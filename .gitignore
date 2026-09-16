@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+
+### Skills ###
+.agents/
+skills-lock.json
