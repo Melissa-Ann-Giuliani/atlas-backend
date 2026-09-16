@@ -1,4 +1,4 @@
-﻿package com.atlas.atlas_backend.categoria;
+package com.atlas.atlas_backend.categoria;
 
 import jakarta.persistence.*;
 import lombok.Data;

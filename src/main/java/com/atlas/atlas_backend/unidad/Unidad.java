@@ -1,4 +1,4 @@
-﻿package com.atlas.atlas_backend.unidad;
+package com.atlas.atlas_backend.unidad;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -16,6 +16,7 @@ public class Unidad {
     @Column(name = "unidad_nombre", nullable = false, length = 100)
     private String unidadNombre;
 
-    @Column(name = "tipo_unidad_id", nullable = false)
-    private Integer tipoUnidadId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tipo_unidad_id", nullable = false)
+    private TipoUnidad tipoUnidad;
 }

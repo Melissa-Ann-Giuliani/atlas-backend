@@ -1,4 +1,4 @@
-﻿package com.atlas.atlas_backend.origen;
+package com.atlas.atlas_backend.origen;
 
 import jakarta.persistence.*;
 import lombok.Data;

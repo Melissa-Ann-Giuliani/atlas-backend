@@ -32,4 +32,9 @@ public class Docente extends Usuario {
 
     @Column(name = "docente_antig_previa")
     private Integer antigPrevia;
+
+    @ElementCollection
+    @CollectionTable(name = "telefonos_docentes", joinColumns = @JoinColumn(name = "docente_usuario_id"))
+    @Column(name = "docente_telefono", length = 20)
+    private java.util.List<String> telefonos;
 }

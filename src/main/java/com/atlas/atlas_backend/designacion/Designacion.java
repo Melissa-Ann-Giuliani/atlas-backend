@@ -1,4 +1,4 @@
-﻿package com.atlas.atlas_backend.designacion;
+package com.atlas.atlas_backend.designacion;
 
 import jakarta.persistence.*;
 import lombok.Data;

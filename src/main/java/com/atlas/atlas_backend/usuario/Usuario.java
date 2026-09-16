@@ -19,7 +19,7 @@ public class Usuario {
     @Column(name = "usuario_username", nullable = false, length = 50)
     private String username;
 
-    @Column(name = "usuario_contrasenia", nullable = false, length = 50)
+    @Column(name = "usuario_contrasenia", nullable = false, length = 255)
     private String contrasenia;
 
     @Column(name = "usuario_correo", length = 50)

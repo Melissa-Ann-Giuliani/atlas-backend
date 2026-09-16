@@ -36,3 +36,6 @@ build/
 ### Skills ###
 .agents/
 skills-lock.json
+
+
+atlas-create.sql
