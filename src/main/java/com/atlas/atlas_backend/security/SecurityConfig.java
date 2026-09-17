@@ -40,7 +40,7 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/caracteres")
                         .permitAll()
-                        .anyRequest().permitAll()) // cambiar luego por .anyRequest().authenticated()
+                        .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 

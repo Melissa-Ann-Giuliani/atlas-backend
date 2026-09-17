@@ -39,3 +39,7 @@ skills-lock.json
 
 
 atlas-create.sql
+
+### Test de Hash ###
+.test\java\com\atlas\atlas_backend\
+PasswordHashGeneratorTest.java
