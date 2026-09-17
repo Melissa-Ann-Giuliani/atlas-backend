@@ -20,4 +20,4 @@ Clonar el repositorio y ejecutar:
 ./mvnw spring-boot:run
 ```
 
-La aplicación se iniciará en `http://localhost:8080` (REVISAR).
+La aplicación se iniciará en `http://localhost:8081`.
