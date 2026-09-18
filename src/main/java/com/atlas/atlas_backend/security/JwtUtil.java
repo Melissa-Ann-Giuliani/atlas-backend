@@ -1,5 +1,6 @@
 package com.atlas.atlas_backend.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -15,7 +16,8 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    private final String SECRET_KEY = "ThisIsAVerySecretKeyThatShouldBeStoredInEnvironmentVariablesAndNotHere";
+    @Value("${jwt.secret:ThisIsAVerySecretKeyThatShouldBeStoredInEnvironmentVariablesAndNotHere}")
+    private String SECRET_KEY;
     
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());

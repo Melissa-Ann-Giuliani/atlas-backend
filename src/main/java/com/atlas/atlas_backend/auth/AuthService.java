@@ -13,6 +13,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.atlas.atlas_backend.notification.EmailService;
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -34,6 +37,9 @@ public class AuthService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EmailService emailService;
 
     public AuthResponse authenticate(AuthRequest authRequest) throws Exception {
         try {
@@ -70,6 +76,40 @@ public class AuthService {
         newUsuario.setRol(defaultRol);
 
         usuarioRepository.save(newUsuario);
+    }
+
+    public void resetPassword(String username, String correo) throws Exception {
+        Usuario usuario = usuarioRepository.findByUsernameAndCorreo(username, correo)
+                .orElseThrow(() -> new Exception("No account found matching the provided credentials."));
+        
+        if (!usuario.getActivo()) {
+            throw new Exception("Account is inactive, please contact support.");
+        }
+
+        String provisionalPassword = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        usuario.setContrasenia(passwordEncoder.encode(provisionalPassword));
+        usuario.setDebeCambiarContrasenia(true);
+        usuario.setFechaReset(LocalDateTime.now());
+        
+        usuarioRepository.save(usuario);
+        emailService.sendProvisionalPassword(usuario.getCorreo(), provisionalPassword);
+    }
+
+    public void adminResetPassword(Integer userId) throws Exception {
+        Usuario usuario = usuarioRepository.findById(userId)
+                .orElseThrow(() -> new Exception("User not found."));
+        
+        if (!usuario.getActivo()) {
+            throw new Exception("Cannot reset password for an inactive account.");
+        }
+
+        String provisionalPassword = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
+        usuario.setContrasenia(passwordEncoder.encode(provisionalPassword));
+        usuario.setDebeCambiarContrasenia(true);
+        usuario.setFechaReset(LocalDateTime.now());
+        
+        usuarioRepository.save(usuario);
+        emailService.sendProvisionalPassword(usuario.getCorreo(), provisionalPassword);
     }
 }
 
