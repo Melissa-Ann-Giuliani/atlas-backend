@@ -58,6 +58,7 @@ public class AuthService {
             if (usuario.getFechaReset().plusHours(24).isBefore(LocalDateTime.now())) {
                 throw new Exception("Provisional password has expired. Please request a new one.");
             }
+        }
 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
         final String jwt = jwtUtil.generateToken(userDetails);
