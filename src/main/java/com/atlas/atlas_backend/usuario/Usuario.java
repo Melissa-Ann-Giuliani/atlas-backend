@@ -37,4 +37,10 @@ public class Usuario {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "rol_id", nullable = false)
     private Rol rol;
+
+    @Column(name = "usuario_debe_cambiar_contrasenia", nullable = false, columnDefinition = "boolean default false")
+    private Boolean debeCambiarContrasenia = false;
+
+    @Column(name = "usuario_fecha_reset")
+    private java.time.LocalDateTime fechaReset;
 }

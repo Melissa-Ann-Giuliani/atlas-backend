@@ -53,6 +53,35 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody PasswordResetRequest request, HttpServletRequest httpRequest) {
+        String ip = getClientIP(httpRequest);
+
+        if (loginAttemptService.isBlocked(ip)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(new ErrorResponse("Too many failed attempts. Please try again later."));
+        }
+
+        if (request.getUsername() == null || request.getUsername().trim().isEmpty() ||
+            request.getCorreo() == null || request.getCorreo().trim().isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse("Username and correo are required"));
+        }
+
+        try {
+            authService.resetPassword(request.getUsername(), request.getCorreo());
+            loginAttemptService.loginSucceeded(ip);
+            return ResponseEntity.ok(java.util.Map.of("message", "Provisional password issued."));
+        } catch (Exception e) {
+            loginAttemptService.loginFailed(ip);
+            String msg = e.getMessage();
+            if (msg.contains("inactive")) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(msg));
+            }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("No account found matching the provided credentials."));
+        }
+    }
+
     private String getClientIP(HttpServletRequest request) {
         String xfHeader = request.getHeader("X-Forwarded-For");
         if (xfHeader == null) {
