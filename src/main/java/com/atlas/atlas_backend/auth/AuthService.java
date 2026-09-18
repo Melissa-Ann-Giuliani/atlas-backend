@@ -51,6 +51,14 @@ public class AuthService {
             throw new Exception("Invalid username or password", e);
         }
 
+        Usuario usuario = usuarioRepository.findByUsername(authRequest.getUsername())
+                .orElseThrow(() -> new Exception("User not found"));
+
+        if (Boolean.TRUE.equals(usuario.getDebeCambiarContrasenia()) && usuario.getFechaReset() != null) {
+            if (usuario.getFechaReset().plusHours(24).isBefore(LocalDateTime.now())) {
+                throw new Exception("Provisional password has expired. Please request a new one.");
+            }
+
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
         final String jwt = jwtUtil.generateToken(userDetails);
 
@@ -70,7 +78,8 @@ public class AuthService {
         newUsuario.setApellido(request.getApellido());
         newUsuario.setActivo(true);
 
-        // Assign a default role, usually "USER" (or ID 1). Assuming ID 1 exists or fetching by name.
+        // Assign a default role, usually "USER" (or ID 1). Assuming ID 1 exists or
+        // fetching by name.
         Rol defaultRol = rolRepository.findById(1)
                 .orElseThrow(() -> new Exception("Default role not found"));
         newUsuario.setRol(defaultRol);
@@ -81,7 +90,7 @@ public class AuthService {
     public void resetPassword(String username, String correo) throws Exception {
         Usuario usuario = usuarioRepository.findByUsernameAndCorreo(username, correo)
                 .orElseThrow(() -> new Exception("No account found matching the provided credentials."));
-        
+
         if (!usuario.getActivo()) {
             throw new Exception("Account is inactive, please contact support.");
         }
@@ -90,7 +99,7 @@ public class AuthService {
         usuario.setContrasenia(passwordEncoder.encode(provisionalPassword));
         usuario.setDebeCambiarContrasenia(true);
         usuario.setFechaReset(LocalDateTime.now());
-        
+
         usuarioRepository.save(usuario);
         emailService.sendProvisionalPassword(usuario.getCorreo(), provisionalPassword);
     }
@@ -98,7 +107,7 @@ public class AuthService {
     public void adminResetPassword(Integer userId) throws Exception {
         Usuario usuario = usuarioRepository.findById(userId)
                 .orElseThrow(() -> new Exception("User not found."));
-        
+
         if (!usuario.getActivo()) {
             throw new Exception("Cannot reset password for an inactive account.");
         }
@@ -107,9 +116,8 @@ public class AuthService {
         usuario.setContrasenia(passwordEncoder.encode(provisionalPassword));
         usuario.setDebeCambiarContrasenia(true);
         usuario.setFechaReset(LocalDateTime.now());
-        
+
         usuarioRepository.save(usuario);
         emailService.sendProvisionalPassword(usuario.getCorreo(), provisionalPassword);
     }
 }
-
