@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,12 +16,16 @@ public class UsuarioController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private AdminGlobalService adminGlobalService;
+
     @PostMapping("/{userId}/reset-password")
     @PreAuthorize("hasRole('ADMIN_GLOBAL')") // Or equivalent check
     public ResponseEntity<?> adminResetPassword(@PathVariable Integer userId) {
         try {
             authService.adminResetPassword(userId);
-            return ResponseEntity.ok(java.util.Map.of("message", "Password reset successfully for user " + userId + "."));
+            return ResponseEntity
+                    .ok(java.util.Map.of("message", "Password reset successfully for user " + userId + "."));
         } catch (Exception e) {
             String msg = e.getMessage();
             if (msg.contains("inactive")) {
@@ -29,6 +34,27 @@ public class UsuarioController {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(msg));
             }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(msg));
+        }
+    }
+
+    @PostMapping("/admin-global")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL')")
+    public ResponseEntity<?> registrarAdminGlobal(@Valid @RequestBody AdminGlobalRequest request) {
+        try {
+            StringBuilder warningMessage = new StringBuilder();
+            AdminGlobal user = adminGlobalService.registrarAdminGlobal(request, warningMessage);
+            
+            if (warningMessage.length() > 0) {
+                return ResponseEntity.status(HttpStatus.CREATED)
+                        .body(java.util.Map.of("message", "Usuario registrado, pero: " + warningMessage.toString(), "usuario", user));
+            }
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(java.util.Map.of("message", "Administrador Global registrado exitosamente", "usuario", user));
+        } catch (Exception e) {
+            if (e.getMessage().contains("ya existe")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(e.getMessage()));
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
         }
     }
 }
