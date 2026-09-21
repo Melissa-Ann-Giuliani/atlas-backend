@@ -43,4 +43,15 @@ public class EmailService {
                 "\n\nPor favor, ingresa al sistema y cambia tu contraseña (tienes 24 horas antes de que expire).\n\nSaludos cordiales,\nAtlas");
         mailSender.send(message);
     }
+
+    @Async
+    public void sendWelcomeAuditor(String to, String provisionalPassword) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject("Bienvenido a Atlas - Auditor");
+        message.setText("Hola,\n\nHas sido registrado como Auditor en el sistema Atlas.\n\n" +
+                "Tu contraseña provisoria es: " + provisionalPassword +
+                "\n\nPor favor, ingresa al sistema y cambia tu contraseña (tienes 24 horas antes de que expire).\n\nSaludos cordiales,\nAtlas");
+        mailSender.send(message);
+    }
 }

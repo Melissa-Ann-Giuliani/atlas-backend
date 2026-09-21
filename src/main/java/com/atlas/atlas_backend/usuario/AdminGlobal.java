@@ -12,6 +12,6 @@ import lombok.Setter;
 public class AdminGlobal extends Usuario {
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "cargo_ag_nombre", length = 40)
+    @Column(name = "cargo_ag_nombre", length = 40, nullable = false)
     private CargoAdminGlobal cargoNombre;
 }
