@@ -31,6 +31,9 @@ public class UsuarioControllerTest {
         private AdminGlobalService adminGlobalService;
 
         @MockBean
+        private AdminUnidadService adminUnidadService;
+
+        @MockBean
         private com.atlas.atlas_backend.security.JwtUtil jwtUtil;
 
         @MockBean
