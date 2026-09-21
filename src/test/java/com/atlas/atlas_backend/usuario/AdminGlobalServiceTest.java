@@ -17,7 +17,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 public class AdminGlobalServiceTest {
 
     @Mock
@@ -50,7 +49,6 @@ public class AdminGlobalServiceTest {
         request.setCargoNombre(CargoAdminGlobal.DESPACHO);
     }
 
-    @SuppressWarnings("null")
     @Test
     public void testRegistrarAdminGlobal_Success() throws Exception {
         when(usuarioRepository.findByUsername(anyString())).thenReturn(Optional.empty());
@@ -75,7 +73,6 @@ public class AdminGlobalServiceTest {
         assertEquals(0, warningMessage.length());
     }
 
-    @SuppressWarnings("null")
     @Test
     public void testRegistrarAdminGlobal_EmailFailureReturnsWarning() throws Exception {
         when(usuarioRepository.findByUsername(anyString())).thenReturn(Optional.empty());
@@ -100,7 +97,6 @@ public class AdminGlobalServiceTest {
         assertTrue(warningMessage.toString().contains("falló el envío del correo"));
     }
 
-    @SuppressWarnings("null")
     @Test
     public void testRegistrarAdminGlobal_UsernameExistsThrowsException() {
         when(usuarioRepository.findByUsername(anyString())).thenReturn(Optional.of(new Usuario()));
