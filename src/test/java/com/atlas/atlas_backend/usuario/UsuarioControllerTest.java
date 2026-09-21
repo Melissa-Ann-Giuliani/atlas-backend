@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UsuarioController.class)
-@AutoConfigureMockMvc(addFilters = false) 
+@AutoConfigureMockMvc(addFilters = false)
 public class UsuarioControllerTest {
 
     @Autowired
@@ -26,6 +26,9 @@ public class UsuarioControllerTest {
 
     @MockBean
     private AuthService authService;
+
+    @MockBean
+    private AdminGlobalService adminGlobalService;
 
     @MockBean
     private com.atlas.atlas_backend.security.JwtUtil jwtUtil;
@@ -48,7 +51,8 @@ public class UsuarioControllerTest {
     @Test
     @WithMockUser(roles = "DOCENTE")
     public void testScenario2_AdminResetPassword_ForbiddenForDocente() throws Exception {
-        // En una app real, SecurityConfig + @PreAuthorize con filter activo validaria el FORBIDDEN
+        // En una app real, SecurityConfig + @PreAuthorize con filter activo validaria
+        // el FORBIDDEN
     }
 
     @Test
