@@ -1,5 +1,6 @@
 package com.atlas.atlas_backend.usuario;
 
+import com.atlas.atlas_backend.unidad.Unidad;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,9 +12,11 @@ import lombok.Setter;
 @Setter
 public class AdminUnidad extends Usuario {
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "cargo_ad_nombre", nullable = false, length = 40)
-    private String cargoNombre;
+    private CargoAdminUnidad cargoNombre;
 
-    @Column(name = "unidad_id", nullable = false)
-    private Integer unidadId; // Mapped as simple ID for brevity, can map as ManyToOne Unidades later
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "unidad_id", nullable = false)
+    private Unidad unidad;
 }

@@ -19,6 +19,9 @@ public class UsuarioController {
     @Autowired
     private AdminGlobalService adminGlobalService;
 
+    @Autowired
+    private AdminUnidadService adminUnidadService;
+
     @PostMapping("/{userId}/reset-password")
     @PreAuthorize("hasRole('ADMIN_GLOBAL')") // Or equivalent check
     public ResponseEntity<?> adminResetPassword(@PathVariable Integer userId) {
@@ -50,6 +53,27 @@ public class UsuarioController {
             }
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(java.util.Map.of("message", "Administrador Global registrado exitosamente", "usuario", user));
+        } catch (Exception e) {
+            if (e.getMessage().contains("ya existe")) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(e.getMessage()));
+            }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/admin-unidad")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL')")
+    public ResponseEntity<?> registrarAdminUnidad(@Valid @RequestBody AdminUnidadRequest request) {
+        try {
+            StringBuilder warningMessage = new StringBuilder();
+            AdminUnidad user = adminUnidadService.registrarAdminUnidad(request, warningMessage);
+
+            if (warningMessage.length() > 0) {
+                return ResponseEntity.status(HttpStatus.CREATED)
+                        .body(java.util.Map.of("message", "Usuario registrado, pero: " + warningMessage.toString(), "usuario", user));
+            }
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(java.util.Map.of("message", "Administrador de Unidad registrado exitosamente", "usuario", user));
         } catch (Exception e) {
             if (e.getMessage().contains("ya existe")) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(e.getMessage()));
