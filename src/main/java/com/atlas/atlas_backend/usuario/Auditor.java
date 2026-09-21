@@ -11,5 +11,7 @@ import lombok.Setter;
 @Setter
 public class Auditor extends Usuario {
 
-    // The table only has usuario_id as PK, no extra fields.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cargo_auditor_nombre", length = 50)
+    private CargoAuditor cargoNombre;
 }
