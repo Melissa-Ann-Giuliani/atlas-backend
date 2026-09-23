@@ -3,13 +3,13 @@
 Servicio backend para automatizar la automatizar la gestión de trámites correspondientes a los docentes (designaciones, licencias, renuncias, subrogaciones), así como también realizar auditorías y brindar un acceso rápido a estadísticas e información consolidada.
 
 ## Tecnologías
-- Java 26.0.2.1
+- Java 17
 - Spring Boot
 - Maven
 - PostgreSQL
 
 ## Requisitos 
-- JDK 26.0.2.1
+- JDK 17
 - Maven
 
 ## Cómo empezar
