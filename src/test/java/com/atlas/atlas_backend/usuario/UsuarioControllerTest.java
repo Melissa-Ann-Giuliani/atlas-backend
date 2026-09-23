@@ -38,6 +38,9 @@ public class UsuarioControllerTest {
         private AuditorService auditorService;
 
         @MockBean
+        private DocenteService docenteService;
+
+        @MockBean
         private com.atlas.atlas_backend.security.JwtUtil jwtUtil;
 
         @MockBean
