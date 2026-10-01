@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.lang.NonNull;
 
 @RestController
 @RequestMapping("/api/docentes")
@@ -38,7 +39,7 @@ public class DocenteController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
-    public ResponseEntity<DocenteDetailsDTO> getTeacherDetails(@PathVariable Integer id) {
+    public ResponseEntity<DocenteDetailsDTO> getTeacherDetails(@PathVariable @NonNull Integer id) {
         try {
             DocenteDetailsDTO dto = docenteService.getTeacherProfile(id);
             return ResponseEntity.ok(dto);
