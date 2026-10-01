@@ -5,4 +5,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface LicenciaRepository extends JpaRepository<Licencia, Integer> {
+    java.util.List<Licencia> findByDesignacionDesignacionIdIn(java.util.List<Integer> designacionIds);
 }

@@ -5,4 +5,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface FuncionRepository extends JpaRepository<Funcion, Integer> {
+    java.util.List<Funcion> findByCargoIdIn(java.util.List<Integer> cargoIds);
 }
