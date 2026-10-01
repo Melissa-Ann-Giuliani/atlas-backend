@@ -5,5 +5,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CargoRepository extends JpaRepository<Cargo, Integer> {
-
+    java.util.List<Cargo> findByDesignacionDesignacionIdIn(java.util.List<Integer> designacionIds);
 }

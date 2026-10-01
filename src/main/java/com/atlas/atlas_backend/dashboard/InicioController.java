@@ -53,9 +53,12 @@ public class InicioController {
 
         if (user.getRol().getNombre().equalsIgnoreCase("Admin de unidad") || 
             user.getRol().getNombre().equalsIgnoreCase("Administrador de Unidad")) {
-            Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(user.getId());
-            if (adminUnidadOpt.isPresent() && adminUnidadOpt.get().getUnidad() != null) {
-                unidadId = adminUnidadOpt.get().getUnidad().getUnidadId();
+            Integer userId = user.getId();
+            if (userId != null) {
+                Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(userId);
+                if (adminUnidadOpt.isPresent() && adminUnidadOpt.get().getUnidad() != null) {
+                    unidadId = adminUnidadOpt.get().getUnidad().getUnidadId();
+                }
             }
         }
 
