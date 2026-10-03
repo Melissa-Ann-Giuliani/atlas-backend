@@ -5,7 +5,6 @@ import java.util.List;
 
 @Data
 public class UnitTypeStatsDTO {
-    private String unitTypeName;
-    private Long count;
-    private List<SpecificUnitStatsDTO> specificUnits;
+    private String label;
+    private Long value;
 }

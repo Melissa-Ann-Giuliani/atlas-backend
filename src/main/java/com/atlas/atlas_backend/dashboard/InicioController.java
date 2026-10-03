@@ -28,7 +28,7 @@ public class InicioController {
     @Autowired
     private AdminUnidadRepository adminUnidadRepository;
 
-    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
+    @PreAuthorize("hasRole('ADMINISTRADOR_GLOBAL') or hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
     @GetMapping("/mapa-docente")
     public ResponseEntity<TeachingMapResponseDTO> getTeachingMap(
             @org.springframework.web.bind.annotation.RequestParam(required = false) Integer caracterId,

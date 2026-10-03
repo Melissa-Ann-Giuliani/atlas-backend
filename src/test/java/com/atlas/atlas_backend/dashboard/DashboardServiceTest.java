@@ -50,22 +50,22 @@ class DashboardServiceTest {
 
         // Assert
         assertNotNull(result);
-        assertEquals(100L, result.getTotalTeachers());
+        assertEquals(100L, result.getTotalDocentes());
         assertEquals(3, result.getUnitTypes().size());
 
         // Assert specific unit mapping
         UnitTypeStatsDTO deptStats = result.getUnitTypes().stream()
-                .filter(u -> u.getUnitTypeName().equals("Departamento"))
+                .filter(u -> u.getLabel().equals("Departamento"))
                 .findFirst().orElse(null);
         assertNotNull(deptStats);
-        assertEquals(50L, deptStats.getCount());
-        assertEquals(2, deptStats.getSpecificUnits().size());
+        assertEquals(50L, deptStats.getValue());
+        assertEquals(2, result.getDepartamentos().size());
 
-        SpecificUnitStatsDTO matStats = deptStats.getSpecificUnits().stream()
-                .filter(u -> u.getUnitName().equals("Matemática"))
+        SpecificUnitStatsDTO matStats = result.getDepartamentos().stream()
+                .filter(u -> u.getLabel().equals("Matemática"))
                 .findFirst().orElse(null);
         assertNotNull(matStats);
-        assertEquals(30L, matStats.getCount());
+        assertEquals(30L, matStats.getValue());
     }
 
     @Test
@@ -80,12 +80,14 @@ class DashboardServiceTest {
 
         // Assert
         assertNotNull(result);
-        assertEquals(0L, result.getTotalTeachers());
+        assertEquals(0L, result.getTotalDocentes());
         assertEquals(3, result.getUnitTypes().size()); // Should still initialize the core 3 types
 
         for (UnitTypeStatsDTO type : result.getUnitTypes()) {
-            assertEquals(0L, type.getCount());
-            assertEquals(0, type.getSpecificUnits().size());
+            assertEquals(0L, type.getValue());
         }
+        assertEquals(0, result.getCentros().size());
+        assertEquals(0, result.getDepartamentos().size());
+        assertEquals(0, result.getInstitutos().size());
     }
 }

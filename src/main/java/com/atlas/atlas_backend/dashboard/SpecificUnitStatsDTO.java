@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class SpecificUnitStatsDTO {
-    private String unitName;
-    private Long count;
+    private String label;
+    private Long value;
 }

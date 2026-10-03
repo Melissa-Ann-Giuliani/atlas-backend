@@ -16,7 +16,7 @@ public class DashboardService {
 
     public TeachingMapResponseDTO getTeachingMapData(Integer unidadId, Integer caracterId, Integer categoriaId, Integer dedicacionId, Integer origenId, String estadoActual) {
         TeachingMapResponseDTO dto = new TeachingMapResponseDTO();
-        dto.setTotalTeachers(dashboardRepository.countTotalTeachers(unidadId, caracterId, categoriaId, dedicacionId, origenId, estadoActual));
+        dto.setTotalDocentes(dashboardRepository.countTotalTeachers(unidadId, caracterId, categoriaId, dedicacionId, origenId, estadoActual));
 
         List<Object[]> byUnitTypeData = dashboardRepository.countTeachersByUnitType(unidadId, caracterId, categoriaId, dedicacionId, origenId, estadoActual);
         Map<String, Long> byUnitTypeMap = new HashMap<>();
@@ -40,8 +40,8 @@ public class DashboardService {
             Long count = (Long) row[2];
 
             SpecificUnitStatsDTO specificUnit = new SpecificUnitStatsDTO();
-            specificUnit.setUnitName(unitName);
-            specificUnit.setCount(count);
+            specificUnit.setLabel(unitName);
+            specificUnit.setValue(count);
 
             specificUnitsMap.computeIfAbsent(unitType, k -> new ArrayList<>()).add(specificUnit);
         }
@@ -56,13 +56,15 @@ public class DashboardService {
         List<UnitTypeStatsDTO> unitTypes = new ArrayList<>();
         for (String typeName : allTypesToInclude) {
             UnitTypeStatsDTO unitTypeStats = new UnitTypeStatsDTO();
-            unitTypeStats.setUnitTypeName(typeName);
-            unitTypeStats.setCount(byUnitTypeMap.getOrDefault(typeName, 0L));
-            unitTypeStats.setSpecificUnits(specificUnitsMap.getOrDefault(typeName, new ArrayList<>()));
+            unitTypeStats.setLabel(typeName);
+            unitTypeStats.setValue(byUnitTypeMap.getOrDefault(typeName, 0L));
             unitTypes.add(unitTypeStats);
         }
 
         dto.setUnitTypes(unitTypes);
+        dto.setCentros(specificUnitsMap.getOrDefault("Centro", new ArrayList<>()));
+        dto.setDepartamentos(specificUnitsMap.getOrDefault("Departamento", new ArrayList<>()));
+        dto.setInstitutos(specificUnitsMap.getOrDefault("Instituto", new ArrayList<>()));
         return dto;
     }
 }
