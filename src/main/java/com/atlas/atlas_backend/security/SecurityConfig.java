@@ -40,7 +40,7 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
                         .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/reset-password", "/api/caracteres")
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/reset-password", "/api/caracteres", "/api/categorias", "/api/dedicaciones", "/api/tipos-unidad")
                         .permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
