@@ -118,6 +118,9 @@ public class DocenteService {
             String searchTerm,
             String origen,
             String dedicacion,
+            String categoria,
+            String caracter,
+            String tipoUnidad,
             org.springframework.data.domain.Pageable pageable) throws Exception {
 
         Usuario usuario = usuarioRepository.findByUsername(username)
@@ -140,7 +143,7 @@ public class DocenteService {
             }
         }
 
-        return docenteRepository.findActiveDocentes(unidadId, searchTerm, origen, dedicacion, pageable);
+        return docenteRepository.findActiveDocentes(unidadId, searchTerm, origen, dedicacion, categoria, caracter, tipoUnidad, pageable);
     }
 
     @Transactional(readOnly = true)

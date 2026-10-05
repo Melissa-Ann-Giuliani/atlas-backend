@@ -66,6 +66,9 @@ public class CargoService {
 
     @Transactional(readOnly = true)
     public CargoDetailDTO getCargoDetails(Integer cargoId, String username) throws Exception {
+        if (cargoId == null) {
+            throw new Exception("ID de cargo nulo");
+        }
         Cargo cargo = cargoRepository.findById(cargoId)
                 .orElseThrow(() -> new Exception("Cargo no encontrado"));
 
@@ -94,7 +97,7 @@ public class CargoService {
         dto.setEstado(cargo.getDesignacion() != null ? cargo.getDesignacion().getDesignacionEstadoActual() : null);
 
         if (cargo.getDesignacion() != null && cargo.getDesignacion().getUsuarioId() != null) {
-            Optional<Docente> docenteOpt = docenteRepository.findById(cargo.getDesignacion().getUsuarioId());
+            Optional<Docente> docenteOpt = docenteRepository.findById(cargo.getDesignacion().getUsuarioId().intValue());
             if (docenteOpt.isPresent()) {
                 Docente docente = docenteOpt.get();
                 dto.setAsignadoANombre(docente.getApellido() + " " + docente.getNombre());
