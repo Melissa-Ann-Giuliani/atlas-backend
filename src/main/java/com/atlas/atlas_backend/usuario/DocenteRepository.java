@@ -16,7 +16,7 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
         value = """
             SELECT d.id AS usuarioId, d.nombre AS nombre, d.apellido AS apellido,
                    o.origenNombre AS origen, u.unidadNombre AS unidad, cat.categoriaNombre AS categoria,
-                   ded.dedicacionNombre AS dedicacion, car.caracterNombre AS caracter, des.designacionEstadoActual AS estado
+                   ded.dedicacionNombre AS dedicacion, car.caracterNombre AS caracter, d.estado AS estado
             FROM Cargo c
             JOIN c.designacion des
             JOIN Docente d ON d.id = des.usuarioId
@@ -25,7 +25,7 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
             JOIN c.categoria cat
             JOIN c.dedicacion ded
             JOIN c.caracter car
-            WHERE des.designacionEstadoActual = 'Activo'
+            WHERE d.estado = 'Activo'
               AND (:unidadId IS NULL OR u.unidadId = :unidadId)
               AND (CAST(:searchTerm AS string) IS NULL OR LOWER(d.nombre) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
                    OR LOWER(d.apellido) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
@@ -46,7 +46,7 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
             JOIN c.categoria cat
             JOIN c.dedicacion ded
             JOIN c.caracter car
-            WHERE des.designacionEstadoActual = 'Activo'
+            WHERE d.estado = 'Activo'
               AND (:unidadId IS NULL OR u.unidadId = :unidadId)
               AND (CAST(:searchTerm AS string) IS NULL OR LOWER(d.nombre) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
                    OR LOWER(d.apellido) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 

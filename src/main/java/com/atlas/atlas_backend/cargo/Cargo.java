@@ -63,4 +63,7 @@ public class Cargo {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unidad_id", nullable = false)
     private Unidad unidad;
+
+    @Column(name = "cargo_estado", length = 20, nullable = false)
+    private String estado = "Libre";
 }

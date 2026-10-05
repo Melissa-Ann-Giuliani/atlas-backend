@@ -17,7 +17,7 @@ public interface CargoRepository extends JpaRepository<Cargo, Integer> {
 
     @Query("""
         SELECT c.id AS id, c.codigo AS numero, c.fechaCreacion AS fechaCreacion,
-               des.designacionEstadoActual AS estado,
+               c.estado AS estado,
                CONCAT(doc.apellido, ' ', doc.nombre) AS apellidoNombre,
                cat.categoriaNombre AS categoria, ded.dedicacionNombre AS dedicacion,
                car.caracterNombre AS caracter
@@ -28,7 +28,7 @@ public interface CargoRepository extends JpaRepository<Cargo, Integer> {
         JOIN c.dedicacion ded
         JOIN c.caracter car
         JOIN c.unidad u
-        WHERE des.designacionEstadoActual = 'Asignado'
+        WHERE c.estado = 'Asignado'
           AND (:unidadId IS NULL OR u.unidadId = :unidadId)
           AND (:searchTerm IS NULL OR LOWER(CAST(c.codigo AS string)) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
                OR LOWER(doc.nombre) LIKE LOWER(CONCAT('%', :searchTerm, '%')) 

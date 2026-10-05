@@ -84,6 +84,10 @@ public class DocenteService {
             docente.setAntigPrevia(0);
         }
 
+        if (request.getEstado() != null) {
+            docente.setEstado(request.getEstado());
+        }
+
         Docente savedUser = docenteRepository.save(docente);
 
         try {
@@ -159,6 +163,7 @@ public class DocenteService {
         pd.setTelefonos(docente.getTelefonos());
         pd.setNombre(docente.getNombre());
         pd.setApellido(docente.getApellido());
+        pd.setEstado(docente.getEstado());
         dto.setDatosPersonales(pd);
 
         java.util.List<com.atlas.atlas_backend.designacion.Designacion> designaciones = designacionRepository

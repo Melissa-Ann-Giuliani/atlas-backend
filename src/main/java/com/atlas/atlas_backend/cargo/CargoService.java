@@ -94,7 +94,7 @@ public class CargoService {
         CargoDetailDTO dto = new CargoDetailDTO();
         dto.setNumero(cargo.getCodigo());
         dto.setCategoria(cargo.getCategoria() != null ? cargo.getCategoria().getCategoriaNombre() : null);
-        dto.setEstado(cargo.getDesignacion() != null ? cargo.getDesignacion().getDesignacionEstadoActual() : null);
+        dto.setEstado(cargo.getEstado());
 
         if (cargo.getDesignacion() != null && cargo.getDesignacion().getUsuarioId() != null) {
             Optional<Docente> docenteOpt = docenteRepository.findById(cargo.getDesignacion().getUsuarioId().intValue());
@@ -132,7 +132,7 @@ public class CargoService {
             Cargo predecesor = cargo.getCargoPredecesor();
             CargoDetailDTO.CargoPredecesorData pd = new CargoDetailDTO.CargoPredecesorData();
             pd.setNumero(predecesor.getCodigo());
-            pd.setEstado(predecesor.getDesignacion() != null ? predecesor.getDesignacion().getDesignacionEstadoActual() : null);
+            pd.setEstado(predecesor.getEstado());
             pd.setCategoria(predecesor.getCategoria() != null ? predecesor.getCategoria().getCategoriaNombre() : null);
             dto.setCargoPredecesor(pd);
         }
@@ -142,7 +142,7 @@ public class CargoService {
         for (Cargo sc : subcargosList) {
             CargoDetailDTO.SubcargoData sd = new CargoDetailDTO.SubcargoData();
             sd.setNumero(sc.getCodigo());
-            sd.setEstado(sc.getDesignacion() != null ? sc.getDesignacion().getDesignacionEstadoActual() : null);
+            sd.setEstado(sc.getEstado());
             sd.setCategoria(sc.getCategoria() != null ? sc.getCategoria().getCategoriaNombre() : null);
             subcargos.add(sd);
         }

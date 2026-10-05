@@ -39,5 +39,7 @@ public class DocenteRequest {
 
     private Integer antigPrevia;
 
+    private String estado;
+
     private List<String> telefonos;
 }

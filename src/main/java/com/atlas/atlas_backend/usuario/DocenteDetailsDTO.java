@@ -18,6 +18,7 @@ public class DocenteDetailsDTO {
         private List<String> telefonos;
         private String nombre;
         private String apellido;
+        private String estado;
     }
 
     @Data

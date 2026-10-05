@@ -33,6 +33,9 @@ public class Docente extends Usuario {
     @Column(name = "docente_antig_previa")
     private Integer antigPrevia;
 
+    @Column(name = "docente_estado", length = 15, nullable = false)
+    private String estado = "Inactivo";
+
     @ElementCollection
     @CollectionTable(name = "telefonos_docentes", joinColumns = @JoinColumn(name = "docente_usuario_id"))
     @Column(name = "docente_telefono", length = 20)
