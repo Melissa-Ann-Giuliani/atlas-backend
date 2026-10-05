@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS public.docentes
     docente_fecha_ingreso date NOT NULL,
     docente_domicilio character varying(100),
     docente_antig_previa integer,
+    docente_estado character varying(15) NOT NULL DEFAULT 'Inactivo',
     PRIMARY KEY (usuario_id),
     UNIQUE (docente_dni),
     UNIQUE (docente_cuil),
@@ -114,6 +115,7 @@ CREATE TABLE IF NOT EXISTS public.cargos
     dedicacion_id integer NOT NULL,
     designacion_id integer NOT NULL,
     unidad_id integer NOT NULL,
+    cargo_estado character varying(20) NOT NULL DEFAULT 'Libre',
     PRIMARY KEY (cargo_id)
 );
 
@@ -552,8 +554,10 @@ INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_corr
 
 -- 7. Insert Origenes, Caracteres, Categorias, Dedicaciones
 INSERT INTO public.origen (origen_nombre) VALUES
-('Presupuesto Universitario'),
-('Proyecto Especial');
+('Planta'),
+('Investigación'),
+('Extensión'),
+('Gestión');
 
 INSERT INTO public.caracteres (caracter_nombre) VALUES
 ('Efectivo'),
@@ -619,7 +623,7 @@ INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materi
 -- jperez: Titular, Exclusiva, Matematica
 INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
 (5001, 40, '2010-03-01', 
- (SELECT origen_id FROM public.origen WHERE origen_nombre = 'Presupuesto Universitario' LIMIT 1),
+ (SELECT origen_id FROM public.origen WHERE origen_nombre = 'Planta' LIMIT 1),
  (SELECT caracter_id FROM public.caracteres WHERE caracter_nombre = 'Efectivo' LIMIT 1),
  (SELECT categoria_id FROM public.categorias WHERE categoria_nombre = 'Titular' LIMIT 1),
  (SELECT dedicacion_id FROM public.dedicaciones WHERE dedicacion_nombre = 'Exclusiva' LIMIT 1),
@@ -630,7 +634,7 @@ INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creac
 -- agarcia: Adjunto, Semiexclusiva, Fisica
 INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
 (5002, 20, '2015-05-15', 
- (SELECT origen_id FROM public.origen WHERE origen_nombre = 'Presupuesto Universitario' LIMIT 1),
+ (SELECT origen_id FROM public.origen WHERE origen_nombre = 'Planta' LIMIT 1),
  (SELECT caracter_id FROM public.caracteres WHERE caracter_nombre = 'Interino' LIMIT 1),
  (SELECT categoria_id FROM public.categorias WHERE categoria_nombre = 'Adjunto' LIMIT 1),
  (SELECT dedicacion_id FROM public.dedicaciones WHERE dedicacion_nombre = 'Semi-Exclusiva' LIMIT 1),
@@ -641,7 +645,7 @@ INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creac
 -- lmartinez: JTP, Simple, Historia del Arte
 INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
 (5003, 10, '2008-04-10', 
- (SELECT origen_id FROM public.origen WHERE origen_nombre = 'Presupuesto Universitario' LIMIT 1),
+ (SELECT origen_id FROM public.origen WHERE origen_nombre = 'Planta' LIMIT 1),
  (SELECT caracter_id FROM public.caracteres WHERE caracter_nombre = 'Efectivo' LIMIT 1),
  (SELECT categoria_id FROM public.categorias WHERE categoria_nombre = 'Jefe de Trabajos Prácticos' LIMIT 1),
  (SELECT dedicacion_id FROM public.dedicaciones WHERE dedicacion_nombre = 'Simple' LIMIT 1),
@@ -652,7 +656,7 @@ INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creac
 -- sfernandez: JTP, Simple, Coro Universitario
 INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
 (5004, 10, '2018-03-01', 
- (SELECT origen_id FROM public.origen WHERE origen_nombre = 'Proyecto Especial' LIMIT 1),
+ (SELECT origen_id FROM public.origen WHERE origen_nombre = 'Investigación' LIMIT 1),
  (SELECT caracter_id FROM public.caracteres WHERE caracter_nombre = 'Suplente Constituido' LIMIT 1),
  (SELECT categoria_id FROM public.categorias WHERE categoria_nombre = 'Auxiliar de Primera' LIMIT 1),
  (SELECT dedicacion_id FROM public.dedicaciones WHERE dedicacion_nombre = 'Simple' LIMIT 1),

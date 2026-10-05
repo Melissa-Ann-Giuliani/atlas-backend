@@ -84,6 +84,10 @@ public class DocenteService {
             docente.setAntigPrevia(0);
         }
 
+        if (request.getEstado() != null) {
+            docente.setEstado(request.getEstado());
+        }
+
         Docente savedUser = docenteRepository.save(docente);
 
         try {
@@ -118,6 +122,9 @@ public class DocenteService {
             String searchTerm,
             String origen,
             String dedicacion,
+            String categoria,
+            String caracter,
+            String tipoUnidad,
             org.springframework.data.domain.Pageable pageable) throws Exception {
 
         Usuario usuario = usuarioRepository.findByUsername(username)
@@ -140,7 +147,7 @@ public class DocenteService {
             }
         }
 
-        return docenteRepository.findActiveDocentes(unidadId, searchTerm, origen, dedicacion, pageable);
+        return docenteRepository.findActiveDocentes(unidadId, searchTerm, origen, dedicacion, categoria, caracter, tipoUnidad, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -156,6 +163,7 @@ public class DocenteService {
         pd.setTelefonos(docente.getTelefonos());
         pd.setNombre(docente.getNombre());
         pd.setApellido(docente.getApellido());
+        pd.setEstado(docente.getEstado());
         dto.setDatosPersonales(pd);
 
         java.util.List<com.atlas.atlas_backend.designacion.Designacion> designaciones = designacionRepository

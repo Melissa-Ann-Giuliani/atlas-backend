@@ -1,4 +1,4 @@
-package com.atlas.atlas_backend.usuario;
+package com.atlas.atlas_backend.cargo;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -11,29 +11,23 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.lang.NonNull;
 
 @RestController
-@RequestMapping("/api/docentes")
-public class DocenteController {
+@RequestMapping("/api/cargos")
+public class CargoController {
 
     @Autowired
-    private DocenteService docenteService;
+    private CargoService cargoService;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
-    public ResponseEntity<Page<DocenteListDTO>> getActiveTeachers(
+    public ResponseEntity<Page<CargoListDTO>> getActiveCargos(
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) String origen,
-            @RequestParam(required = false) String dedicacion,
-            @RequestParam(required = false) String categoria,
-            @RequestParam(required = false) String caracter,
-            @RequestParam(required = false) String tipoUnidad,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
-        
         try {
             Pageable pageable = PageRequest.of(page, size);
-            Page<DocenteListDTO> result = docenteService.getActiveTeachers(
-                    authentication.getName(), search, origen, dedicacion, categoria, caracter, tipoUnidad, pageable);
+            Page<CargoListDTO> result = cargoService.getActiveCargos(
+                    authentication.getName(), search, pageable);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
@@ -42,9 +36,9 @@ public class DocenteController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
-    public ResponseEntity<DocenteDetailsDTO> getTeacherDetails(@PathVariable @NonNull Integer id) {
+    public ResponseEntity<CargoDetailDTO> getCargoDetails(@PathVariable @NonNull Integer id, Authentication authentication) {
         try {
-            DocenteDetailsDTO dto = docenteService.getTeacherProfile(id);
+            CargoDetailDTO dto = cargoService.getCargoDetails(id, authentication.getName());
             return ResponseEntity.ok(dto);
         } catch (Exception e) {
             return ResponseEntity.notFound().build();

@@ -18,6 +18,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 public class DocenteServiceTest {
 
     @Mock
@@ -109,6 +110,33 @@ public class DocenteServiceTest {
 
         assertNotNull(result);
         assertEquals(0, result.getAntigPrevia());
+    }
+
+    @Test
+    public void testRegistrarDocente_WithEstado() throws Exception {
+        request.setEstado("Inactivo");
+
+        when(usuarioRepository.findByUsername(anyString())).thenReturn(Optional.empty());
+        when(usuarioRepository.existsByCorreo(anyString())).thenReturn(false);
+        when(docenteRepository.existsByEmailInstitucional(anyString())).thenReturn(false);
+        when(docenteRepository.existsByDni(anyLong())).thenReturn(false);
+        when(docenteRepository.existsByCuil(anyLong())).thenReturn(false);
+
+        Rol rol = new Rol();
+        rol.setNombre("DOCENTE");
+        when(rolRepository.findByNombre("DOCENTE")).thenReturn(Optional.of(rol));
+
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
+
+        when(docenteRepository.save(any(Docente.class))).thenAnswer(invocation -> {
+            return invocation.getArgument(0);
+        });
+
+        StringBuilder warningMessage = new StringBuilder();
+        Docente result = docenteService.registrarDocente(request, warningMessage);
+
+        assertNotNull(result);
+        assertEquals("Inactivo", result.getEstado());
     }
 
     @Test
