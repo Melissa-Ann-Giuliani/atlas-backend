@@ -592,12 +592,12 @@ INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_corr
 ('sfernandez', crypt('pass123', gen_salt('bf', 10)), 'sfernandez@atlas.edu', 'Fernandez', 'Sofia', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente'));
 
 -- Docentes Details
-INSERT INTO public.docentes (usuario_id, docente_dni, docente_cuil, docente_fecha_nac, docente_email_institucional, docente_fecha_ingreso, docente_domicilio, docente_antig_previa) VALUES
-((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'jperez'), 30111222, 20301112224, '1985-04-12', 'jperez@atlas.edu', '2010-03-01', 'Calle Falsa 123', 0),
-((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'agarcia'), 32333444, 27323334445, '1987-08-22', 'agarcia@atlas.edu', '2015-05-15', 'Av. Siempreviva 742', 2),
-((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'lmartinez'), 28555666, 20285556668, '1982-11-05', 'lmartinez@atlas.edu', '2008-04-10', 'San Martin 555', 5),
-((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'crodriguez'), 29444777, 20294447771, '1984-01-30', 'crodriguez@atlas.edu', '2012-08-01', 'Belgrano 1000', 1),
-((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'sfernandez'), 35888999, 27358889993, '1991-09-18', 'sfernandez@atlas.edu', '2018-03-01', 'Sarmiento 200', 0);
+INSERT INTO public.docentes (usuario_id, docente_dni, docente_cuil, docente_fecha_nac, docente_email_institucional, docente_fecha_ingreso, docente_domicilio, docente_antig_previa, docente_estado) VALUES
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'jperez'), 30111222, 20301112224, '1985-04-12', 'jperez@atlas.edu', '2010-03-01', 'Calle Falsa 123', 0, 'Activo'),
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'agarcia'), 32333444, 27323334445, '1987-08-22', 'agarcia@atlas.edu', '2015-05-15', 'Av. Siempreviva 742', 2, 'Activo'),
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'lmartinez'), 28555666, 20285556668, '1982-11-05', 'lmartinez@atlas.edu', '2008-04-10', 'San Martin 555', 5, 'Activo'),
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'crodriguez'), 29444777, 20294447771, '1984-01-30', 'crodriguez@atlas.edu', '2012-08-01', 'Belgrano 1000', 1, 'Inactivo'),
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'sfernandez'), 35888999, 27358889993, '1991-09-18', 'sfernandez@atlas.edu', '2018-03-01', 'Sarmiento 200', 0, 'Activo');
 
 -- Telefonos
 INSERT INTO public.telefonos_docentes (docente_usuario_id, docente_telefono) VALUES
@@ -711,8 +711,8 @@ INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_corr
 ('doc_lit', crypt('pass123', gen_salt('bf', 10)), 'doc_lit@atlas.edu', 'Dominguez', 'Paula', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente'));
 
 -- 2. Insert Docentes details
-INSERT INTO public.docentes (usuario_id, docente_dni, docente_cuil, docente_fecha_nac, docente_email_institucional, docente_fecha_ingreso, docente_domicilio, docente_antig_previa)
-SELECT usuario_id, 10000000 + usuario_id, 20100000000 + usuario_id, '1980-01-01', usuario_correo, '2015-01-01', 'Calle Falsa 123', 0
+INSERT INTO public.docentes (usuario_id, docente_dni, docente_cuil, docente_fecha_nac, docente_email_institucional, docente_fecha_ingreso, docente_domicilio, docente_antig_previa, docente_estado)
+SELECT usuario_id, 10000000 + usuario_id, 20100000000 + usuario_id, '1980-01-01', usuario_correo, '2015-01-01', 'Calle Falsa 123', 0, 'Activo'
 FROM public.usuarios WHERE usuario_username LIKE 'doc_%';
 
 -- 3. Insert Designaciones (all Activo)
