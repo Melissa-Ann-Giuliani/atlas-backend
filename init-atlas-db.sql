@@ -257,6 +257,20 @@ CREATE TABLE IF NOT EXISTS public.catedras
     UNIQUE (catedra_director_id)
 );
 
+CREATE TABLE IF NOT EXISTS public.archivos
+(
+    archivo_id serial NOT NULL,
+    archivo_nombre_original character varying(255) NOT NULL,
+    archivo_nombre_encriptado character varying(255) NOT NULL,
+    archivo_tipo_tramite character varying(50) NOT NULL,
+    archivo_tramite_id integer NOT NULL,
+    archivo_fecha_subida timestamp without time zone NOT NULL,
+    archivo_tamano bigint NOT NULL,
+    archivo_tipo_contenido character varying(100) NOT NULL,
+    PRIMARY KEY (archivo_id),
+    UNIQUE (archivo_nombre_encriptado)
+);
+
 ALTER TABLE IF EXISTS public.usuarios
     ADD CONSTRAINT fk_usuarios_roles FOREIGN KEY (rol_id)
     REFERENCES public.roles (rol_id) MATCH SIMPLE
