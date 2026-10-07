@@ -15,7 +15,7 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
     @org.springframework.data.jpa.repository.Query(
         value = """
             SELECT d.id AS usuarioId, d.nombre AS nombre, d.apellido AS apellido,
-                   o.origenNombre AS origen, u.unidadNombre AS unidad, cat.categoriaNombre AS categoria,
+                   o.origenNombre AS origen, u.unidadNombre AS unidad, u.tipoUnidad.nombre AS tipoUnidadNombre, cat.categoriaNombre AS categoria,
                    ded.dedicacionNombre AS dedicacion, car.caracterNombre AS caracter, d.estado AS estado
             FROM Cargo c
             JOIN c.designacion des

@@ -19,6 +19,8 @@ public class DocenteDetailsDTO {
         private String nombre;
         private String apellido;
         private String estado;
+        private String unidadNombre;
+        private String tipoUnidadNombre;
     }
 
     @Data

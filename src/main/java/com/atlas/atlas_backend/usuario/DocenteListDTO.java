@@ -6,6 +6,7 @@ public interface DocenteListDTO {
     String getApellido();
     String getOrigen();
     String getUnidad();
+    String getTipoUnidadNombre();
     String getCategoria();
     String getDedicacion();
     String getCaracter();

@@ -181,6 +181,16 @@ public class DocenteService {
             java.util.List<com.atlas.atlas_backend.cargo.Cargo> cargos = cargoRepository
                     .findByDesignacionDesignacionIdIn(designacionIds);
 
+            if (!cargos.isEmpty()) {
+                com.atlas.atlas_backend.unidad.Unidad unidad = cargos.get(0).getUnidad();
+                if (unidad != null) {
+                    pd.setUnidadNombre(unidad.getUnidadNombre());
+                    if (unidad.getTipoUnidad() != null) {
+                        pd.setTipoUnidadNombre(unidad.getTipoUnidad().getNombre());
+                    }
+                }
+            }
+
             for (com.atlas.atlas_backend.cargo.Cargo cargo : cargos) {
                 DocenteDetailsDTO.DesignacionData dd = new DocenteDetailsDTO.DesignacionData();
                 dd.setLegajo(null); // Docente doesn't have legajo explicitly mapped in requirements, assuming null

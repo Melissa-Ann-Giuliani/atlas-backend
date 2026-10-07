@@ -51,6 +51,7 @@ public class DocenteControllerTest {
                         public String getApellido() { return "Perez"; }
                         public String getOrigen() { return null; }
                         public String getUnidad() { return null; }
+                        public String getTipoUnidadNombre() { return null; }
                         public String getCategoria() { return null; }
                         public String getDedicacion() { return null; }
                         public String getCaracter() { return null; }
