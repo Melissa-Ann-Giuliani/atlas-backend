@@ -19,6 +19,8 @@ public class DocenteDetailsDTO {
         private String nombre;
         private String apellido;
         private String estado;
+        private String unidadNombre;
+        private String tipoUnidadNombre;
     }
 
     @Data
@@ -27,19 +29,23 @@ public class DocenteDetailsDTO {
         private Integer nroResolucion;
         private LocalDate fechaInicio;
         private LocalDate fechaFin;
+        private Integer cargoId;
         private Long nroCargo;
         private String categoria;
         private String dedicacion;
         private String caracter;
         private String estado;
+        private String origen;
     }
 
     @Data
     public static class ActividadData {
-        private String materiaProyecto;
-        private String origen;
-        private Integer horas;
-        private String estado;
+        private Integer funcionId;
+        private String funcionNombre;
+        private Integer funcionHoras;
+        private Integer cargoId;
+        private Integer materiaId;
+        private String materiaNombre;
     }
 
     @Data

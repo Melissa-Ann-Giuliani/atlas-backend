@@ -528,11 +528,11 @@ INSERT INTO public.unidades (unidad_nombre, tipo_unidad_id) VALUES
 -- 3. Insert Departamentos
 INSERT INTO public.unidades (unidad_nombre, tipo_unidad_id) VALUES
 ('Artes Visuales', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Departamento')),
-('Filosofía y Cs. de la Edu.', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Departamento')),
+('Filosofía y Ciencias de la Educación', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Departamento')),
 ('Física, Química y Tec.', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Departamento')),
 ('Geografía', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Departamento')),
 ('Historia', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Departamento')),
-('Lengua y Lit. Inglesa', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Departamento')),
+('Lengua y Literatura Inglesa', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Departamento')),
 ('Letras', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Departamento')),
 ('Matemática', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Departamento')),
 ('Música', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Departamento')),
@@ -542,14 +542,14 @@ INSERT INTO public.unidades (unidad_nombre, tipo_unidad_id) VALUES
 INSERT INTO public.unidades (unidad_nombre, tipo_unidad_id) VALUES
 ('Ciencias Básicas - ICB', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
 ('Geografía Aplicada', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
-('Instituto de Est. Musicales', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
-('Instituto de Exp. Visual', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
-('Instituto de Filosofía', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
-('Instituto de Inv. Ling. y Filolog.', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
-('Investig. Aqueológ. y Museo', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
-('Investig. en Cs. de la Edu.', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
-('Investig. en Ed. en Cs. Exper.', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
-('Investig. en Historia Reg. y Arg.', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
+('Estudios Musicales', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
+('Experiencia Visual', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
+('Filosofía', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
+('Investig. Lingüísticas y Filológicas', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
+('Investig. Aqueológicas y Museo', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
+('Investig. en Ciencias de la Educación', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
+('Investig. en Educación en Ciencias Experimentales', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
+('Investig. en Historia Regional y Argentina', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto')),
 ('Litertura - Ricardo Güiraldes', (SELECT tipo_unidad_id FROM public.tipo_de_unidad WHERE tipo_unidad_nombre = 'Instituto'));
 
 
@@ -619,12 +619,12 @@ INSERT INTO public.telefonos_docentes (docente_usuario_id, docente_telefono) VAL
 ((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'agarcia'), '264-2222222');
 
 -- Designaciones (Activo except for Carlos Rodriguez)
-INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_estado_actual, usuario_id) VALUES
-(1001, '2010-03-01', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'jperez')),
-(1002, '2015-05-15', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'agarcia')),
-(1003, '2008-04-10', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'lmartinez')),
-(1004, '2012-08-01', 'Inactivo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'crodriguez')),
-(1005, '2018-03-01', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'sfernandez'));
+INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id) VALUES
+(1001, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'jperez')),
+(1002, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'agarcia')),
+(1003, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'lmartinez')),
+(1004, '2026-04-01', '2027-03-31', 'Inactivo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'crodriguez')),
+(1005, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'sfernandez'));
 
 -- Materias
 INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, unidad_id) VALUES
@@ -730,8 +730,8 @@ SELECT usuario_id, 10000000 + usuario_id, 20100000000 + usuario_id, '1980-01-01'
 FROM public.usuarios WHERE usuario_username LIKE 'doc_%';
 
 -- 3. Insert Designaciones (all Activo)
-INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_estado_actual, usuario_id)
-SELECT 2000 + usuario_id, '2015-01-01', 'Activo', usuario_id
+INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id)
+SELECT 2000 + usuario_id, '2026-04-01', '2027-03-31', 'Activo', usuario_id
 FROM public.usuarios WHERE usuario_username LIKE 'doc_%';
 
 -- 4. Insert Cargos, linking each new docente designacion to one specific unit
@@ -741,21 +741,72 @@ FROM public.usuarios WHERE usuario_username LIKE 'doc_%';
 INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
 (6001, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_orq') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Creación. Art. Orq.' LIMIT 1)),
 (6002, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_tornambe') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Tornambé Centro de Creación' LIMIT 1)),
-(6003, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_filo') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Filosofía y Cs. de la Edu.' LIMIT 1)),
+(6003, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_filo') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Filosofía y Ciencias de la Educación' LIMIT 1)),
 (6004, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_geo') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Geografía' LIMIT 1)),
 (6005, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_historia') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Historia' LIMIT 1)),
-(6006, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_ingles') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Lengua y Lit. Inglesa' LIMIT 1)),
+(6006, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_ingles') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Lengua y Literatura Inglesa' LIMIT 1)),
 (6007, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_letras') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Letras' LIMIT 1)),
 (6008, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_musica') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Música' LIMIT 1)),
 (6009, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_turismo') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Turismo' LIMIT 1)),
 (6010, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_icb') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Ciencias Básicas - ICB' LIMIT 1)),
 (6011, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_geo_ap') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Geografía Aplicada' LIMIT 1)),
-(6012, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_est_mus') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Instituto de Est. Musicales' LIMIT 1)),
-(6013, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_exp_vis') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Instituto de Exp. Visual' LIMIT 1)),
-(6014, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_inst_filo') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Instituto de Filosofía' LIMIT 1)),
-(6015, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_ling') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Instituto de Inv. Ling. y Filolog.' LIMIT 1)),
-(6016, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_arq') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Investig. Aqueológ. y Museo' LIMIT 1)),
-(6017, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_cs_edu') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Investig. en Cs. de la Edu.' LIMIT 1)),
-(6018, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_ed_exp') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Investig. en Ed. en Cs. Exper.' LIMIT 1)),
-(6019, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_hist_reg') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Investig. en Historia Reg. y Arg.' LIMIT 1)),
+(6012, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_est_mus') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Estudios Musicales' LIMIT 1)),
+(6013, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_exp_vis') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Experiencia Visual' LIMIT 1)),
+(6014, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_inst_filo') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Filosofía' LIMIT 1)),
+(6015, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_ling') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Investig. Lingüísticas y Filológicas' LIMIT 1)),
+(6016, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_arq') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Investig. Aqueológicas y Museo' LIMIT 1)),
+(6017, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_cs_edu') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Investig. en Ciencias de la Educación' LIMIT 1)),
+(6018, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_ed_exp') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Investig. en Educación en Ciencias Experimentales' LIMIT 1)),
+(6019, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_hist_reg') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Investig. en Historia Regional y Argentina' LIMIT 1)),
 (6020, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lit') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Litertura - Ricardo Güiraldes' LIMIT 1));
+
+-- =========================================================================
+-- ADDITIONAL MOCK DATA: LICENCIAS
+-- =========================================================================
+
+-- Insert Motivos Licencias
+INSERT INTO public.motivos_licencias (motivo_l_id, motivo_l_nombre, motivo_l_dias_corresp) VALUES
+(1, 'Maternidad', 90),
+(2, 'Enfermedad', 30),
+(3, 'Estudio', 15),
+(4, 'Razones Particulares', 6);
+
+-- 1. Insert Users for Licencia
+INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_correo, usuario_apellido, usuario_nombre, usuario_activo, rol_id) VALUES
+('doc_lic1', crypt('pass123', gen_salt('bf', 10)), 'doc_lic1@atlas.edu', 'Gutierrez', 'Pablo', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente')),
+('doc_lic2', crypt('pass123', gen_salt('bf', 10)), 'doc_lic2@atlas.edu', 'Herrera', 'Marta', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente'));
+
+-- 2. Insert Docentes details (estado = 'Licencia')
+INSERT INTO public.docentes (usuario_id, docente_dni, docente_cuil, docente_fecha_nac, docente_email_institucional, docente_fecha_ingreso, docente_domicilio, docente_antig_previa, docente_estado) VALUES
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1'), 40111222, 20401112224, '1995-01-01', 'doc_lic1@atlas.edu', '2020-01-01', 'Calle L 1', 0, 'Licencia'),
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2'), 40222333, 27402223335, '1996-02-02', 'doc_lic2@atlas.edu', '2021-02-02', 'Calle L 2', 0, 'Licencia');
+
+-- 3. Insert Designaciones
+INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id) VALUES
+(3001, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1')),
+(3002, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2'));
+
+-- 4. Insert Cargos
+INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
+(7001, 10, '2020-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
+(7002, 10, '2021-02-02', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Historia' LIMIT 1));
+
+-- 5. Insert Licencias for these new docentes
+INSERT INTO public.licencias (licencia_nro_resolucion, licencia_fecha_inicio, licencia_fecha_fin, licencia_fecha_fin_estim, motivo_id, licencia_cantidad_dias, designacion_id) VALUES
+('RES-2024-400', '2024-05-01', NULL, '2024-05-15', 2, 15, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1') LIMIT 1)),
+('RES-2024-500', '2024-06-10', NULL, '2024-09-10', 1, 90, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2') LIMIT 1));
+
+-- 6. Insert new Materia for Historia
+INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, unidad_id) VALUES
+('Historia Argentina I', 60, 1, 'Anual', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Historia' LIMIT 1));
+
+-- 7. Insert Funciones for docentes on Licencia
+INSERT INTO public.funciones (funcion_nombre, funcion_horas, cargo_id, materia_id) VALUES
+('Dictado de Clases Teóricas', 10,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 7001 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matematica I' LIMIT 1)
+),
+('Investigación Documental', 10,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 7002 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Historia Argentina I' LIMIT 1)
+);

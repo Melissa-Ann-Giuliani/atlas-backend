@@ -51,6 +51,7 @@ public class DocenteControllerTest {
                         public String getApellido() { return "Perez"; }
                         public String getOrigen() { return null; }
                         public String getUnidad() { return null; }
+                        public String getTipoUnidadNombre() { return null; }
                         public String getCategoria() { return null; }
                         public String getDedicacion() { return null; }
                         public String getCaracter() { return null; }
@@ -59,7 +60,7 @@ public class DocenteControllerTest {
 
                 Page<DocenteListDTO> mockPage = new PageImpl<>(List.of(dto));
 
-                when(docenteService.getActiveTeachers(anyString(), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
+                when(docenteService.getActiveTeachers(anyString(), any(), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                                 .thenReturn(mockPage);
 
                 mockMvc.perform(get("/api/docentes")
@@ -74,7 +75,7 @@ public class DocenteControllerTest {
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN_GLOBAL" })
         void getActiveTeachers_Returns500OnException() throws Exception {
-                when(docenteService.getActiveTeachers(anyString(), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
+                when(docenteService.getActiveTeachers(anyString(), any(), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                                 .thenThrow(new RuntimeException("Database error"));
 
                 mockMvc.perform(get("/api/docentes"))

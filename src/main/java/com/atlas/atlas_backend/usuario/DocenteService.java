@@ -125,6 +125,7 @@ public class DocenteService {
             String categoria,
             String caracter,
             String tipoUnidad,
+            String estado,
             org.springframework.data.domain.Pageable pageable) throws Exception {
 
         Usuario usuario = usuarioRepository.findByUsername(username)
@@ -147,7 +148,8 @@ public class DocenteService {
             }
         }
 
-        return docenteRepository.findActiveDocentes(unidadId, searchTerm, origen, dedicacion, categoria, caracter, tipoUnidad, pageable);
+        return docenteRepository.findActiveDocentes(unidadId, searchTerm, origen, dedicacion, categoria, caracter,
+                tipoUnidad, estado, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -181,6 +183,16 @@ public class DocenteService {
             java.util.List<com.atlas.atlas_backend.cargo.Cargo> cargos = cargoRepository
                     .findByDesignacionDesignacionIdIn(designacionIds);
 
+            if (!cargos.isEmpty()) {
+                com.atlas.atlas_backend.unidad.Unidad unidad = cargos.get(0).getUnidad();
+                if (unidad != null) {
+                    pd.setUnidadNombre(unidad.getUnidadNombre());
+                    if (unidad.getTipoUnidad() != null) {
+                        pd.setTipoUnidadNombre(unidad.getTipoUnidad().getNombre());
+                    }
+                }
+            }
+
             for (com.atlas.atlas_backend.cargo.Cargo cargo : cargos) {
                 DocenteDetailsDTO.DesignacionData dd = new DocenteDetailsDTO.DesignacionData();
                 dd.setLegajo(null); // Docente doesn't have legajo explicitly mapped in requirements, assuming null
@@ -191,12 +203,14 @@ public class DocenteService {
                 dd.setFechaInicio(
                         cargo.getDesignacion() != null ? cargo.getDesignacion().getDesignacionFechaInicio() : null);
                 dd.setFechaFin(cargo.getDesignacion() != null ? cargo.getDesignacion().getDesignacionFechaFin() : null);
+                dd.setCargoId(cargo.getId());
                 dd.setNroCargo(cargo.getCodigo());
                 dd.setCategoria(cargo.getCategoria() != null ? cargo.getCategoria().getCategoriaNombre() : null);
                 dd.setDedicacion(cargo.getDedicacion() != null ? cargo.getDedicacion().getDedicacionNombre() : null);
                 dd.setCaracter(cargo.getCaracter() != null ? cargo.getCaracter().getCaracterNombre() : null);
                 dd.setEstado(
                         cargo.getDesignacion() != null ? cargo.getDesignacion().getDesignacionEstadoActual() : null);
+                dd.setOrigen(cargo.getOrigen() != null ? cargo.getOrigen().getOrigenNombre() : null);
                 designacionDataList.add(dd);
             }
 
@@ -210,14 +224,12 @@ public class DocenteService {
                         .findByCargoIdIn(cargoIds);
                 for (com.atlas.atlas_backend.funcion.Funcion f : funciones) {
                     DocenteDetailsDTO.ActividadData ad = new DocenteDetailsDTO.ActividadData();
-                    ad.setMateriaProyecto(f.getMateria() != null ? f.getMateria().getNombre() : f.getNombre());
-                    ad.setOrigen(f.getCargo() != null && f.getCargo().getOrigen() != null
-                            ? f.getCargo().getOrigen().getOrigenNombre()
-                            : null);
-                    ad.setHoras(f.getHoras());
-                    ad.setEstado(f.getCargo() != null && f.getCargo().getDesignacion() != null
-                            ? f.getCargo().getDesignacion().getDesignacionEstadoActual()
-                            : null);
+                    ad.setFuncionId(f.getId());
+                    ad.setFuncionNombre(f.getNombre());
+                    ad.setFuncionHoras(f.getHoras());
+                    ad.setCargoId(f.getCargo() != null ? f.getCargo().getId() : null);
+                    ad.setMateriaId(f.getMateria() != null ? f.getMateria().getId() : null);
+                    ad.setMateriaNombre(f.getMateria() != null ? f.getMateria().getNombre() : null);
                     actividadDataList.add(ad);
                 }
             }

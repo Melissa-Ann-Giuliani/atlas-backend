@@ -15,7 +15,7 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
     @org.springframework.data.jpa.repository.Query(
         value = """
             SELECT d.id AS usuarioId, d.nombre AS nombre, d.apellido AS apellido,
-                   o.origenNombre AS origen, u.unidadNombre AS unidad, cat.categoriaNombre AS categoria,
+                   o.origenNombre AS origen, u.unidadNombre AS unidad, u.tipoUnidad.nombre AS tipoUnidadNombre, cat.categoriaNombre AS categoria,
                    ded.dedicacionNombre AS dedicacion, car.caracterNombre AS caracter, d.estado AS estado
             FROM Cargo c
             JOIN c.designacion des
@@ -25,7 +25,8 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
             JOIN c.categoria cat
             JOIN c.dedicacion ded
             JOIN c.caracter car
-            WHERE d.estado = 'Activo'
+            WHERE d.estado IN ('Activo', 'Licencia')
+              AND (:estado IS NULL OR d.estado = :estado)
               AND (:unidadId IS NULL OR u.unidadId = :unidadId)
               AND (CAST(:searchTerm AS string) IS NULL OR LOWER(d.nombre) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
                    OR LOWER(d.apellido) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
@@ -46,7 +47,8 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
             JOIN c.categoria cat
             JOIN c.dedicacion ded
             JOIN c.caracter car
-            WHERE d.estado = 'Activo'
+            WHERE d.estado IN ('Activo', 'Licencia')
+              AND (:estado IS NULL OR d.estado = :estado)
               AND (:unidadId IS NULL OR u.unidadId = :unidadId)
               AND (CAST(:searchTerm AS string) IS NULL OR LOWER(d.nombre) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
                    OR LOWER(d.apellido) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
@@ -66,5 +68,6 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
             @org.springframework.data.repository.query.Param("categoria") String categoria,
             @org.springframework.data.repository.query.Param("caracter") String caracter,
             @org.springframework.data.repository.query.Param("tipoUnidad") String tipoUnidad,
+            @org.springframework.data.repository.query.Param("estado") String estado,
             org.springframework.data.domain.Pageable pageable);
 }
