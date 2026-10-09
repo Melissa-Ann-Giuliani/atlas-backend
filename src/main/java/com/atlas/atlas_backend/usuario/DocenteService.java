@@ -147,7 +147,8 @@ public class DocenteService {
             }
         }
 
-        return docenteRepository.findActiveDocentes(unidadId, searchTerm, origen, dedicacion, categoria, caracter, tipoUnidad, pageable);
+        return docenteRepository.findActiveDocentes(unidadId, searchTerm, origen, dedicacion, categoria, caracter,
+                tipoUnidad, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -220,14 +221,12 @@ public class DocenteService {
                         .findByCargoIdIn(cargoIds);
                 for (com.atlas.atlas_backend.funcion.Funcion f : funciones) {
                     DocenteDetailsDTO.ActividadData ad = new DocenteDetailsDTO.ActividadData();
-                    ad.setMateriaProyecto(f.getMateria() != null ? f.getMateria().getNombre() : f.getNombre());
-                    ad.setOrigen(f.getCargo() != null && f.getCargo().getOrigen() != null
-                            ? f.getCargo().getOrigen().getOrigenNombre()
-                            : null);
-                    ad.setHoras(f.getHoras());
-                    ad.setEstado(f.getCargo() != null && f.getCargo().getDesignacion() != null
-                            ? f.getCargo().getDesignacion().getDesignacionEstadoActual()
-                            : null);
+                    ad.setFuncionId(f.getId());
+                    ad.setFuncionNombre(f.getNombre());
+                    ad.setFuncionHoras(f.getHoras());
+                    ad.setCargoId(f.getCargo() != null ? f.getCargo().getId() : null);
+                    ad.setMateriaId(f.getMateria() != null ? f.getMateria().getId() : null);
+                    ad.setMateriaNombre(f.getMateria() != null ? f.getMateria().getNombre() : null);
                     actividadDataList.add(ad);
                 }
             }

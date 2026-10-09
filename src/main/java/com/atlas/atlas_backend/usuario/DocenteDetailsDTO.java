@@ -38,10 +38,12 @@ public class DocenteDetailsDTO {
 
     @Data
     public static class ActividadData {
-        private String materiaProyecto;
-        private String origen;
-        private Integer horas;
-        private String estado;
+        private Integer funcionId;
+        private String funcionNombre;
+        private Integer funcionHoras;
+        private Integer cargoId;
+        private Integer materiaId;
+        private String materiaNombre;
     }
 
     @Data
