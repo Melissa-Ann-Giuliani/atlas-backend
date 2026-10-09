@@ -759,3 +759,39 @@ INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creac
 (6018, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_ed_exp') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Investig. en Educación en Ciencias Experimentales' LIMIT 1)),
 (6019, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_hist_reg') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Investig. en Historia Regional y Argentina' LIMIT 1)),
 (6020, 10, '2015-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lit') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Litertura - Ricardo Güiraldes' LIMIT 1));
+
+-- =========================================================================
+-- ADDITIONAL MOCK DATA: LICENCIAS
+-- =========================================================================
+
+-- Insert Motivos Licencias
+INSERT INTO public.motivos_licencias (motivo_l_id, motivo_l_nombre, motivo_l_dias_corresp) VALUES
+(1, 'Maternidad', 90),
+(2, 'Enfermedad', 30),
+(3, 'Estudio', 15),
+(4, 'Razones Particulares', 6);
+
+-- 1. Insert Users for Licencia
+INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_correo, usuario_apellido, usuario_nombre, usuario_activo, rol_id) VALUES
+('doc_lic1', crypt('pass123', gen_salt('bf', 10)), 'doc_lic1@atlas.edu', 'Gutierrez', 'Pablo', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente')),
+('doc_lic2', crypt('pass123', gen_salt('bf', 10)), 'doc_lic2@atlas.edu', 'Herrera', 'Marta', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente'));
+
+-- 2. Insert Docentes details (estado = 'Licencia')
+INSERT INTO public.docentes (usuario_id, docente_dni, docente_cuil, docente_fecha_nac, docente_email_institucional, docente_fecha_ingreso, docente_domicilio, docente_antig_previa, docente_estado) VALUES
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1'), 40111222, 20401112224, '1995-01-01', 'doc_lic1@atlas.edu', '2020-01-01', 'Calle L 1', 0, 'Licencia'),
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2'), 40222333, 27402223335, '1996-02-02', 'doc_lic2@atlas.edu', '2021-02-02', 'Calle L 2', 0, 'Licencia');
+
+-- 3. Insert Designaciones
+INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_estado_actual, usuario_id) VALUES
+(3001, '2020-01-01', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1')),
+(3002, '2021-02-02', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2'));
+
+-- 4. Insert Cargos
+INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
+(7001, 10, '2020-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
+(7002, 10, '2021-02-02', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Historia' LIMIT 1));
+
+-- 5. Insert Licencias for these new docentes
+INSERT INTO public.licencias (licencia_nro_resolucion, licencia_fecha_inicio, licencia_fecha_fin, licencia_fecha_fin_estim, motivo_id, licencia_cantidad_dias, designacion_id) VALUES
+('RES-2024-400', '2024-05-01', NULL, '2024-05-15', 2, 15, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1') LIMIT 1)),
+('RES-2024-500', '2024-06-10', NULL, '2024-09-10', 1, 90, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2') LIMIT 1));

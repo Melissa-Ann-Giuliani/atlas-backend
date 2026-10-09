@@ -26,14 +26,23 @@ public class DocenteController {
             @RequestParam(required = false) String categoria,
             @RequestParam(required = false) String caracter,
             @RequestParam(required = false) String tipoUnidad,
+            @RequestParam(required = false) String estado,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
         
         try {
+            search = (search != null && search.trim().isEmpty()) ? null : search;
+            origen = (origen != null && origen.trim().isEmpty()) ? null : origen;
+            dedicacion = (dedicacion != null && dedicacion.trim().isEmpty()) ? null : dedicacion;
+            categoria = (categoria != null && categoria.trim().isEmpty()) ? null : categoria;
+            caracter = (caracter != null && caracter.trim().isEmpty()) ? null : caracter;
+            tipoUnidad = (tipoUnidad != null && tipoUnidad.trim().isEmpty()) ? null : tipoUnidad;
+            estado = (estado != null && estado.trim().isEmpty()) ? null : estado;
+
             Pageable pageable = PageRequest.of(page, size);
             Page<DocenteListDTO> result = docenteService.getActiveTeachers(
-                    authentication.getName(), search, origen, dedicacion, categoria, caracter, tipoUnidad, pageable);
+                    authentication.getName(), search, origen, dedicacion, categoria, caracter, tipoUnidad, estado, pageable);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();

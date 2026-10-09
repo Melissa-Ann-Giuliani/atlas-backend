@@ -125,6 +125,7 @@ public class DocenteService {
             String categoria,
             String caracter,
             String tipoUnidad,
+            String estado,
             org.springframework.data.domain.Pageable pageable) throws Exception {
 
         Usuario usuario = usuarioRepository.findByUsername(username)
@@ -148,7 +149,7 @@ public class DocenteService {
         }
 
         return docenteRepository.findActiveDocentes(unidadId, searchTerm, origen, dedicacion, categoria, caracter,
-                tipoUnidad, pageable);
+                tipoUnidad, estado, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -202,12 +203,14 @@ public class DocenteService {
                 dd.setFechaInicio(
                         cargo.getDesignacion() != null ? cargo.getDesignacion().getDesignacionFechaInicio() : null);
                 dd.setFechaFin(cargo.getDesignacion() != null ? cargo.getDesignacion().getDesignacionFechaFin() : null);
+                dd.setCargoId(cargo.getId());
                 dd.setNroCargo(cargo.getCodigo());
                 dd.setCategoria(cargo.getCategoria() != null ? cargo.getCategoria().getCategoriaNombre() : null);
                 dd.setDedicacion(cargo.getDedicacion() != null ? cargo.getDedicacion().getDedicacionNombre() : null);
                 dd.setCaracter(cargo.getCaracter() != null ? cargo.getCaracter().getCaracterNombre() : null);
                 dd.setEstado(
                         cargo.getDesignacion() != null ? cargo.getDesignacion().getDesignacionEstadoActual() : null);
+                dd.setOrigen(cargo.getOrigen() != null ? cargo.getOrigen().getOrigenNombre() : null);
                 designacionDataList.add(dd);
             }
 
