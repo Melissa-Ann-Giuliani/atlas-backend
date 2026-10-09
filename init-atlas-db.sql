@@ -619,12 +619,12 @@ INSERT INTO public.telefonos_docentes (docente_usuario_id, docente_telefono) VAL
 ((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'agarcia'), '264-2222222');
 
 -- Designaciones (Activo except for Carlos Rodriguez)
-INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_estado_actual, usuario_id) VALUES
-(1001, '2010-03-01', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'jperez')),
-(1002, '2015-05-15', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'agarcia')),
-(1003, '2008-04-10', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'lmartinez')),
-(1004, '2012-08-01', 'Inactivo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'crodriguez')),
-(1005, '2018-03-01', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'sfernandez'));
+INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id) VALUES
+(1001, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'jperez')),
+(1002, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'agarcia')),
+(1003, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'lmartinez')),
+(1004, '2026-04-01', '2027-03-31', 'Inactivo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'crodriguez')),
+(1005, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'sfernandez'));
 
 -- Materias
 INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, unidad_id) VALUES
@@ -730,8 +730,8 @@ SELECT usuario_id, 10000000 + usuario_id, 20100000000 + usuario_id, '1980-01-01'
 FROM public.usuarios WHERE usuario_username LIKE 'doc_%';
 
 -- 3. Insert Designaciones (all Activo)
-INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_estado_actual, usuario_id)
-SELECT 2000 + usuario_id, '2015-01-01', 'Activo', usuario_id
+INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id)
+SELECT 2000 + usuario_id, '2026-04-01', '2027-03-31', 'Activo', usuario_id
 FROM public.usuarios WHERE usuario_username LIKE 'doc_%';
 
 -- 4. Insert Cargos, linking each new docente designacion to one specific unit
@@ -782,9 +782,9 @@ INSERT INTO public.docentes (usuario_id, docente_dni, docente_cuil, docente_fech
 ((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2'), 40222333, 27402223335, '1996-02-02', 'doc_lic2@atlas.edu', '2021-02-02', 'Calle L 2', 0, 'Licencia');
 
 -- 3. Insert Designaciones
-INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_estado_actual, usuario_id) VALUES
-(3001, '2020-01-01', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1')),
-(3002, '2021-02-02', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2'));
+INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id) VALUES
+(3001, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1')),
+(3002, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2'));
 
 -- 4. Insert Cargos
 INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
@@ -795,3 +795,18 @@ INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creac
 INSERT INTO public.licencias (licencia_nro_resolucion, licencia_fecha_inicio, licencia_fecha_fin, licencia_fecha_fin_estim, motivo_id, licencia_cantidad_dias, designacion_id) VALUES
 ('RES-2024-400', '2024-05-01', NULL, '2024-05-15', 2, 15, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1') LIMIT 1)),
 ('RES-2024-500', '2024-06-10', NULL, '2024-09-10', 1, 90, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2') LIMIT 1));
+
+-- 6. Insert new Materia for Historia
+INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, unidad_id) VALUES
+('Historia Argentina I', 60, 1, 'Anual', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Historia' LIMIT 1));
+
+-- 7. Insert Funciones for docentes on Licencia
+INSERT INTO public.funciones (funcion_nombre, funcion_horas, cargo_id, materia_id) VALUES
+('Dictado de Clases Teóricas', 10,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 7001 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matematica I' LIMIT 1)
+),
+('Investigación Documental', 10,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 7002 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Historia Argentina I' LIMIT 1)
+);
