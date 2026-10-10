@@ -2,6 +2,7 @@ package com.atlas.atlas_backend.security;
 
 import org.springframework.beans.factory.annotation.Value;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -60,9 +61,26 @@ public class JwtUtil {
                 .claims(claims)
                 .subject(subject)
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .signWith(getSigningKey())
                 .compact();
+    }
+
+    public String renewToken(String token) {
+        Claims claims;
+        try {
+            claims = extractAllClaims(token);
+        } catch (ExpiredJwtException e) {
+            claims = e.getClaims();
+        }
+        
+        if (claims.getExpiration().before(new Date(System.currentTimeMillis() - 1000 * 60 * 60))) {
+            throw new RuntimeException("Token expired too long ago");
+        }
+
+        Map<String, Object> newClaims = new HashMap<>();
+        newClaims.put("role", claims.get("role"));
+        return createToken(newClaims, claims.getSubject());
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {

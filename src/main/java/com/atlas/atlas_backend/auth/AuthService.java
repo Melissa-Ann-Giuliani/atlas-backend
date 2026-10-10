@@ -105,6 +105,10 @@ public class AuthService {
         emailService.sendProvisionalPassword(usuario.getCorreo(), provisionalPassword);
     }
 
+    public AuthResponse renewToken(String token) throws Exception {
+        return new AuthResponse(jwtUtil.renewToken(token));
+    }
+
     public void adminResetPassword(Integer userId) throws Exception {
         Usuario usuario = usuarioRepository.findById(userId)
                 .orElseThrow(() -> new Exception("User not found."));
