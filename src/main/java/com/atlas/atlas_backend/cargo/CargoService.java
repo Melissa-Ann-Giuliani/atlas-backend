@@ -39,7 +39,7 @@ public class CargoService {
     private FuncionRepository funcionRepository;
 
     @Transactional(readOnly = true)
-    public Page<CargoListDTO> getActiveCargos(String username, String searchTerm, Pageable pageable) throws Exception {
+    public Page<CargoListDTO> getActiveCargos(String username, String searchTerm, String estado, Integer categoriaId, Integer dedicacionId, Integer caracterId, Pageable pageable) throws Exception {
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
@@ -61,7 +61,7 @@ public class CargoService {
             }
         }
 
-        return cargoRepository.findActiveCargos(unidadId, searchTerm, pageable);
+        return cargoRepository.findActiveCargos(unidadId, searchTerm, estado, categoriaId, dedicacionId, caracterId, pageable);
     }
 
     @Transactional(readOnly = true)

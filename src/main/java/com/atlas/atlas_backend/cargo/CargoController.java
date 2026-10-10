@@ -21,6 +21,10 @@ public class CargoController {
     @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
     public ResponseEntity<Page<CargoListDTO>> getActiveCargos(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) Integer dedicacionId,
+            @RequestParam(required = false) Integer caracterId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             Authentication authentication) {
@@ -28,7 +32,7 @@ public class CargoController {
             Pageable pageable = PageRequest.of(page, size);
             String safeSearch = (search == null) ? "" : search;
             Page<CargoListDTO> result = cargoService.getActiveCargos(
-                    authentication.getName(), safeSearch, pageable);
+                    authentication.getName(), safeSearch, estado, categoriaId, dedicacionId, caracterId, pageable);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             e.printStackTrace();

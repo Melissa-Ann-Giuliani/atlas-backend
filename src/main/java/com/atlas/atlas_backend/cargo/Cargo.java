@@ -57,7 +57,7 @@ public class Cargo {
     private Dedicacion dedicacion;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "designacion_id", nullable = false)
+    @JoinColumn(name = "designacion_id", nullable = true)
     private Designacion designacion;
 
     @ManyToOne(fetch = FetchType.LAZY)

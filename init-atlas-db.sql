@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS public.cargos
     caracter_id integer NOT NULL,
     categoria_id integer NOT NULL,
     dedicacion_id integer NOT NULL,
-    designacion_id integer NOT NULL,
+    designacion_id integer,
     unidad_id integer NOT NULL,
     cargo_estado character varying(20) NOT NULL DEFAULT 'Libre',
     PRIMARY KEY (cargo_id)
@@ -822,3 +822,10 @@ FROM public.designaciones d
 JOIN public.docentes doc ON doc.usuario_id = d.usuario_id
 WHERE public.cargos.designacion_id = d.designacion_id
   AND doc.docente_estado = 'Activo';
+
+-- 9. Insert 4 dummy cargos with estado: Libre (no designacion)
+INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
+(9001, 10, '2026-01-01', 1, 1, 1, 1, NULL, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
+(9002, 10, '2026-01-01', 1, 1, 1, 1, NULL, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Historia' LIMIT 1)),
+(9003, 10, '2026-01-01', 1, 1, 1, 1, NULL, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Física, Química y Tec.' LIMIT 1)),
+(9004, 10, '2026-01-01', 1, 1, 1, 1, NULL, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Turismo' LIMIT 1));
