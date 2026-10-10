@@ -566,6 +566,10 @@ INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_corr
 ('jperez', crypt('docente123', gen_salt('bf', 10)), 'jperez@atlas.edu', 'Perez', 'Juan', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente')),
 ('mgomez', crypt('admin123', gen_salt('bf', 10)), 'mgomez@atlas.edu', 'Gomez', 'Maria', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Administrador de Unidad'));
 
+-- 6.1 Insert Admin de Unidad details
+INSERT INTO public.admin_de_unidad (usuario_id, cargo_ad_nombre, unidad_id) VALUES
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'mgomez'), 'Director de Departamento', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1));
+
 -- 7. Insert Origenes, Caracteres, Categorias, Dedicaciones
 INSERT INTO public.origen (origen_nombre) VALUES
 ('Planta'),
@@ -810,3 +814,11 @@ INSERT INTO public.funciones (funcion_nombre, funcion_horas, cargo_id, materia_i
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 7002 LIMIT 1),
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Historia Argentina I' LIMIT 1)
 );
+
+-- 8. Update estado to 'Asignado' for cargos assigned to active docentes
+UPDATE public.cargos 
+SET cargo_estado = 'Asignado' 
+FROM public.designaciones d
+JOIN public.docentes doc ON doc.usuario_id = d.usuario_id
+WHERE public.cargos.designacion_id = d.designacion_id
+  AND doc.docente_estado = 'Activo';

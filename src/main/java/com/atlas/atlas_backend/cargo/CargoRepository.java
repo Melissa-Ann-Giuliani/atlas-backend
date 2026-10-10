@@ -30,7 +30,7 @@ public interface CargoRepository extends JpaRepository<Cargo, Integer> {
         JOIN c.unidad u
         WHERE c.estado = 'Asignado'
           AND (:unidadId IS NULL OR u.unidadId = :unidadId)
-          AND (:searchTerm IS NULL OR LOWER(CAST(c.codigo AS string)) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
+          AND (:searchTerm IS NULL OR LOWER(CAST(c.codigo AS String)) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
                OR LOWER(doc.nombre) LIKE LOWER(CONCAT('%', :searchTerm, '%')) 
                OR LOWER(doc.apellido) LIKE LOWER(CONCAT('%', :searchTerm, '%')) 
                OR LOWER(cat.categoriaNombre) LIKE LOWER(CONCAT('%', :searchTerm, '%'))

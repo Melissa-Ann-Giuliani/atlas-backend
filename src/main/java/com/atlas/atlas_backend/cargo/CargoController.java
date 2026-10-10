@@ -26,11 +26,13 @@ public class CargoController {
             Authentication authentication) {
         try {
             Pageable pageable = PageRequest.of(page, size);
+            String safeSearch = (search == null) ? "" : search;
             Page<CargoListDTO> result = cargoService.getActiveCargos(
-                    authentication.getName(), search, pageable);
+                    authentication.getName(), safeSearch, pageable);
             return ResponseEntity.ok(result);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().header("X-Error-Message", e.getMessage()).build();
         }
     }
 
