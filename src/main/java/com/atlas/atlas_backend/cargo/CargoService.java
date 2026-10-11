@@ -137,16 +137,37 @@ public class CargoService {
             dto.setCargoPredecesor(pd);
         }
 
-        List<Cargo> subcargosList = cargoRepository.findByCargoPredecesorId(cargo.getId());
+        if (cargo.getCargoOrigenDivision() != null) {
+            Cargo origenDivision = cargo.getCargoOrigenDivision();
+            CargoDetailDTO.CargoOrigenDivisionData od = new CargoDetailDTO.CargoOrigenDivisionData();
+            od.setNumero(origenDivision.getCodigo());
+            od.setEstado(origenDivision.getEstado());
+            od.setCategoria(origenDivision.getCategoria() != null ? origenDivision.getCategoria().getCategoriaNombre() : null);
+            dto.setCargoOrigenDivision(od);
+        }
+
+        List<Cargo> subcargosPredecesor = cargoRepository.findByCargoPredecesorId(cargo.getId());
         List<CargoDetailDTO.SubcargoData> subcargos = new ArrayList<>();
-        for (Cargo sc : subcargosList) {
+        for (Cargo sc : subcargosPredecesor) {
             CargoDetailDTO.SubcargoData sd = new CargoDetailDTO.SubcargoData();
             sd.setNumero(sc.getCodigo());
             sd.setEstado(sc.getEstado());
             sd.setCategoria(sc.getCategoria() != null ? sc.getCategoria().getCategoriaNombre() : null);
             subcargos.add(sd);
         }
+
+        List<Cargo> subcargosDivision = cargoRepository.findByCargoOrigenDivisionId(cargo.getId());
+        List<CargoDetailDTO.SubcargoData> cargosSubdivididos = new ArrayList<>();
+        for (Cargo sc : subcargosDivision) {
+            CargoDetailDTO.SubcargoData sd = new CargoDetailDTO.SubcargoData();
+            sd.setNumero(sc.getCodigo());
+            sd.setEstado(sc.getEstado());
+            sd.setCategoria(sc.getCategoria() != null ? sc.getCategoria().getCategoriaNombre() : null);
+            cargosSubdivididos.add(sd);
+            subcargos.add(sd);
+        }
         dto.setSubcargosActivos(subcargos);
+        dto.setCargosSubdivididos(cargosSubdivididos);
 
         dto.setDocumentacionAdjunta(new ArrayList<>()); 
 

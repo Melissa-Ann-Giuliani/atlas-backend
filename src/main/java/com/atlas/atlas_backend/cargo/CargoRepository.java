@@ -15,6 +15,8 @@ public interface CargoRepository extends JpaRepository<Cargo, Integer> {
 
     List<Cargo> findByCargoPredecesorId(Integer cargoPredecesorId);
 
+    List<Cargo> findByCargoOrigenDivisionId(Integer cargoOrigenDivisionId);
+
     @Query("""
         SELECT c.id AS id, c.codigo AS numero, c.fechaCreacion AS fechaCreacion,
                c.estado AS estado,
