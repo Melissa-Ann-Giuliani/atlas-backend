@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS public.cargos
     caracter_id integer NOT NULL,
     categoria_id integer NOT NULL,
     dedicacion_id integer NOT NULL,
-    designacion_id integer NOT NULL,
+    designacion_id integer,
     unidad_id integer NOT NULL,
     cargo_estado character varying(20) NOT NULL DEFAULT 'Libre',
     PRIMARY KEY (cargo_id)
@@ -566,6 +566,10 @@ INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_corr
 ('jperez', crypt('docente123', gen_salt('bf', 10)), 'jperez@atlas.edu', 'Perez', 'Juan', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente')),
 ('mgomez', crypt('admin123', gen_salt('bf', 10)), 'mgomez@atlas.edu', 'Gomez', 'Maria', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Administrador de Unidad'));
 
+-- 6.1 Insert Admin de Unidad details
+INSERT INTO public.admin_de_unidad (usuario_id, cargo_ad_nombre, unidad_id) VALUES
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'mgomez'), 'Director de Departamento', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1));
+
 -- 7. Insert Origenes, Caracteres, Categorias, Dedicaciones
 INSERT INTO public.origen (origen_nombre) VALUES
 ('Planta'),
@@ -628,13 +632,13 @@ INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fec
 
 -- Materias
 INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, unidad_id) VALUES
-('Matematica I', 80, 1, 'Anual', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
+('Matemática I', 80, 1, 'Anual', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
 ('Fisica I', 60, 1, 'Cuatrimestral', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Física, Química y Tec.' LIMIT 1)),
 ('Historia del Arte', 40, 2, 'Cuatrimestral', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Artes Visuales' LIMIT 1)),
 ('Coro Universitario', 120, 1, 'Anual', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Creación. Art. Coral' LIMIT 1));
 
 -- Cargos 
--- jperez: Titular, Exclusiva, Matematica
+-- jperez: Titular, Exclusiva, Matemática
 INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
 (5001, 40, '2010-03-01', 
  (SELECT origen_id FROM public.origen WHERE origen_nombre = 'Planta' LIMIT 1),
@@ -682,7 +686,7 @@ INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creac
 INSERT INTO public.funciones (funcion_nombre, funcion_horas, cargo_id, materia_id) VALUES
 ('Dictado de Clases', 10, 
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 5001 LIMIT 1),
- (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matematica I' LIMIT 1)
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matemática I' LIMIT 1)
 ),
 ('Dictado de Clases', 8, 
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 5002 LIMIT 1),
@@ -804,9 +808,74 @@ INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materi
 INSERT INTO public.funciones (funcion_nombre, funcion_horas, cargo_id, materia_id) VALUES
 ('Dictado de Clases Teóricas', 10,
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 7001 LIMIT 1),
- (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matematica I' LIMIT 1)
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matemática I' LIMIT 1)
 ),
 ('Investigación Documental', 10,
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 7002 LIMIT 1),
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Historia Argentina I' LIMIT 1)
 );
+
+-- 8. Update estado to 'Asignado' for cargos assigned to active docentes
+UPDATE public.cargos 
+SET cargo_estado = 'Asignado' 
+FROM public.designaciones d
+JOIN public.docentes doc ON doc.usuario_id = d.usuario_id
+WHERE public.cargos.designacion_id = d.designacion_id
+  AND doc.docente_estado = 'Activo';
+
+-- 9. Insert 4 dummy cargos with estado: Libre (no designacion)
+INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
+(9001, 10, '2026-01-01', 1, 1, 1, 1, NULL, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
+(9002, 10, '2026-01-01', 1, 1, 1, 1, NULL, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Historia' LIMIT 1)),
+(9003, 10, '2026-01-01', 1, 1, 1, 1, NULL, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Física, Química y Tec.' LIMIT 1)),
+(9004, 10, '2026-01-01', 1, 1, 1, 1, NULL, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Turismo' LIMIT 1));
+-- =========================================================================
+-- ADDITIONAL MOCK DATA: CARGO SUBDIVIDIDO
+-- =========================================================================
+
+-- 1. Insert 3 Users
+INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_correo, usuario_apellido, usuario_nombre, usuario_activo, rol_id) VALUES
+('doc_orig_sub', crypt('pass123', gen_salt('bf', 10)), 'doc_orig_sub@atlas.edu', 'Original', 'Docente', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente')),
+('doc_sub1', crypt('pass123', gen_salt('bf', 10)), 'doc_sub1@atlas.edu', 'Subdivision', 'Uno', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente')),
+('doc_sub2', crypt('pass123', gen_salt('bf', 10)), 'doc_sub2@atlas.edu', 'Subdivision', 'Dos', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente'));
+
+-- 2. Insert Docentes details
+INSERT INTO public.docentes (usuario_id, docente_dni, docente_cuil, docente_fecha_nac, docente_email_institucional, docente_fecha_ingreso, docente_domicilio, docente_antig_previa, docente_estado) VALUES
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_orig_sub'), 41111222, 20411112224, '1995-01-01', 'doc_orig_sub@atlas.edu', '2020-01-01', 'Calle O 1', 0, 'Licencia'),
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub1'), 41222333, 27412223335, '1996-02-02', 'doc_sub1@atlas.edu', '2021-02-02', 'Calle S 1', 0, 'Activo'),
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub2'), 41333444, 27413334445, '1996-02-02', 'doc_sub2@atlas.edu', '2021-02-02', 'Calle S 2', 0, 'Activo');
+
+-- 3. Insert Designaciones
+INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id) VALUES
+(4001, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_orig_sub')),
+(4002, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub1')),
+(4003, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub2'));
+
+-- 4. Insert Licencia for the original docente
+INSERT INTO public.licencias (licencia_nro_resolucion, licencia_fecha_inicio, licencia_fecha_fin, licencia_fecha_fin_estim, motivo_id, licencia_cantidad_dias, designacion_id) VALUES
+('RES-2024-600', '2024-05-01', NULL, '2024-05-15', 2, 15, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_orig_sub') LIMIT 1));
+
+-- 5. Insert Cargo Original (Dividido)
+INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id, cargo_estado) VALUES
+(8001, 20, '2020-01-01', 1, 1, 1, 2, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_orig_sub') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1), 'Licencia');
+
+-- 6. Insert Cargos Subdivididos
+INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id, cargo_estado, cargo_origen_division) VALUES
+(8002, 10, '2021-02-02', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub1') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1), 'Asignado', (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 8001 LIMIT 1)),
+(8003, 10, '2021-02-02', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub2') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1), 'Asignado', (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 8001 LIMIT 1));
+
+-- 7. Insert Funciones for original and sub cargos
+INSERT INTO public.funciones (funcion_nombre, funcion_horas, cargo_id, materia_id) VALUES
+('Dictado de Clases Teóricas', 20,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 8001 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matemática I' LIMIT 1)
+),
+('Dictado de Clases Prácticas', 10,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 8002 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matemática I' LIMIT 1)
+),
+('Dictado de Clases Prácticas', 10,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 8003 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matemática I' LIMIT 1)
+);
+

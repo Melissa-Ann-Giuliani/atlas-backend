@@ -31,6 +31,10 @@ public class CargoDetailDTO {
     private CargoPredecesorData cargoPredecesor;
     private List<SubcargoData> subcargosActivos;
 
+    // Division
+    private CargoOrigenDivisionData cargoOrigenDivision;
+    private List<SubcargoData> cargosSubdivididos;
+
     // Attached Documentation
     private List<String> documentacionAdjunta;
 
@@ -51,6 +55,13 @@ public class CargoDetailDTO {
 
     @Data
     public static class SubcargoData {
+        private Long numero;
+        private String estado;
+        private String categoria;
+    }
+
+    @Data
+    public static class CargoOrigenDivisionData {
         private Long numero;
         private String estado;
         private String categoria;
