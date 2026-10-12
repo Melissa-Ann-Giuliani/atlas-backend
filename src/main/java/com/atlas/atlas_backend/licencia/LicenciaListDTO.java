@@ -11,4 +11,5 @@ public interface LicenciaListDTO {
     LocalDate getFechaFin();
     Integer getDiasUsados();
     String getEstado();
+    Integer getDocenteId();
 }

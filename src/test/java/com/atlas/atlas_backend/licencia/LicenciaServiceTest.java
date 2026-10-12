@@ -207,6 +207,9 @@ public class LicenciaServiceTest {
         assertEquals(1, detail.getCargosDetalle().size());
         assertEquals(1, detail.getDocumentacionAdjunta().size());
         assertEquals("resolucion.pdf", detail.getDocumentacionAdjunta().get(0).getNombreOriginal());
+        assertEquals(50, detail.getDocenteId());
+        assertEquals(200, detail.getCargoId());
+        assertEquals(7001L, detail.getCargoCodigo());
     }
 
     @Test

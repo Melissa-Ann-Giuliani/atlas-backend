@@ -151,6 +151,7 @@ public class LicenciaService {
 
             // Docente Data
             Integer docenteUsuarioId = licencia.getDesignacion().getUsuarioId();
+            dto.setDocenteId(docenteUsuarioId);
             if (docenteUsuarioId != null) {
                 Optional<Docente> docenteOpt = docenteRepository.findById(docenteUsuarioId);
                 if (docenteOpt.isPresent()) {
@@ -171,6 +172,12 @@ public class LicenciaService {
         List<LicenciaDetailDTO.CargoVinculadoData> cargosDetalle = new ArrayList<>();
         Integer firstUnidadId = null;
         String firstUnidadNombre = null;
+
+        if (!cargos.isEmpty()) {
+            Cargo firstCargo = cargos.get(0);
+            dto.setCargoId(firstCargo.getId());
+            dto.setCargoCodigo(firstCargo.getCodigo());
+        }
 
         for (Cargo cargo : cargos) {
             LicenciaDetailDTO.CargoVinculadoData cd = new LicenciaDetailDTO.CargoVinculadoData();

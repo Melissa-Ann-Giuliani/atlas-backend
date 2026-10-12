@@ -20,6 +20,7 @@ public class LicenciaDetailDTO {
     private String estado;
 
     // Docente Info
+    private Integer docenteId;
     private String docenteNombreCompleto;
     private Long docenteDni;
     private Long docenteCuil;
@@ -38,6 +39,8 @@ public class LicenciaDetailDTO {
     private String unidadNombre;
 
     // Linked Cargo Info
+    private Integer cargoId;
+    private Long cargoCodigo;
     private List<String> cargosVinculados;
     private List<CargoVinculadoData> cargosDetalle;
 

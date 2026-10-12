@@ -22,7 +22,8 @@ public interface LicenciaRepository extends JpaRepository<Licencia, Integer> {
                l.fechaInicio AS fechaInicio,
                COALESCE(l.fechaFin, l.fechaFinEstim) AS fechaFin,
                l.cantidadDias AS diasUsados,
-               'Activa' AS estado
+               'Activa' AS estado,
+               doc.id AS docenteId
         FROM Licencia l
         JOIN l.motivo m
         JOIN l.designacion des

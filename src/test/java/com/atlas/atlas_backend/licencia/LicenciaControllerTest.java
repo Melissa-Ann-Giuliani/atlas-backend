@@ -56,6 +56,7 @@ public class LicenciaControllerTest {
             public LocalDate getFechaFin() { return LocalDate.of(2026, 7, 31); }
             public Integer getDiasUsados() { return 90; }
             public String getEstado() { return "Activa"; }
+            public Integer getDocenteId() { return 5; }
         };
 
         Page<LicenciaListDTO> page = new PageImpl<>(List.of(dto));
