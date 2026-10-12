@@ -45,7 +45,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(authz -> authz
                         .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
-                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/reset-password", "/api/auth/renew", "/api/caracteres", "/api/categorias", "/api/dedicaciones", "/api/tipos-unidad")
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/reset-password", "/api/auth/renew", "/api/caracteres", "/api/categorias", "/api/dedicaciones", "/api/tipos-unidad", "/api/motivos-licencias")
                         .permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
