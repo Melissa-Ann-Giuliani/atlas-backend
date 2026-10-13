@@ -787,8 +787,8 @@ INSERT INTO public.docentes (usuario_id, docente_dni, docente_cuil, docente_fech
 
 -- 3. Insert Designaciones
 INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id) VALUES
-(3001, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1')),
-(3002, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2'));
+(3001, '2026-04-01', '2027-03-31', 'Licencia', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1')),
+(3002, '2026-04-01', '2027-03-31', 'Licencia', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2'));
 
 -- 4. Insert Cargos
 INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
@@ -797,8 +797,8 @@ INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creac
 
 -- 5. Insert Licencias for these new docentes
 INSERT INTO public.licencias (licencia_nro_resolucion, licencia_fecha_inicio, licencia_fecha_fin, licencia_fecha_fin_estim, motivo_id, licencia_cantidad_dias, designacion_id) VALUES
-('RES-2024-400', '2024-05-01', NULL, '2024-05-15', 2, 15, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1') LIMIT 1)),
-('RES-2024-500', '2024-06-10', NULL, '2024-09-10', 1, 90, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2') LIMIT 1));
+('RES-2026-400', '2026-05-01', NULL, '2026-11-15', 2, 198, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1') LIMIT 1)),
+('RES-2026-500', '2026-06-10', NULL, '2026-12-10', 1, 183, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2') LIMIT 1));
 
 -- 6. Insert new Materia for Historia
 INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, unidad_id) VALUES
@@ -847,13 +847,13 @@ INSERT INTO public.docentes (usuario_id, docente_dni, docente_cuil, docente_fech
 
 -- 3. Insert Designaciones
 INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id) VALUES
-(4001, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_orig_sub')),
+(4001, '2026-04-01', '2027-03-31', 'Licencia', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_orig_sub')),
 (4002, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub1')),
 (4003, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub2'));
 
 -- 4. Insert Licencia for the original docente
 INSERT INTO public.licencias (licencia_nro_resolucion, licencia_fecha_inicio, licencia_fecha_fin, licencia_fecha_fin_estim, motivo_id, licencia_cantidad_dias, designacion_id) VALUES
-('RES-2024-600', '2024-05-01', NULL, '2024-05-15', 2, 15, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_orig_sub') LIMIT 1));
+('RES-2026-600', '2026-05-01', NULL, '2026-11-15', 2, 198, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_orig_sub') LIMIT 1));
 
 -- 5. Insert Cargo Original (Dividido)
 INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id, cargo_estado) VALUES
