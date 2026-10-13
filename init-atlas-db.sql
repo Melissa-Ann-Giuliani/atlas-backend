@@ -568,7 +568,7 @@ INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_corr
 
 -- 6.1 Insert Admin de Unidad details
 INSERT INTO public.admin_de_unidad (usuario_id, cargo_ad_nombre, unidad_id) VALUES
-((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'mgomez'), 'Director de Departamento', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1));
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'mgomez'), 'DIRECTOR', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1));
 
 -- 7. Insert Origenes, Caracteres, Categorias, Dedicaciones
 INSERT INTO public.origen (origen_nombre) VALUES
