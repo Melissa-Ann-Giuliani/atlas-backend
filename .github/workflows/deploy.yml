@@ -5,13 +5,17 @@ on:
     branches:
       - main
       - testing
+  workflow_dispatch:
 
 jobs:
   deploy:
     name: Despliegue en Servidor Docker
     runs-on: ubuntu-latest
+    env:
+      SERVER_HOST: ${{ secrets.SERVER_HOST }}
     steps:
       - name: Ejecutar despliegue vía SSH
+        if: env.SERVER_HOST != ''
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
