@@ -90,7 +90,6 @@ public class UsuarioControllerTest {
                                                 .value("Cannot reset password for an inactive account."));
         }
 
-        @SuppressWarnings("null")
         @Test
         @WithMockUser(roles = "ADMIN_GLOBAL")
         public void testRegistrarAdminGlobal_Success() throws Exception {
@@ -112,13 +111,12 @@ public class UsuarioControllerTest {
 
                 mockMvc.perform(post("/api/usuarios/admin-global")
                                 .contentType(MediaType.APPLICATION_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(request)))
+                                .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(request))))
                                 .andExpect(status().isCreated())
                                 .andExpect(jsonPath("$.message").value("Administrador Global registrado exitosamente"))
                                 .andExpect(jsonPath("$.usuario.username").value("nuevo_admin"));
         }
 
-        @SuppressWarnings("null")
         @Test
         @WithMockUser(roles = "ADMIN_GLOBAL")
         public void testRegistrarAdminGlobal_MissingFields() throws Exception {
@@ -128,7 +126,7 @@ public class UsuarioControllerTest {
 
                 mockMvc.perform(post("/api/usuarios/admin-global")
                                 .contentType(MediaType.APPLICATION_JSON_VALUE)
-                                .content(objectMapper.writeValueAsString(request)))
+                                .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(request))))
                                 .andExpect(status().isBadRequest()); // Handled by @Valid and
                                                                      // DefaultHandlerExceptionResolver
         }

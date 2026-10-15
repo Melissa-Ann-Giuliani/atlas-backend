@@ -7,6 +7,7 @@ import com.atlas.atlas_backend.usuario.RolRepository;
 import com.atlas.atlas_backend.usuario.Usuario;
 import com.atlas.atlas_backend.usuario.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -109,7 +110,7 @@ public class AuthService {
         return new AuthResponse(jwtUtil.renewToken(token));
     }
 
-    public void adminResetPassword(Integer userId) throws Exception {
+    public void adminResetPassword(@NonNull Integer userId) throws Exception {
         Usuario usuario = usuarioRepository.findById(userId)
                 .orElseThrow(() -> new Exception("User not found."));
 

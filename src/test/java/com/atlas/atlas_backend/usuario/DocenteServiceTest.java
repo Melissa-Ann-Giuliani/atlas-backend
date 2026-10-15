@@ -15,10 +15,10 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@SuppressWarnings("null")
 public class DocenteServiceTest {
 
     @Mock
@@ -73,7 +73,7 @@ public class DocenteServiceTest {
         savedUser.setUsername("docente_test");
         savedUser.setEmailInstitucional("docente@test.com");
         savedUser.setAntigPrevia(5);
-        when(docenteRepository.save(any(Docente.class))).thenReturn(savedUser);
+        when(docenteRepository.save(notNull())).thenReturn(savedUser);
 
         StringBuilder warningMessage = new StringBuilder();
         Docente result = docenteService.registrarDocente(request, warningMessage);
@@ -101,7 +101,7 @@ public class DocenteServiceTest {
 
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
 
-        when(docenteRepository.save(any(Docente.class))).thenAnswer(invocation -> {
+        when(docenteRepository.save(notNull())).thenAnswer(invocation -> {
             return invocation.getArgument(0);
         });
 
@@ -128,7 +128,7 @@ public class DocenteServiceTest {
 
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
 
-        when(docenteRepository.save(any(Docente.class))).thenAnswer(invocation -> {
+        when(docenteRepository.save(notNull())).thenAnswer(invocation -> {
             return invocation.getArgument(0);
         });
 

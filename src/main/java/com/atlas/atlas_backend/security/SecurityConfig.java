@@ -38,7 +38,6 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    @SuppressWarnings("null")
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))

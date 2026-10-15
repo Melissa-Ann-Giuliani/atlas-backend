@@ -45,7 +45,12 @@ public class AdminUnidadService {
         Rol adminUnidadRol = rolRepository.findByNombre("ADMIN_UNIDAD")
                 .orElseThrow(() -> new Exception("Rol ADMIN_UNIDAD no encontrado"));
 
-        Unidad unidad = unidadRepository.findById(request.getUnidadId())
+        Integer unidadId = request.getUnidadId();
+        if (unidadId == null) {
+            throw new Exception("El ID de la unidad no puede ser nulo");
+        }
+
+        Unidad unidad = unidadRepository.findById(unidadId)
                 .orElseThrow(() -> new Exception("Unidad no encontrada"));
 
         String provisionalPassword = UUID.randomUUID().toString().replace("-", "").substring(0, 12);

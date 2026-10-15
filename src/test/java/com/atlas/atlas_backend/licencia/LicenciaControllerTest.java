@@ -14,9 +14,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -59,7 +59,7 @@ public class LicenciaControllerTest {
             public Integer getDocenteId() { return 5; }
         };
 
-        Page<LicenciaListDTO> page = new PageImpl<>(List.of(dto));
+        Page<LicenciaListDTO> page = new PageImpl<>(Objects.requireNonNull(List.of(dto)));
         when(licenciaService.getActiveLicencias(anyString(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(page);
 

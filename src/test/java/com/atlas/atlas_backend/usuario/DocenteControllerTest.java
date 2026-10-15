@@ -12,6 +12,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.Objects;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -43,7 +44,6 @@ public class DocenteControllerTest {
 
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN_GLOBAL" })
-        @SuppressWarnings("null")
         void getActiveTeachers_Returns200AndPageOfTeachers() throws Exception {
                 DocenteListDTO dto = new DocenteListDTO() {
                         public Integer getUsuarioId() { return 1; }
@@ -58,7 +58,8 @@ public class DocenteControllerTest {
                         public String getEstado() { return null; }
                 };
 
-                Page<DocenteListDTO> mockPage = new PageImpl<>(List.of(dto));
+                Page<DocenteListDTO> mockPage = new PageImpl<>
+                (Objects.requireNonNull(List.of(dto)));
 
                 when(docenteService.getActiveTeachers(anyString(), any(), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
                                 .thenReturn(mockPage);
