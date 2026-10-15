@@ -8,14 +8,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,7 +73,7 @@ public class DocenteServiceTest {
         savedUser.setUsername("docente_test");
         savedUser.setEmailInstitucional("docente@test.com");
         savedUser.setAntigPrevia(5);
-        when(docenteRepository.save(notNull())).thenReturn(savedUser);
+        when(docenteRepository.save(Objects.requireNonNull(any(Docente.class)))).thenReturn(savedUser);
 
         StringBuilder warningMessage = new StringBuilder();
         Docente result = docenteService.registrarDocente(request, warningMessage);
@@ -101,7 +101,7 @@ public class DocenteServiceTest {
 
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
 
-        when(docenteRepository.save(notNull())).thenAnswer(invocation -> {
+        when(docenteRepository.save(Objects.requireNonNull(any(Docente.class)))).thenAnswer(invocation -> {
             return invocation.getArgument(0);
         });
 
@@ -128,7 +128,7 @@ public class DocenteServiceTest {
 
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
 
-        when(docenteRepository.save(notNull())).thenAnswer(invocation -> {
+        when(docenteRepository.save(Objects.requireNonNull(any(Docente.class)))).thenAnswer(invocation -> {
             return invocation.getArgument(0);
         });
 
@@ -148,9 +148,9 @@ public class DocenteServiceTest {
         });
 
         assertEquals("Username ya existe", exception.getMessage());
-        verify(docenteRepository, never()).save(any(Docente.class));
+        verify(docenteRepository, never()).save(Objects.requireNonNull(any(Docente.class)));
     }
-    
+
     @Test
     public void testRegistrarDocente_EmailFailureReturnsWarning() throws Exception {
         when(usuarioRepository.findByUsername(anyString())).thenReturn(Optional.empty());
@@ -167,7 +167,7 @@ public class DocenteServiceTest {
 
         Docente savedUser = new Docente();
         savedUser.setUsername("docente_test");
-        when(docenteRepository.save(any(Docente.class))).thenReturn(savedUser);
+        when(docenteRepository.save(Objects.requireNonNull(any(Docente.class)))).thenReturn(savedUser);
 
         doThrow(new RuntimeException("SMTP Error")).when(emailService).sendWelcomeDocente(any(), anyString());
 
