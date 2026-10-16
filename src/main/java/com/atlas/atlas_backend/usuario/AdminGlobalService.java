@@ -37,8 +37,9 @@ public class AdminGlobalService {
             throw new Exception("Correo ya existe");
         }
 
-        Rol adminGlobalRol = rolRepository.findByNombre("ADMIN_GLOBAL")
-                .orElseThrow(() -> new Exception("Rol ADMIN_GLOBAL no encontrado"));
+        Rol adminGlobalRol = rolRepository.findByNombre("Administrador Global")
+                .or(() -> rolRepository.findByNombre("ADMIN_GLOBAL"))
+                .orElseThrow(() -> new Exception("Rol Administrador Global no encontrado"));
 
         String provisionalPassword = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
 

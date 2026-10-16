@@ -37,8 +37,9 @@ public class AuditorService {
             throw new Exception("Correo ya existe");
         }
 
-        Rol auditorRol = rolRepository.findByNombre("AUDITOR")
-                .orElseThrow(() -> new Exception("Rol AUDITOR no encontrado"));
+        Rol auditorRol = rolRepository.findByNombre("Auditor")
+                .or(() -> rolRepository.findByNombre("AUDITOR"))
+                .orElseThrow(() -> new Exception("Rol Auditor no encontrado"));
 
         String provisionalPassword = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
 

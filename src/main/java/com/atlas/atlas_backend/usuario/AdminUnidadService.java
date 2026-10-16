@@ -42,8 +42,9 @@ public class AdminUnidadService {
             throw new Exception("Correo ya existe");
         }
 
-        Rol adminUnidadRol = rolRepository.findByNombre("ADMIN_UNIDAD")
-                .orElseThrow(() -> new Exception("Rol ADMIN_UNIDAD no encontrado"));
+        Rol adminUnidadRol = rolRepository.findByNombre("Administrador de Unidad")
+                .or(() -> rolRepository.findByNombre("ADMIN_UNIDAD"))
+                .orElseThrow(() -> new Exception("Rol Administrador de Unidad no encontrado"));
 
         Integer unidadId = request.getUnidadId();
         if (unidadId == null) {
