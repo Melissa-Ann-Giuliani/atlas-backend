@@ -87,6 +87,19 @@ public class UsuarioController {
         return ResponseEntity.ok(CargoAdminGlobal.values());
     }
 
+    @GetMapping("/admin-unidad/cargos")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL')")
+    public ResponseEntity<java.util.List<java.util.Map<String, String>>> getCargosAdminUnidad() {
+        java.util.List<java.util.Map<String, String>> cargos = java.util.Arrays.stream(CargoAdminUnidad.values())
+                .map(c -> java.util.Map.of(
+                        "value", c.name(),
+                        "nombre", c.getLabel(),
+                        "label", c.getLabel()
+                ))
+                .toList();
+        return ResponseEntity.ok(cargos);
+    }
+
     @PostMapping("/admin-unidad")
     @PreAuthorize("hasRole('ADMIN_GLOBAL')")
     public ResponseEntity<?> registrarAdminUnidad(@Valid @RequestBody AdminUnidadRequest request) {
@@ -103,10 +116,12 @@ public class UsuarioController {
                     .body(java.util.Map.of("message", "Administrador de Unidad registrado exitosamente", "usuario",
                             user));
         } catch (Exception e) {
-            if (e.getMessage().contains("ya existe")) {
+            e.printStackTrace();
+            if (e.getMessage() != null && e.getMessage().contains("ya existe")) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(e.getMessage()));
             }
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+            String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(msg));
         }
     }
 

@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -62,7 +63,7 @@ public class AdminGlobalServiceTest {
 
         AdminGlobal savedUser = new AdminGlobal();
         savedUser.setUsername("admin_test");
-        when(adminGlobalRepository.save(any(AdminGlobal.class))).thenReturn(savedUser);
+        when(adminGlobalRepository.save(Objects.requireNonNull(any(AdminGlobal.class)))).thenReturn(savedUser);
 
         StringBuilder warningMessage = new StringBuilder();
         AdminGlobal result = adminGlobalService.registrarAdminGlobal(request, warningMessage);
@@ -86,7 +87,7 @@ public class AdminGlobalServiceTest {
 
         AdminGlobal savedUser = new AdminGlobal();
         savedUser.setUsername("admin_test");
-        when(adminGlobalRepository.save(any(AdminGlobal.class))).thenReturn(savedUser);
+        when(adminGlobalRepository.save(Objects.requireNonNull(any(AdminGlobal.class)))).thenReturn(savedUser);
 
         doThrow(new RuntimeException("SMTP Error")).when(emailService).sendWelcomeAdminGlobal(any(), anyString());
 
@@ -106,6 +107,6 @@ public class AdminGlobalServiceTest {
         });
 
         assertEquals("Username ya existe", exception.getMessage());
-        verify(adminGlobalRepository, never()).save(any(AdminGlobal.class));
+        verify(adminGlobalRepository, never()).save(Objects.requireNonNull(any(AdminGlobal.class)));
     }
 }
