@@ -8,8 +8,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.Objects;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -32,7 +32,7 @@ public class UnidadControllerTest {
         when(unidadService.getUnidades(1, null)).thenReturn(Collections.singletonList(u1));
 
         mockMvc.perform(get("/api/unidades?tipoUnidadId=1")
-                        .contentType(MediaType.APPLICATION_JSON))
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].unidadId").value(1))
                 .andExpect(jsonPath("$[0].unidadNombre").value("Creación. Art. Coral"))
@@ -45,7 +45,7 @@ public class UnidadControllerTest {
         when(unidadService.getUnidades(null, "Departamento")).thenReturn(Collections.singletonList(u2));
 
         mockMvc.perform(get("/api/unidades?tipo=Departamento")
-                        .contentType(MediaType.APPLICATION_JSON))
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].unidadId").value(2))
                 .andExpect(jsonPath("$[0].unidadNombre").value("Historia"))

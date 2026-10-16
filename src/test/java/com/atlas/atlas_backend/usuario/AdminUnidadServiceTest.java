@@ -11,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -72,7 +73,7 @@ public class AdminUnidadServiceTest {
 
         AdminUnidad savedUser = new AdminUnidad();
         savedUser.setUsername("admin_unidad_test");
-        when(adminUnidadRepository.save(any(AdminUnidad.class))).thenReturn(savedUser);
+        when(adminUnidadRepository.save(Objects.requireNonNull(any(AdminUnidad.class)))).thenReturn(savedUser);
 
         StringBuilder warningMessage = new StringBuilder();
         AdminUnidad result = adminUnidadService.registrarAdminUnidad(request, warningMessage);
@@ -100,7 +101,7 @@ public class AdminUnidadServiceTest {
 
         AdminUnidad savedUser = new AdminUnidad();
         savedUser.setUsername("admin_unidad_test");
-        when(adminUnidadRepository.save(any(AdminUnidad.class))).thenReturn(savedUser);
+        when(adminUnidadRepository.save(Objects.requireNonNull(any(AdminUnidad.class)))).thenReturn(savedUser);
 
         doThrow(new RuntimeException("SMTP Error")).when(emailService).sendWelcomeAdminUnidad(any(), anyString());
 
@@ -120,7 +121,7 @@ public class AdminUnidadServiceTest {
         });
 
         assertEquals("Username ya existe", exception.getMessage());
-        verify(adminUnidadRepository, never()).save(any(AdminUnidad.class));
+        verify(adminUnidadRepository, never()).save(Objects.requireNonNull(any(AdminUnidad.class)));
     }
 
     @Test
@@ -133,7 +134,7 @@ public class AdminUnidadServiceTest {
         });
 
         assertEquals("Correo ya existe", exception.getMessage());
-        verify(adminUnidadRepository, never()).save(any(AdminUnidad.class));
+        verify(adminUnidadRepository, never()).save(Objects.requireNonNull(any(AdminUnidad.class)));
     }
 
     @Test
