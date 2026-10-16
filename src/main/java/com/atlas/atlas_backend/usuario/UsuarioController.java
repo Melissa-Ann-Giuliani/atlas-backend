@@ -81,6 +81,12 @@ public class UsuarioController {
         }
     }
 
+    @GetMapping("/admin-global/cargos")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL')")
+    public ResponseEntity<CargoAdminGlobal[]> getCargosAdminGlobal() {
+        return ResponseEntity.ok(CargoAdminGlobal.values());
+    }
+
     @PostMapping("/admin-unidad")
     @PreAuthorize("hasRole('ADMIN_GLOBAL')")
     public ResponseEntity<?> registrarAdminUnidad(@Valid @RequestBody AdminUnidadRequest request) {
@@ -147,4 +153,5 @@ public class UsuarioController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
         }
     }
+
 }
