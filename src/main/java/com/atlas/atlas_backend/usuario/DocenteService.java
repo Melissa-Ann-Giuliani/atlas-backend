@@ -52,8 +52,9 @@ public class DocenteService {
             throw new Exception("CUIL ya existe");
         }
 
-        Rol docenteRol = rolRepository.findByNombre("DOCENTE")
-                .orElseThrow(() -> new Exception("Rol DOCENTE no encontrado"));
+        Rol docenteRol = rolRepository.findByNombre("Docente")
+                .or(() -> rolRepository.findByNombre("DOCENTE"))
+                .orElseThrow(() -> new Exception("Rol Docente no encontrado"));
 
         String provisionalPassword = UUID.randomUUID().toString().replace("-", "").substring(0, 12);
 
