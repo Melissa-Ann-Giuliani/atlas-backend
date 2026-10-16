@@ -140,4 +140,17 @@ public class UsuarioControllerTest {
                                 .andExpect(jsonPath("$.password").isString())
                                 .andExpect(jsonPath("$.password.length()").value(12));
         }
+
+        @Test
+        @WithMockUser(roles = "ADMIN_GLOBAL")
+        public void testGetCargosAdminUnidad_Success() throws Exception {
+                mockMvc.perform(get("/api/usuarios/admin-unidad/cargos"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[0].value").value("DIRECTOR"))
+                                .andExpect(jsonPath("$[0].nombre").value("Director"))
+                                .andExpect(jsonPath("$[1].value").value("VICEDIRECTOR"))
+                                .andExpect(jsonPath("$[1].nombre").value("Vice Director"))
+                                .andExpect(jsonPath("$[2].value").value("SECRETARIA_ADMINISTRATIVA"))
+                                .andExpect(jsonPath("$[2].nombre").value("Secretaría Administrativa"));
+        }
 }

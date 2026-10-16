@@ -87,6 +87,19 @@ public class UsuarioController {
         return ResponseEntity.ok(CargoAdminGlobal.values());
     }
 
+    @GetMapping("/admin-unidad/cargos")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL')")
+    public ResponseEntity<java.util.List<java.util.Map<String, String>>> getCargosAdminUnidad() {
+        java.util.List<java.util.Map<String, String>> cargos = java.util.Arrays.stream(CargoAdminUnidad.values())
+                .map(c -> java.util.Map.of(
+                        "value", c.name(),
+                        "nombre", c.getLabel(),
+                        "label", c.getLabel()
+                ))
+                .toList();
+        return ResponseEntity.ok(cargos);
+    }
+
     @PostMapping("/admin-unidad")
     @PreAuthorize("hasRole('ADMIN_GLOBAL')")
     public ResponseEntity<?> registrarAdminUnidad(@Valid @RequestBody AdminUnidadRequest request) {
