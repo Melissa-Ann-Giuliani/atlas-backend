@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS public.admin_de_unidad
 CREATE TABLE IF NOT EXISTS public.auditores
 (
     usuario_id integer NOT NULL,
-    cargo_aud_nombre character varying(40) NOT NULL,
+    cargo_au_nombre character varying(40) NOT NULL,
     PRIMARY KEY (usuario_id)
 );
 
