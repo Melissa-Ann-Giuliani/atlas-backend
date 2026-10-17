@@ -153,4 +153,17 @@ public class UsuarioControllerTest {
                                 .andExpect(jsonPath("$[2].value").value("SECRETARIA_ADMINISTRATIVA"))
                                 .andExpect(jsonPath("$[2].nombre").value("Secretaría Administrativa"));
         }
+
+        @Test
+        @WithMockUser(roles = "ADMIN_GLOBAL")
+        public void testGetCargosAuditor_Success() throws Exception {
+                mockMvc.perform(get("/api/usuarios/auditor/cargos"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[0].value").value("DECANO"))
+                                .andExpect(jsonPath("$[0].nombre").value("Decano"))
+                                .andExpect(jsonPath("$[1].value").value("VICEDECANO"))
+                                .andExpect(jsonPath("$[1].nombre").value("Vicedecano"))
+                                .andExpect(jsonPath("$[2].value").value("SECRETARIA_ACADEMICA"))
+                                .andExpect(jsonPath("$[2].nombre").value("Secretaría Académica"));
+        }
 }
