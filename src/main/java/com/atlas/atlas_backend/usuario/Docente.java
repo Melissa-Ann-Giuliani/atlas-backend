@@ -21,8 +21,6 @@ public class Docente extends Usuario {
     @Column(name = "docente_cuil", nullable = false, unique = true)
     private Long cuil;
 
-    @Column(name = "docente_fecha_nac", nullable = false)
-    private LocalDate fechaNac;
 
     @Column(name = "docente_email_institucional", length = 60, unique = true)
     private String emailInstitucional;

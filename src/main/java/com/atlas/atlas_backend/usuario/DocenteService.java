@@ -73,7 +73,6 @@ public class DocenteService {
         docente.setTipoDni(request.getTipoDni() != null && !request.getTipoDni().isBlank() ? request.getTipoDni() : "DNI");
         docente.setDni(request.getDni());
         docente.setCuil(request.getCuil());
-        docente.setFechaNac(request.getFechaNac());
         docente.setEmailInstitucional(request.getEmailInstitucional());
         docente.setFechaIngreso(request.getFechaIngreso());
         docente.setDomicilio(request.getDomicilio());

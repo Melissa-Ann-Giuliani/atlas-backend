@@ -185,10 +185,12 @@ public class UsuarioController {
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(java.util.Map.of("message", "Docente registrado exitosamente", "usuario", user));
         } catch (Exception e) {
-            if (e.getMessage().contains("ya existe")) {
+            e.printStackTrace();
+            if (e.getMessage() != null && e.getMessage().contains("ya existe")) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(e.getMessage()));
             }
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+            String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(msg));
         }
     }
 

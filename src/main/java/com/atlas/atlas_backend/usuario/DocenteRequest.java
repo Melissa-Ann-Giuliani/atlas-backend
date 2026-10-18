@@ -27,8 +27,6 @@ public class DocenteRequest {
     @NotNull(message = "El CUIL es obligatorio")
     private Long cuil;
 
-    @NotNull(message = "La fecha de nacimiento es obligatoria")
-    private LocalDate fechaNac;
 
     @NotBlank(message = "El correo electrónico institucional es obligatorio")
     @Email(message = "Formato de correo inválido")

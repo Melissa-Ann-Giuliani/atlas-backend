@@ -49,7 +49,6 @@ public class DocenteServiceTest {
         request.setApellido("Test");
         request.setDni(12345678L);
         request.setCuil(20123456780L);
-        request.setFechaNac(LocalDate.of(1980, 1, 1));
         request.setEmailInstitucional("docente@test.com");
         request.setFechaIngreso(LocalDate.of(2020, 1, 1));
         request.setTipoDni("DNI");
