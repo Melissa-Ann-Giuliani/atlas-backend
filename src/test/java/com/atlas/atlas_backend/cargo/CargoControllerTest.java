@@ -20,6 +20,7 @@ import java.util.Objects;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -78,6 +79,11 @@ public class CargoControllerTest {
                 expectedDto.setDedicacion("Exclusiva");
                 expectedDto.setCaracter("Ordinario");
                 expectedDto.setFechaCreacion(LocalDate.of(2026, 10, 18));
+                expectedDto.setOrigenId(1);
+                expectedDto.setOrigen("Tesoro");
+                expectedDto.setUnidadId(1);
+                expectedDto.setUnidadNombre("Facultad de Ingeniería");
+                expectedDto.setTipoUnidadNombre("Facultad");
         }
 
         @Test
@@ -325,5 +331,32 @@ public class CargoControllerTest {
                                 .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
                                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(validUpdateRequest))))
                                 .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testGetCargoDetails_Success_Returns200WithOriginAndUnit() throws Exception {
+                when(cargoService.getCargoDetails(eq(10), eq("admin_global"))).thenReturn(expectedDto);
+
+                mockMvc.perform(get("/api/cargos/10")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.numero").value(5001))
+                                .andExpect(jsonPath("$.origenId").value(1))
+                                .andExpect(jsonPath("$.origen").value("Tesoro"))
+                                .andExpect(jsonPath("$.unidadId").value(1))
+                                .andExpect(jsonPath("$.unidadNombre").value("Facultad de Ingeniería"))
+                                .andExpect(jsonPath("$.tipoUnidadNombre").value("Facultad"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testGetCargoDetails_NotFound_Returns404() throws Exception {
+                when(cargoService.getCargoDetails(eq(9999), eq("admin_global")))
+                                .thenThrow(new Exception("Cargo no encontrado"));
+
+                mockMvc.perform(get("/api/cargos/9999")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON)))
+                                .andExpect(status().isNotFound());
         }
 }

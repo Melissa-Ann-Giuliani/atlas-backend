@@ -8,6 +8,8 @@ import com.atlas.atlas_backend.dedicacion.Dedicacion;
 import com.atlas.atlas_backend.dedicacion.DedicacionRepository;
 import com.atlas.atlas_backend.origen.Origen;
 import com.atlas.atlas_backend.origen.OrigenRepository;
+import com.atlas.atlas_backend.funcion.FuncionRepository;
+import com.atlas.atlas_backend.unidad.TipoUnidad;
 import com.atlas.atlas_backend.unidad.Unidad;
 import com.atlas.atlas_backend.unidad.UnidadRepository;
 import com.atlas.atlas_backend.usuario.*;
@@ -56,6 +58,12 @@ public class CargoServiceTest {
     @Mock
     private UnidadRepository unidadRepository;
 
+    @Mock
+    private DocenteRepository docenteRepository;
+
+    @Mock
+    private FuncionRepository funcionRepository;
+
     @InjectMocks
     private CargoService cargoService;
 
@@ -87,9 +95,14 @@ public class CargoServiceTest {
         adminUnidadUser.setUsername("admin_unidad");
         adminUnidadUser.setRol(rolAdminUnidad);
 
+        TipoUnidad testTipoUnidad = new TipoUnidad();
+        testTipoUnidad.setTipoUnidadId(1);
+        testTipoUnidad.setTipoUnidadNombre("Facultad");
+
         testUnidad = new Unidad();
         testUnidad.setUnidadId(10);
         testUnidad.setUnidadNombre("Facultad de Ingeniería");
+        testUnidad.setTipoUnidad(testTipoUnidad);
 
         adminUnidad = new AdminUnidad();
         adminUnidad.setId(2);
@@ -152,6 +165,11 @@ public class CargoServiceTest {
         assertEquals("Profesor Titular", result.getCategoria());
         assertEquals("Exclusiva", result.getDedicacion());
         assertEquals("Ordinario", result.getCaracter());
+        assertEquals(1, result.getOrigenId());
+        assertEquals("Tesoro", result.getOrigen());
+        assertEquals(10, result.getUnidadId());
+        assertEquals("Facultad de Ingeniería", result.getUnidadNombre());
+        assertEquals("Facultad", result.getTipoUnidadNombre());
         assertNull(result.getCargoPredecesor());
         verify(cargoRepository, times(1)).save(Objects.requireNonNull(any(Cargo.class)));
     }
@@ -260,6 +278,7 @@ public class CargoServiceTest {
         existingCargo.setEstado("Libre");
         existingCargo.setHorasOcupadas(0);
         existingCargo.setUnidad(testUnidad);
+        existingCargo.setOrigen(testOrigen);
 
         CargoUpdateRequest updateRequest = new CargoUpdateRequest();
         updateRequest.setFechaCreacion(LocalDate.of(2026, 10, 19));
@@ -283,7 +302,12 @@ public class CargoServiceTest {
         assertEquals("Profesor Titular", result.getCategoria());
         assertEquals("Exclusiva", result.getDedicacion());
         assertEquals("Ordinario", result.getCaracter());
-        verify(cargoRepository, times(1)).save(Objects.requireNonNull(any(Cargo.class)));
+        assertEquals(1, result.getOrigenId());
+        assertEquals("Tesoro", result.getOrigen());
+        assertEquals(10, result.getUnidadId());
+        assertEquals("Facultad de Ingeniería", result.getUnidadNombre());
+        assertEquals("Facultad", result.getTipoUnidadNombre());
+        verify(cargoRepository, times(1)).save(any(Cargo.class));
     }
 
     @Test
@@ -550,5 +574,99 @@ public class CargoServiceTest {
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         assertTrue(exception.getMessage().contains("Cargo predecesor no encontrado"));
+    }
+
+    @Test
+    void getCargoDetails_AdminGlobal_Success() throws Exception {
+        Cargo cargo = new Cargo();
+        cargo.setId(10);
+        cargo.setCodigo(5001L);
+        cargo.setEstado("Libre");
+        cargo.setFechaCreacion(LocalDate.of(2026, 10, 18));
+        cargo.setCategoria(testCategoria);
+        cargo.setDedicacion(testDedicacion);
+        cargo.setCaracter(testCaracter);
+        cargo.setOrigen(testOrigen);
+        cargo.setUnidad(testUnidad);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(cargo));
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+
+        CargoDetailDTO result = cargoService.getCargoDetails(10, "admin_global");
+
+        assertNotNull(result);
+        assertEquals(5001L, result.getNumero());
+        assertEquals("Libre", result.getEstado());
+        assertEquals("Profesor Titular", result.getCategoria());
+        assertEquals("Exclusiva", result.getDedicacion());
+        assertEquals("Ordinario", result.getCaracter());
+        assertEquals(1, result.getOrigenId());
+        assertEquals("Tesoro", result.getOrigen());
+        assertEquals(10, result.getUnidadId());
+        assertEquals("Facultad de Ingeniería", result.getUnidadNombre());
+        assertEquals("Facultad", result.getTipoUnidadNombre());
+    }
+
+    @Test
+    void getCargoDetails_NullOriginAndUnit_Success() throws Exception {
+        Cargo cargo = new Cargo();
+        cargo.setId(10);
+        cargo.setCodigo(5001L);
+        cargo.setEstado("Libre");
+        cargo.setOrigen(null);
+        cargo.setUnidad(null);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(cargo));
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+
+        CargoDetailDTO result = cargoService.getCargoDetails(10, "admin_global");
+
+        assertNotNull(result);
+        assertNull(result.getOrigenId());
+        assertNull(result.getOrigen());
+        assertNull(result.getUnidadId());
+        assertNull(result.getUnidadNombre());
+        assertNull(result.getTipoUnidadNombre());
+    }
+
+    @Test
+    void getCargoDetails_AdminUnidad_OwnUnit_Success() throws Exception {
+        Cargo cargo = new Cargo();
+        cargo.setId(10);
+        cargo.setCodigo(5001L);
+        cargo.setEstado("Libre");
+        cargo.setOrigen(testOrigen);
+        cargo.setUnidad(testUnidad);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(cargo));
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
+
+        CargoDetailDTO result = cargoService.getCargoDetails(10, "admin_unidad");
+
+        assertNotNull(result);
+        assertEquals(1, result.getOrigenId());
+        assertEquals("Tesoro", result.getOrigen());
+        assertEquals(10, result.getUnidadId());
+        assertEquals("Facultad de Ingeniería", result.getUnidadNombre());
+    }
+
+    @Test
+    void getCargoDetails_AdminUnidad_CrossUnit_ThrowsException() {
+        Unidad otherUnidad = new Unidad();
+        otherUnidad.setUnidadId(20);
+
+        Cargo cargo = new Cargo();
+        cargo.setId(10);
+        cargo.setUnidad(otherUnidad);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(cargo));
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
+
+        Exception exception = assertThrows(Exception.class,
+                () -> cargoService.getCargoDetails(10, "admin_unidad"));
+
+        assertTrue(exception.getMessage().contains("No tiene permisos para ver este cargo"));
     }
 }

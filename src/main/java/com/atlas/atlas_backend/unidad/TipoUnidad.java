@@ -15,4 +15,20 @@ public class TipoUnidad {
 
     @Column(name = "tipo_unidad_nombre", length = 20)
     private String nombre;
+
+    public String getTipoUnidadNombre() {
+        return this.nombre;
+    }
+
+    public void setTipoUnidadNombre(String tipoUnidadNombre) {
+        this.nombre = tipoUnidadNombre;
+    }
+
+    public Integer getTipoUnidadId() {
+        return this.id;
+    }
+
+    public void setTipoUnidadId(Integer id) {
+        this.id = id;
+    }
 }

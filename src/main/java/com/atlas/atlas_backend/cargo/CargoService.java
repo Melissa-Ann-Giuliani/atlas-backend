@@ -147,6 +147,19 @@ public class CargoService {
         dto.setDedicacion(cargo.getDedicacion() != null ? cargo.getDedicacion().getDedicacionNombre() : null);
         dto.setCaracter(cargo.getCaracter() != null ? cargo.getCaracter().getCaracterNombre() : null);
 
+        if (cargo.getOrigen() != null) {
+            dto.setOrigenId(cargo.getOrigen().getOrigenId());
+            dto.setOrigen(cargo.getOrigen().getOrigenNombre());
+        }
+
+        if (cargo.getUnidad() != null) {
+            dto.setUnidadId(cargo.getUnidad().getUnidadId());
+            dto.setUnidadNombre(cargo.getUnidad().getUnidadNombre());
+            if (cargo.getUnidad().getTipoUnidad() != null) {
+                dto.setTipoUnidadNombre(cargo.getUnidad().getTipoUnidad().getTipoUnidadNombre());
+            }
+        }
+
         List<Funcion> funciones = funcionRepository.findByCargoIdIn(List.of(cargo.getId()));
         List<CargoDetailDTO.ActividadData> actividades = new ArrayList<>();
         for (Funcion f : funciones) {
@@ -281,6 +294,19 @@ public class CargoService {
         dto.setFechaCreacion(savedCargo.getFechaCreacion());
         dto.setDedicacion(dedicacion.getDedicacionNombre());
         dto.setCaracter(caracter.getCaracterNombre());
+
+        if (savedCargo.getOrigen() != null) {
+            dto.setOrigenId(savedCargo.getOrigen().getOrigenId());
+            dto.setOrigen(savedCargo.getOrigen().getOrigenNombre());
+        }
+
+        if (savedCargo.getUnidad() != null) {
+            dto.setUnidadId(savedCargo.getUnidad().getUnidadId());
+            dto.setUnidadNombre(savedCargo.getUnidad().getUnidadNombre());
+            if (savedCargo.getUnidad().getTipoUnidad() != null) {
+                dto.setTipoUnidadNombre(savedCargo.getUnidad().getTipoUnidad().getTipoUnidadNombre());
+            }
+        }
         dto.setActividadesVinculadas(new ArrayList<>());
         dto.setSubcargosActivos(new ArrayList<>());
         dto.setCargosSubdivididos(new ArrayList<>());
@@ -377,6 +403,19 @@ public class CargoService {
         dto.setFechaCreacion(savedCargo.getFechaCreacion());
         dto.setDedicacion(dedicacion != null ? dedicacion.getDedicacionNombre() : null);
         dto.setCaracter(caracter != null ? caracter.getCaracterNombre() : null);
+
+        if (savedCargo.getOrigen() != null) {
+            dto.setOrigenId(savedCargo.getOrigen().getOrigenId());
+            dto.setOrigen(savedCargo.getOrigen().getOrigenNombre());
+        }
+
+        if (savedCargo.getUnidad() != null) {
+            dto.setUnidadId(savedCargo.getUnidad().getUnidadId());
+            dto.setUnidadNombre(savedCargo.getUnidad().getUnidadNombre());
+            if (savedCargo.getUnidad().getTipoUnidad() != null) {
+                dto.setTipoUnidadNombre(savedCargo.getUnidad().getTipoUnidad().getTipoUnidadNombre());
+            }
+        }
         dto.setActividadesVinculadas(new ArrayList<>());
         dto.setSubcargosActivos(new ArrayList<>());
         dto.setCargosSubdivididos(new ArrayList<>());
