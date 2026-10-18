@@ -19,14 +19,14 @@ public class DocenteRequest {
     @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
 
+    private String tipoDni;
+
     @NotNull(message = "El DNI es obligatorio")
     private Long dni;
 
     @NotNull(message = "El CUIL es obligatorio")
     private Long cuil;
 
-    @NotNull(message = "La fecha de nacimiento es obligatoria")
-    private LocalDate fechaNac;
 
     @NotBlank(message = "El correo electrónico institucional es obligatorio")
     @Email(message = "Formato de correo inválido")

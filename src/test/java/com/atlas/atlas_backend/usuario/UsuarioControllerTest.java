@@ -166,4 +166,15 @@ public class UsuarioControllerTest {
                                 .andExpect(jsonPath("$[2].value").value("SECRETARIA_ACADEMICA"))
                                 .andExpect(jsonPath("$[2].nombre").value("Secretaría Académica"));
         }
+
+        @Test
+        @WithMockUser(roles = "ADMIN_GLOBAL")
+        public void testGetTiposDniDocente_Success() throws Exception {
+                mockMvc.perform(get("/api/usuarios/docente/tipos-dni"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$[0].value").value("DNI"))
+                                .andExpect(jsonPath("$[0].nombre").value("DNI"))
+                                .andExpect(jsonPath("$[1].value").value("PASAPORTE"))
+                                .andExpect(jsonPath("$[1].nombre").value("Pasaporte"));
+        }
 }

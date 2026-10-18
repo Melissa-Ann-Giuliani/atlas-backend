@@ -70,9 +70,9 @@ public class DocenteService {
         docente.setRol(docenteRol);
 
         // Docente specific fields
+        docente.setTipoDni(request.getTipoDni() != null && !request.getTipoDni().isBlank() ? request.getTipoDni() : "DNI");
         docente.setDni(request.getDni());
         docente.setCuil(request.getCuil());
-        docente.setFechaNac(request.getFechaNac());
         docente.setEmailInstitucional(request.getEmailInstitucional());
         docente.setFechaIngreso(request.getFechaIngreso());
         docente.setDomicilio(request.getDomicilio());
@@ -161,6 +161,7 @@ public class DocenteService {
         DocenteDetailsDTO dto = new DocenteDetailsDTO();
 
         DocenteDetailsDTO.PersonalData pd = new DocenteDetailsDTO.PersonalData();
+        pd.setTipoDni(docente.getTipoDni());
         pd.setDni(docente.getDni());
         pd.setEmailInstitucional(docente.getEmailInstitucional());
         pd.setTelefonos(docente.getTelefonos());
