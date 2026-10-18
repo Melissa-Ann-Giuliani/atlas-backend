@@ -17,6 +17,10 @@ public interface CargoRepository extends JpaRepository<Cargo, Integer> {
 
     List<Cargo> findByCargoOrigenDivisionId(Integer cargoOrigenDivisionId);
 
+    boolean existsByCodigo(Long codigo);
+
+    java.util.Optional<Cargo> findByCodigo(Long codigo);
+
     @Query("""
         SELECT c.id AS id, c.codigo AS numero, c.fechaCreacion AS fechaCreacion,
                c.estado AS estado,

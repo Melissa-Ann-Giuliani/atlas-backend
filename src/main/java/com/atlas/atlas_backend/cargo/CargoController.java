@@ -1,13 +1,18 @@
 package com.atlas.atlas_backend.cargo;
 
+import com.atlas.atlas_backend.error.ErrorResponse;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.lang.NonNull;
 
 @RestController
@@ -42,12 +47,29 @@ public class CargoController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
-    public ResponseEntity<CargoDetailDTO> getCargoDetails(@PathVariable @NonNull Integer id, Authentication authentication) {
+    public ResponseEntity<CargoDetailDTO> getCargoDetails(@PathVariable @NonNull Integer id,
+            Authentication authentication) {
         try {
             CargoDetailDTO dto = cargoService.getCargoDetails(id, authentication.getName());
             return ResponseEntity.ok(dto);
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
+    public ResponseEntity<?> crearCargo(@Valid @RequestBody CargoCreateRequest request, Authentication authentication) {
+        try {
+            CargoDetailDTO dto = cargoService.crearCargo(request, authentication.getName());
+            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
         }
     }
 }

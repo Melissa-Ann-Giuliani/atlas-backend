@@ -9,6 +9,20 @@ import com.atlas.atlas_backend.usuario.DocenteRepository;
 import com.atlas.atlas_backend.funcion.Funcion;
 import com.atlas.atlas_backend.funcion.FuncionRepository;
 
+import com.atlas.atlas_backend.origen.Origen;
+import com.atlas.atlas_backend.origen.OrigenRepository;
+import com.atlas.atlas_backend.caracter.Caracter;
+import com.atlas.atlas_backend.caracter.CaracterRepository;
+import com.atlas.atlas_backend.categoria.Categoria;
+import com.atlas.atlas_backend.categoria.CategoriaRepository;
+import com.atlas.atlas_backend.dedicacion.Dedicacion;
+import com.atlas.atlas_backend.dedicacion.DedicacionRepository;
+import com.atlas.atlas_backend.unidad.Unidad;
+import com.atlas.atlas_backend.unidad.UnidadRepository;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -17,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -30,21 +45,37 @@ public class CargoService {
 
     @Autowired
     private AdminUnidadRepository adminUnidadRepository;
-    
+
     @Autowired
     private DocenteRepository docenteRepository;
-    
+
     @Autowired
     private FuncionRepository funcionRepository;
 
+    @Autowired
+    private OrigenRepository origenRepository;
+
+    @Autowired
+    private CaracterRepository caracterRepository;
+
+    @Autowired
+    private CategoriaRepository categoriaRepository;
+
+    @Autowired
+    private DedicacionRepository dedicacionRepository;
+
+    @Autowired
+    private UnidadRepository unidadRepository;
+
     @Transactional(readOnly = true)
-    public Page<CargoListDTO> getActiveCargos(String username, String searchTerm, String estado, Integer categoriaId, Integer dedicacionId, Integer caracterId, Pageable pageable) throws Exception {
+    public Page<CargoListDTO> getActiveCargos(String username, String searchTerm, String estado, Integer categoriaId,
+            Integer dedicacionId, Integer caracterId, Pageable pageable) throws Exception {
         Usuario usuario = usuarioRepository.findByUsername(username)
                 .orElseThrow(() -> new Exception("Usuario no encontrado"));
 
         Integer unidadId = null;
         String rolNombre = usuario.getRol().getNombre();
-        
+
         if (rolNombre.equalsIgnoreCase("Admin de unidad") ||
                 rolNombre.equalsIgnoreCase("Administrador de Unidad") ||
                 rolNombre.equalsIgnoreCase("ADMIN_UNIDAD")) {
@@ -60,7 +91,8 @@ public class CargoService {
             }
         }
 
-        return cargoRepository.findActiveCargos(unidadId, searchTerm, estado, categoriaId, dedicacionId, caracterId, pageable);
+        return cargoRepository.findActiveCargos(unidadId, searchTerm, estado, categoriaId, dedicacionId, caracterId,
+                pageable);
     }
 
     @Transactional(readOnly = true)
@@ -78,13 +110,13 @@ public class CargoService {
         if (rolNombre.equalsIgnoreCase("Admin de unidad") ||
                 rolNombre.equalsIgnoreCase("Administrador de Unidad") ||
                 rolNombre.equalsIgnoreCase("ADMIN_UNIDAD")) {
-            
+
             Integer adminUnidadId = null;
             Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(usuario.getId().intValue());
             if (adminUnidadOpt.isPresent() && adminUnidadOpt.get().getUnidad() != null) {
                 adminUnidadId = adminUnidadOpt.get().getUnidad().getUnidadId();
             }
-            
+
             if (cargo.getUnidad() == null || !cargo.getUnidad().getUnidadId().equals(adminUnidadId)) {
                 throw new Exception("No tiene permisos para ver este cargo");
             }
@@ -120,9 +152,13 @@ public class CargoService {
         for (Funcion f : funciones) {
             CargoDetailDTO.ActividadData ad = new CargoDetailDTO.ActividadData();
             ad.setMateriaProyecto(f.getMateria() != null ? f.getMateria().getNombre() : f.getNombre());
-            ad.setOrigen(f.getCargo() != null && f.getCargo().getOrigen() != null ? f.getCargo().getOrigen().getOrigenNombre() : null);
+            ad.setOrigen(f.getCargo() != null && f.getCargo().getOrigen() != null
+                    ? f.getCargo().getOrigen().getOrigenNombre()
+                    : null);
             ad.setHoras(f.getHoras());
-            ad.setEstado(f.getCargo() != null && f.getCargo().getDesignacion() != null ? f.getCargo().getDesignacion().getDesignacionEstadoActual() : null);
+            ad.setEstado(f.getCargo() != null && f.getCargo().getDesignacion() != null
+                    ? f.getCargo().getDesignacion().getDesignacionEstadoActual()
+                    : null);
             actividades.add(ad);
         }
         dto.setActividadesVinculadas(actividades);
@@ -141,7 +177,8 @@ public class CargoService {
             CargoDetailDTO.CargoOrigenDivisionData od = new CargoDetailDTO.CargoOrigenDivisionData();
             od.setNumero(origenDivision.getCodigo());
             od.setEstado(origenDivision.getEstado());
-            od.setCategoria(origenDivision.getCategoria() != null ? origenDivision.getCategoria().getCategoriaNombre() : null);
+            od.setCategoria(
+                    origenDivision.getCategoria() != null ? origenDivision.getCategoria().getCategoriaNombre() : null);
             dto.setCargoOrigenDivision(od);
         }
 
@@ -168,7 +205,95 @@ public class CargoService {
         dto.setSubcargosActivos(subcargos);
         dto.setCargosSubdivididos(cargosSubdivididos);
 
-        dto.setDocumentacionAdjunta(new ArrayList<>()); 
+        dto.setDocumentacionAdjunta(new ArrayList<>());
+
+        return dto;
+    }
+
+    @Transactional
+    public CargoDetailDTO crearCargo(CargoCreateRequest request, String username) throws Exception {
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        String rolNombre = usuario.getRol().getNombre();
+        if (rolNombre.equalsIgnoreCase("Admin de unidad") ||
+                rolNombre.equalsIgnoreCase("Administrador de Unidad") ||
+                rolNombre.equalsIgnoreCase("ADMIN_UNIDAD")) {
+            if (usuario.getId() != null) {
+                Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(usuario.getId().intValue());
+                if (adminUnidadOpt.isPresent() && adminUnidadOpt.get().getUnidad() != null) {
+                    Integer userUnidadId = adminUnidadOpt.get().getUnidad().getUnidadId();
+                    if (!userUnidadId.equals(request.getUnidadId())) {
+                        throw new AccessDeniedException("No tiene permisos para registrar cargos en esta unidad");
+                    }
+                } else {
+                    throw new AccessDeniedException("La Unidad del Administrador no fue encontrada");
+                }
+            } else {
+                throw new AccessDeniedException("ID de usuario nulo");
+            }
+        }
+
+        if (cargoRepository.existsByCodigo(request.getCodigo())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El número de cargo ya existe");
+        }
+
+        Origen origen = origenRepository.findById(Objects.requireNonNull(request.getOrigenId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Origen no encontrado"));
+
+        Caracter caracter = caracterRepository.findById(Objects.requireNonNull(request.getCaracterId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Carácter no encontrado"));
+
+        Categoria categoria = categoriaRepository.findById(Objects.requireNonNull(request.getCategoriaId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Categoría no encontrada"));
+
+        Dedicacion dedicacion = dedicacionRepository.findById(Objects.requireNonNull(request.getDedicacionId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dedicación no encontrada"));
+
+        Unidad unidad = unidadRepository.findById(Objects.requireNonNull(request.getUnidadId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Unidad no encontrada"));
+
+        Cargo cargo = new Cargo();
+        cargo.setCodigo(request.getCodigo());
+        cargo.setFechaCreacion(request.getFechaCreacion());
+        cargo.setOrigen(origen);
+        cargo.setCaracter(caracter);
+        cargo.setCategoria(categoria);
+        cargo.setDedicacion(dedicacion);
+        cargo.setUnidad(unidad);
+        cargo.setEstado("Libre");
+        cargo.setHorasOcupadas(0);
+        cargo.setDesignacion(null);
+
+        if (request.getPredecesorCodigo() != null) {
+            Cargo predecesor = cargoRepository.findByCodigo(request.getPredecesorCodigo())
+                    .orElseThrow(
+                            () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo predecesor no encontrado"));
+            cargo.setCargoPredecesor(predecesor);
+        }
+
+        Cargo savedCargo = cargoRepository.save(Objects.requireNonNull(cargo));
+
+        CargoDetailDTO dto = new CargoDetailDTO();
+        dto.setNumero(savedCargo.getCodigo());
+        dto.setCategoria(categoria.getCategoriaNombre());
+        dto.setEstado(savedCargo.getEstado());
+        dto.setFechaCreacion(savedCargo.getFechaCreacion());
+        dto.setDedicacion(dedicacion.getDedicacionNombre());
+        dto.setCaracter(caracter.getCaracterNombre());
+        dto.setActividadesVinculadas(new ArrayList<>());
+        dto.setSubcargosActivos(new ArrayList<>());
+        dto.setCargosSubdivididos(new ArrayList<>());
+        dto.setDocumentacionAdjunta(new ArrayList<>());
+
+        if (savedCargo.getCargoPredecesor() != null) {
+            Cargo predecesor = savedCargo.getCargoPredecesor();
+            CargoDetailDTO.CargoPredecesorData pd = new CargoDetailDTO.CargoPredecesorData();
+            pd.setNumero(predecesor.getCodigo());
+            pd.setEstado(predecesor.getEstado());
+            pd.setCategoria(predecesor.getCategoria() != null ? predecesor.getCategoria().getCategoriaNombre() : null);
+            dto.setCargoPredecesor(pd);
+        }
 
         return dto;
     }
