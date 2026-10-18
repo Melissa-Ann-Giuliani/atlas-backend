@@ -129,13 +129,20 @@ public class CargoServiceTest {
         when(unidadRepository.findById(10)).thenReturn(Optional.of(testUnidad));
     }
 
+    private void mockCatalogueLookupsForUpdate() {
+        when(origenRepository.findById(1)).thenReturn(Optional.of(testOrigen));
+        when(caracterRepository.findById(1)).thenReturn(Optional.of(testCaracter));
+        when(categoriaRepository.findById(1)).thenReturn(Optional.of(testCategoria));
+        when(dedicacionRepository.findById(1)).thenReturn(Optional.of(testDedicacion));
+    }
+
     @Test
     void crearCargo_AdminGlobal_Success() throws Exception {
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         when(cargoRepository.existsByCodigo(5001L)).thenReturn(false);
         mockCatalogueLookups();
         when(cargoRepository.save(Objects.requireNonNull(any(Cargo.class))))
-                .thenAnswer(invocation -> Objects.requireNonNull(invocation.getArgument(0)));
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         CargoDetailDTO result = cargoService.crearCargo(validRequest, "admin_global");
 
@@ -240,6 +247,306 @@ public class CargoServiceTest {
 
         ResponseStatusException exception = assertThrows(ResponseStatusException.class,
                 () -> cargoService.crearCargo(validRequest, "admin_global"));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertTrue(exception.getMessage().contains("Cargo predecesor no encontrado"));
+    }
+
+    @Test
+    void modificarCargo_AdminGlobal_Success() throws Exception {
+        Cargo existingCargo = new Cargo();
+        existingCargo.setId(10);
+        existingCargo.setCodigo(5001L);
+        existingCargo.setEstado("Libre");
+        existingCargo.setHorasOcupadas(0);
+        existingCargo.setUnidad(testUnidad);
+
+        CargoUpdateRequest updateRequest = new CargoUpdateRequest();
+        updateRequest.setFechaCreacion(LocalDate.of(2026, 10, 19));
+        updateRequest.setOrigenId(1);
+        updateRequest.setCaracterId(1);
+        updateRequest.setCategoriaId(1);
+        updateRequest.setDedicacionId(1);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(existingCargo));
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        mockCatalogueLookupsForUpdate();
+        when(cargoRepository.save(Objects.requireNonNull(any(Cargo.class))))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        CargoDetailDTO result = cargoService.modificarCargo(10, updateRequest, "admin_global");
+
+        assertNotNull(result);
+        assertEquals(5001L, result.getNumero());
+        assertEquals("Libre", result.getEstado());
+        assertEquals(LocalDate.of(2026, 10, 19), result.getFechaCreacion());
+        assertEquals("Profesor Titular", result.getCategoria());
+        assertEquals("Exclusiva", result.getDedicacion());
+        assertEquals("Ordinario", result.getCaracter());
+        verify(cargoRepository, times(1)).save(Objects.requireNonNull(any(Cargo.class)));
+    }
+
+    @Test
+    void modificarCargo_WithNewPredecessor_Success() throws Exception {
+        Cargo existingCargo = new Cargo();
+        existingCargo.setId(10);
+        existingCargo.setCodigo(5001L);
+        existingCargo.setEstado("Libre");
+        existingCargo.setHorasOcupadas(0);
+        existingCargo.setUnidad(testUnidad);
+
+        Cargo predecesor = new Cargo();
+        predecesor.setId(99);
+        predecesor.setCodigo(4001L);
+        predecesor.setEstado("Baja");
+        predecesor.setCategoria(testCategoria);
+
+        CargoUpdateRequest updateRequest = new CargoUpdateRequest();
+        updateRequest.setFechaCreacion(LocalDate.of(2026, 10, 19));
+        updateRequest.setOrigenId(1);
+        updateRequest.setCaracterId(1);
+        updateRequest.setCategoriaId(1);
+        updateRequest.setDedicacionId(1);
+        updateRequest.setPredecesorCodigo(4001L);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(existingCargo));
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        mockCatalogueLookupsForUpdate();
+        when(cargoRepository.findByCodigo(4001L)).thenReturn(Optional.of(predecesor));
+        when(cargoRepository.save(Objects.requireNonNull(any(Cargo.class))))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        CargoDetailDTO result = cargoService.modificarCargo(10, updateRequest, "admin_global");
+
+        assertNotNull(result);
+        assertNotNull(result.getCargoPredecesor());
+        assertEquals(4001L, result.getCargoPredecesor().getNumero());
+        assertEquals("Baja", result.getCargoPredecesor().getEstado());
+    }
+
+    @Test
+    void modificarCargo_PreserveExistingPredecessor_WhenNullInRequest() throws Exception {
+        Cargo predecesor = new Cargo();
+        predecesor.setId(99);
+        predecesor.setCodigo(4001L);
+        predecesor.setEstado("Baja");
+        predecesor.setCategoria(testCategoria);
+
+        Cargo existingCargo = new Cargo();
+        existingCargo.setId(10);
+        existingCargo.setCodigo(5001L);
+        existingCargo.setEstado("Libre");
+        existingCargo.setHorasOcupadas(0);
+        existingCargo.setUnidad(testUnidad);
+        existingCargo.setCargoPredecesor(predecesor);
+
+        CargoUpdateRequest updateRequest = new CargoUpdateRequest();
+        updateRequest.setFechaCreacion(LocalDate.of(2026, 10, 19));
+        updateRequest.setOrigenId(1);
+        updateRequest.setCaracterId(1);
+        updateRequest.setCategoriaId(1);
+        updateRequest.setDedicacionId(1);
+        updateRequest.setPredecesorCodigo(null);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(existingCargo));
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        mockCatalogueLookupsForUpdate();
+        when(cargoRepository.save(Objects.requireNonNull(any(Cargo.class))))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        CargoDetailDTO result = cargoService.modificarCargo(10, updateRequest, "admin_global");
+
+        assertNotNull(result);
+        assertNotNull(result.getCargoPredecesor());
+        assertEquals(4001L, result.getCargoPredecesor().getNumero());
+    }
+
+    @Test
+    void modificarCargo_AdminUnidad_OwnUnit_Success() throws Exception {
+        Cargo existingCargo = new Cargo();
+        existingCargo.setId(10);
+        existingCargo.setCodigo(5001L);
+        existingCargo.setEstado("Libre");
+        existingCargo.setHorasOcupadas(0);
+        existingCargo.setUnidad(testUnidad);
+
+        CargoUpdateRequest updateRequest = new CargoUpdateRequest();
+        updateRequest.setFechaCreacion(LocalDate.of(2026, 10, 19));
+        updateRequest.setOrigenId(1);
+        updateRequest.setCaracterId(1);
+        updateRequest.setCategoriaId(1);
+        updateRequest.setDedicacionId(1);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(existingCargo));
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
+        mockCatalogueLookupsForUpdate();
+        when(cargoRepository.save(Objects.requireNonNull(any(Cargo.class))))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        CargoDetailDTO result = cargoService.modificarCargo(10, updateRequest, "admin_unidad");
+
+        assertNotNull(result);
+        assertEquals(5001L, result.getNumero());
+    }
+
+    @Test
+    void modificarCargo_AdminUnidad_CrossUnit_ThrowsAccessDenied() {
+        Unidad otherUnidad = new Unidad();
+        otherUnidad.setUnidadId(20);
+
+        Cargo existingCargo = new Cargo();
+        existingCargo.setId(10);
+        existingCargo.setCodigo(5001L);
+        existingCargo.setUnidad(otherUnidad);
+
+        CargoUpdateRequest updateRequest = new CargoUpdateRequest();
+        updateRequest.setFechaCreacion(LocalDate.of(2026, 10, 19));
+        updateRequest.setOrigenId(1);
+        updateRequest.setCaracterId(1);
+        updateRequest.setCategoriaId(1);
+        updateRequest.setDedicacionId(1);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(existingCargo));
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
+
+        assertThrows(AccessDeniedException.class, () -> cargoService.modificarCargo(10, updateRequest, "admin_unidad"));
+
+        verify(cargoRepository, never()).save(Objects.requireNonNull(any(Cargo.class)));
+    }
+
+    @Test
+    void modificarCargo_DedicacionHoursLessThanOccupied_ThrowsBadRequest() {
+        Cargo existingCargo = new Cargo();
+        existingCargo.setId(10);
+        existingCargo.setCodigo(5001L);
+        existingCargo.setHorasOcupadas(20);
+        existingCargo.setUnidad(testUnidad);
+
+        Dedicacion lowHoursDedicacion = new Dedicacion();
+        lowHoursDedicacion.setDedicacionId(3);
+        lowHoursDedicacion.setDedicacionNombre("Simple");
+        lowHoursDedicacion.setDedicacionHoras(10);
+
+        CargoUpdateRequest updateRequest = new CargoUpdateRequest();
+        updateRequest.setFechaCreacion(LocalDate.of(2026, 10, 19));
+        updateRequest.setOrigenId(1);
+        updateRequest.setCaracterId(1);
+        updateRequest.setCategoriaId(1);
+        updateRequest.setDedicacionId(3);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(existingCargo));
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(origenRepository.findById(1)).thenReturn(Optional.of(testOrigen));
+        when(caracterRepository.findById(1)).thenReturn(Optional.of(testCaracter));
+        when(categoriaRepository.findById(1)).thenReturn(Optional.of(testCategoria));
+        when(dedicacionRepository.findById(3)).thenReturn(Optional.of(lowHoursDedicacion));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> cargoService.modificarCargo(10, updateRequest, "admin_global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertTrue(exception.getMessage()
+                .contains("Las horas de la dedicación no pueden ser inferiores a las horas ocupadas"));
+        verify(cargoRepository, never()).save(Objects.requireNonNull(any(Cargo.class)));
+    }
+
+    @Test
+    void modificarCargo_SelfReferencingPredecessor_ThrowsBadRequest() {
+        Cargo existingCargo = new Cargo();
+        existingCargo.setId(10);
+        existingCargo.setCodigo(5001L);
+        existingCargo.setHorasOcupadas(0);
+        existingCargo.setUnidad(testUnidad);
+
+        CargoUpdateRequest updateRequest = new CargoUpdateRequest();
+        updateRequest.setFechaCreacion(LocalDate.of(2026, 10, 19));
+        updateRequest.setOrigenId(1);
+        updateRequest.setCaracterId(1);
+        updateRequest.setCategoriaId(1);
+        updateRequest.setDedicacionId(1);
+        updateRequest.setPredecesorCodigo(5001L);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(existingCargo));
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        mockCatalogueLookupsForUpdate();
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> cargoService.modificarCargo(10, updateRequest, "admin_global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertTrue(exception.getMessage().contains("Un cargo no puede ser predecesor de sí mismo"));
+        verify(cargoRepository, never()).save(Objects.requireNonNull(any(Cargo.class)));
+    }
+
+    @Test
+    void modificarCargo_NonExistentCargo_ThrowsNotFound() {
+        CargoUpdateRequest updateRequest = new CargoUpdateRequest();
+        updateRequest.setFechaCreacion(LocalDate.of(2026, 10, 19));
+        updateRequest.setOrigenId(1);
+        updateRequest.setCaracterId(1);
+        updateRequest.setCategoriaId(1);
+        updateRequest.setDedicacionId(1);
+
+        when(cargoRepository.findById(9999)).thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> cargoService.modificarCargo(9999, updateRequest, "admin_global"));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertTrue(exception.getMessage().contains("Cargo no encontrado"));
+    }
+
+    @Test
+    void modificarCargo_NonExistentCatalogue_ThrowsNotFound() {
+        Cargo existingCargo = new Cargo();
+        existingCargo.setId(10);
+        existingCargo.setCodigo(5001L);
+        existingCargo.setHorasOcupadas(0);
+        existingCargo.setUnidad(testUnidad);
+
+        CargoUpdateRequest updateRequest = new CargoUpdateRequest();
+        updateRequest.setFechaCreacion(LocalDate.of(2026, 10, 19));
+        updateRequest.setOrigenId(999);
+        updateRequest.setCaracterId(1);
+        updateRequest.setCategoriaId(1);
+        updateRequest.setDedicacionId(1);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(existingCargo));
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(origenRepository.findById(999)).thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> cargoService.modificarCargo(10, updateRequest, "admin_global"));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertTrue(exception.getMessage().contains("Origen no encontrado"));
+    }
+
+    @Test
+    void modificarCargo_NonExistentPredecessor_ThrowsNotFound() {
+        Cargo existingCargo = new Cargo();
+        existingCargo.setId(10);
+        existingCargo.setCodigo(5001L);
+        existingCargo.setHorasOcupadas(0);
+        existingCargo.setUnidad(testUnidad);
+
+        CargoUpdateRequest updateRequest = new CargoUpdateRequest();
+        updateRequest.setFechaCreacion(LocalDate.of(2026, 10, 19));
+        updateRequest.setOrigenId(1);
+        updateRequest.setCaracterId(1);
+        updateRequest.setCategoriaId(1);
+        updateRequest.setDedicacionId(1);
+        updateRequest.setPredecesorCodigo(9999L);
+
+        when(cargoRepository.findById(10)).thenReturn(Optional.of(existingCargo));
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        mockCatalogueLookupsForUpdate();
+        when(cargoRepository.findByCodigo(9999L)).thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> cargoService.modificarCargo(10, updateRequest, "admin_global"));
 
         assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         assertTrue(exception.getMessage().contains("Cargo predecesor no encontrado"));

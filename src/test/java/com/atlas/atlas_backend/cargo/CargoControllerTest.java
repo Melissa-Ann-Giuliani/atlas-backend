@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -49,6 +50,7 @@ public class CargoControllerTest {
         private com.atlas.atlas_backend.security.CustomUserDetailsService customUserDetailsService;
 
         private CargoCreateRequest validRequest;
+        private CargoUpdateRequest validUpdateRequest;
         private CargoDetailDTO expectedDto;
 
         @BeforeEach
@@ -61,6 +63,13 @@ public class CargoControllerTest {
                 validRequest.setCategoriaId(1);
                 validRequest.setDedicacionId(1);
                 validRequest.setUnidadId(1);
+
+                validUpdateRequest = new CargoUpdateRequest();
+                validUpdateRequest.setFechaCreacion(LocalDate.of(2026, 10, 19));
+                validUpdateRequest.setOrigenId(1);
+                validUpdateRequest.setCaracterId(1);
+                validUpdateRequest.setCategoriaId(1);
+                validUpdateRequest.setDedicacionId(1);
 
                 expectedDto = new CargoDetailDTO();
                 expectedDto.setNumero(5001L);
@@ -203,6 +212,118 @@ public class CargoControllerTest {
                 mockMvc.perform(post("/api/cargos")
                                 .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
                                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(validRequest))))
+                                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testPutModificarCargo_Success_Returns200() throws Exception {
+                when(cargoService.modificarCargo(eq(10), any(CargoUpdateRequest.class), eq("admin_global")))
+                                .thenReturn(expectedDto);
+
+                mockMvc.perform(put("/api/cargos/10")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(validUpdateRequest))))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.numero").value(5001))
+                                .andExpect(jsonPath("$.estado").value("Libre"))
+                                .andExpect(jsonPath("$.categoria").value("Profesor Titular"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_unidad", roles = { "ADMIN_UNIDAD" })
+        void testPutModificarCargo_AdminUnidad_OwnUnit_Returns200() throws Exception {
+                when(cargoService.modificarCargo(eq(10), any(CargoUpdateRequest.class), eq("admin_unidad")))
+                                .thenReturn(expectedDto);
+
+                mockMvc.perform(put("/api/cargos/10")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(validUpdateRequest))))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.numero").value(5001));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testPutModificarCargo_Validation_MissingRequiredField_Returns400() throws Exception {
+                validUpdateRequest.setCategoriaId(null);
+
+                mockMvc.perform(put("/api/cargos/10")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(validUpdateRequest))))
+                                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testPutModificarCargo_DedicacionHoursConflict_Returns400() throws Exception {
+                when(cargoService.modificarCargo(eq(10), any(CargoUpdateRequest.class), eq("admin_global")))
+                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                                "Las horas de la dedicación no pueden ser inferiores a las horas ocupadas"));
+
+                mockMvc.perform(put("/api/cargos/10")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(validUpdateRequest))))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message")
+                                                .value("Las horas de la dedicación no pueden ser inferiores a las horas ocupadas"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testPutModificarCargo_NonExistentCargo_Returns404() throws Exception {
+                when(cargoService.modificarCargo(eq(9999), any(CargoUpdateRequest.class), eq("admin_global")))
+                                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo no encontrado"));
+
+                mockMvc.perform(put("/api/cargos/9999")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(validUpdateRequest))))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("Cargo no encontrado"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testPutModificarCargo_NonExistentCatalogue_Returns404() throws Exception {
+                when(cargoService.modificarCargo(eq(10), any(CargoUpdateRequest.class), eq("admin_global")))
+                                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Origen no encontrado"));
+
+                mockMvc.perform(put("/api/cargos/10")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(validUpdateRequest))))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("Origen no encontrado"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_unidad", roles = { "ADMIN_UNIDAD" })
+        void testPutModificarCargo_Forbidden_AdminUnidad_CrossUnit_Returns403() throws Exception {
+                when(cargoService.modificarCargo(eq(10), any(CargoUpdateRequest.class), eq("admin_unidad")))
+                                .thenThrow(new AccessDeniedException(
+                                                "No tiene permisos para modificar cargos en esta unidad"));
+
+                mockMvc.perform(put("/api/cargos/10")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(validUpdateRequest))))
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.message")
+                                                .value("No tiene permisos para modificar cargos en esta unidad"));
+        }
+
+        @Test
+        @WithMockUser(username = "docente", roles = { "DOCENTE" })
+        void testPutModificarCargo_UnauthorizedRole_Returns403() throws Exception {
+                mockMvc.perform(put("/api/cargos/10")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(validUpdateRequest))))
+                                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        void testPutModificarCargo_Unauthenticated_ReturnsForbidden() throws Exception {
+                mockMvc.perform(put("/api/cargos/10")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(validUpdateRequest))))
                                 .andExpect(status().isForbidden());
         }
 }

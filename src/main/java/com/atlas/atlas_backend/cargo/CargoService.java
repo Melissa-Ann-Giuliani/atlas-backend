@@ -297,4 +297,174 @@ public class CargoService {
 
         return dto;
     }
+
+    @Transactional
+    public CargoDetailDTO modificarCargo(Integer id, CargoUpdateRequest request, String username) throws Exception {
+        if (id == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ID de cargo nulo");
+        }
+
+        Cargo cargo = cargoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo no encontrado"));
+
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        String rolNombre = usuario.getRol().getNombre();
+        if (rolNombre.equalsIgnoreCase("Admin de unidad") ||
+                rolNombre.equalsIgnoreCase("Administrador de Unidad") ||
+                rolNombre.equalsIgnoreCase("ADMIN_UNIDAD") ||
+                rolNombre.equalsIgnoreCase("ADMIN_DE_UNIDAD")) {
+            if (usuario.getId() != null) {
+                Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(usuario.getId().intValue());
+                if (adminUnidadOpt.isPresent() && adminUnidadOpt.get().getUnidad() != null) {
+                    Integer userUnidadId = adminUnidadOpt.get().getUnidad().getUnidadId();
+                    if (cargo.getUnidad() == null || !userUnidadId.equals(cargo.getUnidad().getUnidadId())) {
+                        throw new AccessDeniedException("No tiene permisos para modificar cargos en esta unidad");
+                    }
+                } else {
+                    throw new AccessDeniedException("La Unidad del Administrador no fue encontrada");
+                }
+            } else {
+                throw new AccessDeniedException("ID de usuario nulo");
+            }
+        }
+
+        Origen origen = origenRepository.findById(Objects.requireNonNull(request.getOrigenId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Origen no encontrado"));
+
+        Caracter caracter = caracterRepository.findById(Objects.requireNonNull(request.getCaracterId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Carácter no encontrado"));
+
+        Categoria categoria = categoriaRepository.findById(Objects.requireNonNull(request.getCategoriaId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Categoría no encontrada"));
+
+        Dedicacion dedicacion = dedicacionRepository.findById(Objects.requireNonNull(request.getDedicacionId()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dedicación no encontrada"));
+
+        if (cargo.getHorasOcupadas() != null && cargo.getHorasOcupadas() > 0) {
+            if (dedicacion.getDedicacionHoras() != null && dedicacion.getDedicacionHoras() < cargo.getHorasOcupadas()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Las horas de la dedicación no pueden ser inferiores a las horas ocupadas");
+            }
+        }
+
+        if (request.getPredecesorCodigo() != null) {
+            if (cargo.getCodigo() != null && cargo.getCodigo().equals(request.getPredecesorCodigo())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Un cargo no puede ser predecesor de sí mismo");
+            }
+            Cargo predecesor = cargoRepository.findByCodigo(request.getPredecesorCodigo())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo predecesor no encontrado"));
+            cargo.setCargoPredecesor(predecesor);
+        }
+
+        cargo.setFechaCreacion(request.getFechaCreacion());
+        cargo.setOrigen(origen);
+        cargo.setCaracter(caracter);
+        cargo.setCategoria(categoria);
+        cargo.setDedicacion(dedicacion);
+
+        Cargo savedCargo = cargoRepository.save(cargo);
+
+        return buildCargoDetailDTO(savedCargo, categoria, dedicacion, caracter);
+    }
+
+    private CargoDetailDTO buildCargoDetailDTO(Cargo savedCargo, Categoria categoria, Dedicacion dedicacion, Caracter caracter) {
+        CargoDetailDTO dto = new CargoDetailDTO();
+        dto.setNumero(savedCargo.getCodigo());
+        dto.setCategoria(categoria != null ? categoria.getCategoriaNombre() : null);
+        dto.setEstado(savedCargo.getEstado());
+        dto.setFechaCreacion(savedCargo.getFechaCreacion());
+        dto.setDedicacion(dedicacion != null ? dedicacion.getDedicacionNombre() : null);
+        dto.setCaracter(caracter != null ? caracter.getCaracterNombre() : null);
+        dto.setActividadesVinculadas(new ArrayList<>());
+        dto.setSubcargosActivos(new ArrayList<>());
+        dto.setCargosSubdivididos(new ArrayList<>());
+        dto.setDocumentacionAdjunta(new ArrayList<>());
+
+        if (savedCargo.getCargoPredecesor() != null) {
+            Cargo predecesor = savedCargo.getCargoPredecesor();
+            CargoDetailDTO.CargoPredecesorData pd = new CargoDetailDTO.CargoPredecesorData();
+            pd.setNumero(predecesor.getCodigo());
+            pd.setEstado(predecesor.getEstado());
+            pd.setCategoria(predecesor.getCategoria() != null ? predecesor.getCategoria().getCategoriaNombre() : null);
+            dto.setCargoPredecesor(pd);
+        }
+
+        if (savedCargo.getCargoOrigenDivision() != null) {
+            Cargo origenDivision = savedCargo.getCargoOrigenDivision();
+            CargoDetailDTO.CargoOrigenDivisionData od = new CargoDetailDTO.CargoOrigenDivisionData();
+            od.setNumero(origenDivision.getCodigo());
+            od.setEstado(origenDivision.getEstado());
+            od.setCategoria(
+                    origenDivision.getCategoria() != null ? origenDivision.getCategoria().getCategoriaNombre() : null);
+            dto.setCargoOrigenDivision(od);
+        }
+
+        if (savedCargo.getDesignacion() != null && savedCargo.getDesignacion().getUsuarioId() != null && docenteRepository != null) {
+            Optional<Docente> docenteOpt = docenteRepository.findById(savedCargo.getDesignacion().getUsuarioId().intValue());
+            if (docenteOpt.isPresent()) {
+                Docente docente = docenteOpt.get();
+                dto.setAsignadoANombre(docente.getApellido() + " " + docente.getNombre());
+                dto.setAsignadoADni(docente.getDni());
+            }
+        }
+
+        if (savedCargo.getDesignacion() != null) {
+            dto.setNroResolucionDesignacion(savedCargo.getDesignacion().getDesignacionNumeroResolucion());
+            dto.setDesignacionNroResolucion(savedCargo.getDesignacion().getDesignacionNumeroResolucion());
+            dto.setDesignacionFechaInicio(savedCargo.getDesignacion().getDesignacionFechaInicio());
+            dto.setDesignacionFechaFin(savedCargo.getDesignacion().getDesignacionFechaFin());
+        }
+
+        if (savedCargo.getId() != null && funcionRepository != null) {
+            List<Funcion> funciones = funcionRepository.findByCargoIdIn(List.of(savedCargo.getId()));
+            if (funciones != null) {
+                List<CargoDetailDTO.ActividadData> actividades = new ArrayList<>();
+                for (Funcion f : funciones) {
+                    CargoDetailDTO.ActividadData ad = new CargoDetailDTO.ActividadData();
+                    ad.setMateriaProyecto(f.getMateria() != null ? f.getMateria().getNombre() : f.getNombre());
+                    ad.setOrigen(f.getCargo() != null && f.getCargo().getOrigen() != null
+                            ? f.getCargo().getOrigen().getOrigenNombre()
+                            : null);
+                    ad.setHoras(f.getHoras());
+                    ad.setEstado(f.getCargo() != null && f.getCargo().getDesignacion() != null
+                            ? f.getCargo().getDesignacion().getDesignacionEstadoActual()
+                            : null);
+                    actividades.add(ad);
+                }
+                dto.setActividadesVinculadas(actividades);
+            }
+        }
+
+        if (savedCargo.getId() != null && cargoRepository != null) {
+            List<Cargo> subcargosPredecesor = cargoRepository.findByCargoPredecesorId(savedCargo.getId());
+            if (subcargosPredecesor != null) {
+                List<CargoDetailDTO.SubcargoData> subcargos = new ArrayList<>();
+                for (Cargo sc : subcargosPredecesor) {
+                    CargoDetailDTO.SubcargoData sd = new CargoDetailDTO.SubcargoData();
+                    sd.setNumero(sc.getCodigo());
+                    sd.setEstado(sc.getEstado());
+                    sd.setCategoria(sc.getCategoria() != null ? sc.getCategoria().getCategoriaNombre() : null);
+                    subcargos.add(sd);
+                }
+                dto.setSubcargosActivos(subcargos);
+            }
+
+            List<Cargo> subcargosDivision = cargoRepository.findByCargoOrigenDivisionId(savedCargo.getId());
+            if (subcargosDivision != null) {
+                List<CargoDetailDTO.SubcargoData> cargosSubdivididos = new ArrayList<>();
+                for (Cargo sc : subcargosDivision) {
+                    CargoDetailDTO.SubcargoData sd = new CargoDetailDTO.SubcargoData();
+                    sd.setNumero(sc.getCodigo());
+                    sd.setEstado(sc.getEstado());
+                    sd.setCategoria(sc.getCategoria() != null ? sc.getCategoria().getCategoriaNombre() : null);
+                    cargosSubdivididos.add(sd);
+                }
+                dto.setCargosSubdivididos(cargosSubdivididos);
+            }
+        }
+
+        return dto;
+    }
 }
