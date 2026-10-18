@@ -25,6 +25,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -148,7 +149,7 @@ public class LicenciaServiceTest {
 
         LicenciaListDTO dto = mock(LicenciaListDTO.class);
 
-        Page<LicenciaListDTO> pageResult = new PageImpl<>(List.of(dto));
+        Page<LicenciaListDTO> pageResult = new PageImpl<>(Objects.requireNonNull(List.of(dto)));
         when(licenciaRepository.findActiveLicencias(eq(null), any(), any(), any(), any(), any()))
                 .thenReturn(pageResult);
 
@@ -166,7 +167,7 @@ public class LicenciaServiceTest {
         when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
         when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
 
-        Page<LicenciaListDTO> pageResult = new PageImpl<>(List.of());
+        Page<LicenciaListDTO> pageResult = new PageImpl<>(Objects.requireNonNull(List.of()));
         when(licenciaRepository.findActiveLicencias(eq(10), any(), any(), any(), any(), any()))
                 .thenReturn(pageResult);
 
