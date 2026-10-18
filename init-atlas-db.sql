@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS public.roles_permisos
 CREATE TABLE IF NOT EXISTS public.docentes
 (
     usuario_id integer NOT NULL,
+    docente_tipo_dni character varying(20) NOT NULL DEFAULT 'DNI',
     docente_dni bigint NOT NULL,
     docente_cuil bigint NOT NULL,
     docente_fecha_nac date NOT NULL,

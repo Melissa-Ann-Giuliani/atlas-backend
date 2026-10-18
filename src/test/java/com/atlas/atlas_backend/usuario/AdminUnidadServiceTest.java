@@ -153,6 +153,6 @@ public class AdminUnidadServiceTest {
         });
 
         assertEquals("Unidad no encontrada", exception.getMessage());
-        verify(adminUnidadRepository, never()).save(any(AdminUnidad.class));
+        verify(adminUnidadRepository, never()).save(Objects.requireNonNull(any(AdminUnidad.class)));
     }
 }

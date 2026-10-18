@@ -52,6 +52,7 @@ public class DocenteServiceTest {
         request.setFechaNac(LocalDate.of(1980, 1, 1));
         request.setEmailInstitucional("docente@test.com");
         request.setFechaIngreso(LocalDate.of(2020, 1, 1));
+        request.setTipoDni("DNI");
         request.setAntigPrevia(5);
     }
 
@@ -64,14 +65,15 @@ public class DocenteServiceTest {
         when(docenteRepository.existsByCuil(anyLong())).thenReturn(false);
 
         Rol rol = new Rol();
-        rol.setNombre("DOCENTE");
-        when(rolRepository.findByNombre("DOCENTE")).thenReturn(Optional.of(rol));
+        rol.setNombre("Docente");
+        when(rolRepository.findByNombre("Docente")).thenReturn(Optional.of(rol));
 
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
 
         Docente savedUser = new Docente();
         savedUser.setUsername("docente_test");
         savedUser.setEmailInstitucional("docente@test.com");
+        savedUser.setTipoDni("DNI");
         savedUser.setAntigPrevia(5);
         when(docenteRepository.save(Objects.requireNonNull(any(Docente.class)))).thenReturn(savedUser);
 
@@ -80,6 +82,7 @@ public class DocenteServiceTest {
 
         assertNotNull(result);
         assertEquals("docente_test", result.getUsername());
+        assertEquals("DNI", result.getTipoDni());
         assertEquals(5, result.getAntigPrevia());
         verify(emailService, times(1)).sendWelcomeDocente(any(), anyString());
         assertEquals(0, warningMessage.length());
@@ -96,8 +99,8 @@ public class DocenteServiceTest {
         when(docenteRepository.existsByCuil(anyLong())).thenReturn(false);
 
         Rol rol = new Rol();
-        rol.setNombre("DOCENTE");
-        when(rolRepository.findByNombre("DOCENTE")).thenReturn(Optional.of(rol));
+        rol.setNombre("Docente");
+        when(rolRepository.findByNombre("Docente")).thenReturn(Optional.of(rol));
 
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
 
@@ -123,8 +126,8 @@ public class DocenteServiceTest {
         when(docenteRepository.existsByCuil(anyLong())).thenReturn(false);
 
         Rol rol = new Rol();
-        rol.setNombre("DOCENTE");
-        when(rolRepository.findByNombre("DOCENTE")).thenReturn(Optional.of(rol));
+        rol.setNombre("Docente");
+        when(rolRepository.findByNombre("Docente")).thenReturn(Optional.of(rol));
 
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
 
@@ -160,8 +163,8 @@ public class DocenteServiceTest {
         when(docenteRepository.existsByCuil(anyLong())).thenReturn(false);
 
         Rol rol = new Rol();
-        rol.setNombre("DOCENTE");
-        when(rolRepository.findByNombre("DOCENTE")).thenReturn(Optional.of(rol));
+        rol.setNombre("Docente");
+        when(rolRepository.findByNombre("Docente")).thenReturn(Optional.of(rol));
 
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
 

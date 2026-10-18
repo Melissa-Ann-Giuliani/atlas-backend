@@ -19,6 +19,8 @@ public class DocenteRequest {
     @NotBlank(message = "El nombre es obligatorio")
     private String nombre;
 
+    private String tipoDni;
+
     @NotNull(message = "El DNI es obligatorio")
     private Long dni;
 

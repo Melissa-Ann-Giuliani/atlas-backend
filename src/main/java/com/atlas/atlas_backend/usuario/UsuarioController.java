@@ -29,7 +29,7 @@ public class UsuarioController {
     @Autowired
     private DocenteService docenteService;
 
-    @GetMapping("/generar-password")
+    @GetMapping({ "/generar-password", "/generar-contrasenia" })
     public ResponseEntity<?> generarPassword() {
         // Genera una contraseña aleatoria y segura
         String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+";
@@ -94,8 +94,7 @@ public class UsuarioController {
                 .map(c -> java.util.Map.of(
                         "value", c.name(),
                         "nombre", c.getLabel(),
-                        "label", c.getLabel()
-                ))
+                        "label", c.getLabel()))
                 .toList();
         return ResponseEntity.ok(cargos);
     }
@@ -107,10 +106,21 @@ public class UsuarioController {
                 .map(c -> java.util.Map.of(
                         "value", c.name(),
                         "nombre", c.getLabel(),
-                        "label", c.getLabel()
-                ))
+                        "label", c.getLabel()))
                 .toList();
         return ResponseEntity.ok(cargos);
+    }
+
+    @GetMapping("/docente/tipos-dni")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMIN_UNIDAD')")
+    public ResponseEntity<java.util.List<java.util.Map<String, String>>> getTiposDniDocente() {
+        java.util.List<java.util.Map<String, String>> tipos = java.util.Arrays.stream(TipoDni.values())
+                .map(t -> java.util.Map.of(
+                        "value", t.name(),
+                        "nombre", t.getLabel(),
+                        "label", t.getLabel()))
+                .toList();
+        return ResponseEntity.ok(tipos);
     }
 
     @PostMapping("/admin-unidad")

@@ -13,6 +13,7 @@ public class DocenteDetailsDTO {
 
     @Data
     public static class PersonalData {
+        private String tipoDni;
         private Long dni;
         private String emailInstitucional;
         private List<String> telefonos;
