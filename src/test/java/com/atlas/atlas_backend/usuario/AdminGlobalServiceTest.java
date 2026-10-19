@@ -9,8 +9,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Objects;
 import java.util.Optional;
+import org.springframework.lang.NonNull;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,6 +38,12 @@ public class AdminGlobalServiceTest {
     @InjectMocks
     private AdminGlobalService adminGlobalService;
 
+    @NonNull
+    private static AdminGlobal anyAdminGlobal() {
+        AdminGlobal a = any(AdminGlobal.class);
+        return a != null ? a : new AdminGlobal();
+    }
+
     private AdminGlobalRequest request;
 
     @BeforeEach
@@ -56,14 +62,14 @@ public class AdminGlobalServiceTest {
         when(usuarioRepository.existsByCorreo(anyString())).thenReturn(false);
 
         Rol rol = new Rol();
-        rol.setNombre("ADMIN_GLOBAL");
-        when(rolRepository.findByNombre("ADMIN_GLOBAL")).thenReturn(Optional.of(rol));
+        rol.setNombre("Administrador Global");
+        when(rolRepository.findByNombre("Administrador Global")).thenReturn(Optional.of(rol));
 
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
 
         AdminGlobal savedUser = new AdminGlobal();
         savedUser.setUsername("admin_test");
-        when(adminGlobalRepository.save(Objects.requireNonNull(any(AdminGlobal.class)))).thenReturn(savedUser);
+        when(adminGlobalRepository.save(anyAdminGlobal())).thenReturn(savedUser);
 
         StringBuilder warningMessage = new StringBuilder();
         AdminGlobal result = adminGlobalService.registrarAdminGlobal(request, warningMessage);
@@ -80,14 +86,14 @@ public class AdminGlobalServiceTest {
         when(usuarioRepository.existsByCorreo(anyString())).thenReturn(false);
 
         Rol rol = new Rol();
-        rol.setNombre("ADMIN_GLOBAL");
-        when(rolRepository.findByNombre("ADMIN_GLOBAL")).thenReturn(Optional.of(rol));
+        rol.setNombre("Administrador Global");
+        when(rolRepository.findByNombre("Administrador Global")).thenReturn(Optional.of(rol));
 
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
 
         AdminGlobal savedUser = new AdminGlobal();
         savedUser.setUsername("admin_test");
-        when(adminGlobalRepository.save(Objects.requireNonNull(any(AdminGlobal.class)))).thenReturn(savedUser);
+        when(adminGlobalRepository.save(anyAdminGlobal())).thenReturn(savedUser);
 
         doThrow(new RuntimeException("SMTP Error")).when(emailService).sendWelcomeAdminGlobal(any(), anyString());
 
@@ -107,6 +113,6 @@ public class AdminGlobalServiceTest {
         });
 
         assertEquals("Username ya existe", exception.getMessage());
-        verify(adminGlobalRepository, never()).save(Objects.requireNonNull(any(AdminGlobal.class)));
+        verify(adminGlobalRepository, never()).save(anyAdminGlobal());
     }
 }
