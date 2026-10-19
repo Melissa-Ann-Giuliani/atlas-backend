@@ -34,7 +34,8 @@ public interface CargoRepository extends JpaRepository<Cargo, Integer> {
         LEFT JOIN c.dedicacion ded
         LEFT JOIN c.caracter car
         JOIN c.unidad u
-        WHERE (:estado IS NULL OR c.estado = :estado)
+        WHERE c.estado != 'Dado de baja'
+          AND (:estado IS NULL OR c.estado = :estado)
           AND (:unidadId IS NULL OR u.unidadId = :unidadId)
           AND (:categoriaId IS NULL OR cat.categoriaId = :categoriaId)
           AND (:dedicacionId IS NULL OR ded.dedicacionId = :dedicacionId)

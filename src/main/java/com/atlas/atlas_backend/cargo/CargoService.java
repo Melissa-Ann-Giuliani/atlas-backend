@@ -644,5 +644,55 @@ public class CargoService {
 
         return result;
     }
+
+    @Transactional
+    public CargoDetailDTO darDeBajaCargo(Integer id, String username) throws Exception {
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        String rolNombre = usuario.getRol() != null ? usuario.getRol().getNombre() : "";
+        if (!rolNombre.equalsIgnoreCase("Admin Global") &&
+                !rolNombre.equalsIgnoreCase("Administrador Global") &&
+                !rolNombre.equalsIgnoreCase("ADMIN_GLOBAL")) {
+            throw new AccessDeniedException("Solo el Administrador Global tiene permisos para dar de baja un cargo");
+        }
+
+        Cargo cargo = cargoRepository.findById(Objects.requireNonNull(id))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo no encontrado"));
+
+        if (cargo.getEstado() != null && cargo.getEstado().equalsIgnoreCase("Dado de baja")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El cargo ya se encuentra dado de baja");
+        }
+
+        // Active Designation validation
+        if (cargo.getDesignacion() != null) {
+            String desEstado = cargo.getDesignacion().getDesignacionEstadoActual();
+            boolean isEstadoActivo = desEstado != null &&
+                    !desEstado.equalsIgnoreCase("Finalizada") &&
+                    !desEstado.equalsIgnoreCase("Cancelada") &&
+                    !desEstado.equalsIgnoreCase("Baja");
+
+            java.time.LocalDate fechaFin = cargo.getDesignacion().getDesignacionFechaFin();
+            boolean isVigenteFecha = (fechaFin == null || !fechaFin.isBefore(java.time.LocalDate.now()));
+
+            if (isEstadoActivo && isVigenteFecha) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede dar de baja el cargo porque posee una designación vigente");
+            }
+        }
+
+        // Subcargos from division validation: cannot decommission parent if active child subcargos exist
+        List<Cargo> subcargosDivision = cargoRepository.findByCargoOrigenDivisionId(cargo.getId());
+        for (Cargo sc : subcargosDivision) {
+            if (sc.getEstado() != null && !sc.getEstado().equalsIgnoreCase("Dado de baja")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede dar de baja el cargo porque posee subcargos activos derivados de una división");
+            }
+        }
+
+        cargo.setEstado("Dado de baja");
+        cargo.setHorasOcupadas(0);
+        cargoRepository.save(cargo);
+
+        return getCargoDetails(cargo.getId(), username);
+    }
 }
 

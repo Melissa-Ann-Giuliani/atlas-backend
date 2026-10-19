@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -469,6 +470,82 @@ public class CargoControllerTest {
                                 .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
                                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
                                 .andExpect(status().isForbidden());
+        }
+
+        // --- RF-20: Baja de Cargo Tests ---
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testDarDeBajaCargo_Success_Returns200() throws Exception {
+                CargoDetailDTO dto = new CargoDetailDTO();
+                dto.setNumero(101L);
+                dto.setEstado("Dado de baja");
+
+                when(cargoService.darDeBajaCargo(eq(101), eq("admin_global")))
+                                .thenReturn(dto);
+
+                mockMvc.perform(patch("/api/cargos/101/baja"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.numero").value(101))
+                                .andExpect(jsonPath("$.estado").value("Dado de baja"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_unidad", roles = { "ADMIN_UNIDAD" })
+        void testDarDeBajaCargo_AdminUnidad_Returns403() throws Exception {
+                mockMvc.perform(patch("/api/cargos/101/baja"))
+                                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(username = "docente", roles = { "DOCENTE" })
+        void testDarDeBajaCargo_Docente_Returns403() throws Exception {
+                mockMvc.perform(patch("/api/cargos/101/baja"))
+                                .andExpect(status().isForbidden());
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testDarDeBajaCargo_NotFound_Returns404() throws Exception {
+                when(cargoService.darDeBajaCargo(eq(99999), eq("admin_global")))
+                                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo no encontrado"));
+
+                mockMvc.perform(patch("/api/cargos/99999/baja"))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("Cargo no encontrado"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testDarDeBajaCargo_ActiveDesignacion_Returns400() throws Exception {
+                when(cargoService.darDeBajaCargo(eq(103), eq("admin_global")))
+                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede dar de baja el cargo porque posee una designación vigente"));
+
+                mockMvc.perform(patch("/api/cargos/103/baja"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("No se puede dar de baja el cargo porque posee una designación vigente"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testDarDeBajaCargo_AlreadyDecommissioned_Returns400() throws Exception {
+                when(cargoService.darDeBajaCargo(eq(104), eq("admin_global")))
+                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "El cargo ya se encuentra dado de baja"));
+
+                mockMvc.perform(patch("/api/cargos/104/baja"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("El cargo ya se encuentra dado de baja"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testDarDeBajaCargo_ActiveSubcargos_Returns400() throws Exception {
+                when(cargoService.darDeBajaCargo(eq(105), eq("admin_global")))
+                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede dar de baja el cargo porque posee subcargos activos derivados de una división"));
+
+                mockMvc.perform(patch("/api/cargos/105/baja"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("No se puede dar de baja el cargo porque posee subcargos activos derivados de una división"));
         }
 }
 
