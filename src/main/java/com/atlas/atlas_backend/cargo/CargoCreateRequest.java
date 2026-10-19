@@ -8,6 +8,9 @@ import java.time.LocalDate;
 @Data
 public class CargoCreateRequest {
 
+    public CargoCreateRequest() {
+    }
+
     @NotNull(message = "El código es obligatorio")
     private Long codigo;
 

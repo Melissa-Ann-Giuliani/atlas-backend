@@ -6,6 +6,9 @@ import java.util.List;
 
 @Data
 public class CargoDetailDTO {
+    public CargoDetailDTO() {
+    }
+
     // Header Data
     private Long numero;
     private String categoria;
@@ -18,6 +21,13 @@ public class CargoDetailDTO {
     private LocalDate fechaCreacion;
     private String dedicacion;
     private String caracter;
+
+    // Origin and Academic Unit
+    private Integer origenId;
+    private String origen;
+    private Integer unidadId;
+    private String unidadNombre;
+    private String tipoUnidadNombre;
 
     // Linked Designation
     private Integer designacionNroResolucion;
