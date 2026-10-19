@@ -37,7 +37,7 @@ sequenceDiagram
         Service-->>Controller: throw AccessDeniedException
         Controller-->>Admin: 403 Forbidden
     end
-    Service->>Service: Validar subcargos (2 <= N <= 10, códigos únicos en payload y BD)
+    Service->>Service: Validar subcargos (2 <= N <= 4, códigos únicos en payload y BD)
     Service->>DedicacionRepo: Obtener horas de dedicaciones
     DedicacionRepo-->>Service: Lista de dedicaciones
     Service->>Service: Validar suma(horas subcargos) <= horas(cargo padre)

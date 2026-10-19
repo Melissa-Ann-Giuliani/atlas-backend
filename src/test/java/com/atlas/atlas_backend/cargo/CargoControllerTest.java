@@ -359,4 +359,116 @@ public class CargoControllerTest {
                                 .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON)))
                                 .andExpect(status().isNotFound());
         }
+
+        // =========================================================================
+        // POST /api/cargos/subdividir TESTS (RF-19)
+        // =========================================================================
+
+        private SubdividirCargoRequest buildValidSubdividirRequest() {
+                SubdividirCargoRequest req = new SubdividirCargoRequest();
+                req.setCargoOrigenCodigo(8001L);
+
+                SubcargoItemRequest item1 = new SubcargoItemRequest();
+                item1.setCodigo(8002L);
+                item1.setFechaCreacion(LocalDate.of(2026, 10, 19));
+                item1.setOrigenId(1);
+                item1.setCaracterId(1);
+                item1.setCategoriaId(1);
+                item1.setDedicacionId(1);
+                item1.setUnidadId(1);
+
+                SubcargoItemRequest item2 = new SubcargoItemRequest();
+                item2.setCodigo(8003L);
+                item2.setFechaCreacion(LocalDate.of(2026, 10, 19));
+                item2.setOrigenId(1);
+                item2.setCaracterId(1);
+                item2.setCategoriaId(1);
+                item2.setDedicacionId(1);
+                item2.setUnidadId(1);
+
+                req.setSubcargos(java.util.List.of(item1, item2));
+                return req;
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testSubdividirCargo_Success_Returns201() throws Exception {
+                SubdividirCargoRequest req = buildValidSubdividirRequest();
+
+                CargoDetailDTO sc1 = new CargoDetailDTO();
+                sc1.setNumero(8002L);
+                sc1.setEstado("Libre");
+
+                CargoDetailDTO sc2 = new CargoDetailDTO();
+                sc2.setNumero(8003L);
+                sc2.setEstado("Libre");
+
+                when(cargoService.subdividirCargo(any(SubdividirCargoRequest.class), eq("admin_global")))
+                                .thenReturn(java.util.List.of(sc1, sc2));
+
+                mockMvc.perform(post("/api/cargos/subdividir")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.length()").value(2))
+                                .andExpect(jsonPath("$[0].numero").value(8002))
+                                .andExpect(jsonPath("$[1].numero").value(8003));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testSubdividirCargo_BadRequest_Returns400() throws Exception {
+                SubdividirCargoRequest req = buildValidSubdividirRequest();
+
+                when(cargoService.subdividirCargo(any(SubdividirCargoRequest.class), eq("admin_global")))
+                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "La suma de horas supera al original"));
+
+                mockMvc.perform(post("/api/cargos/subdividir")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("La suma de horas supera al original"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testSubdividirCargo_Conflict_Returns409() throws Exception {
+                SubdividirCargoRequest req = buildValidSubdividirRequest();
+
+                when(cargoService.subdividirCargo(any(SubdividirCargoRequest.class), eq("admin_global")))
+                                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "El código 8002 ya existe"));
+
+                mockMvc.perform(post("/api/cargos/subdividir")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.message").value("El código 8002 ya existe"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_unidad", roles = { "ADMIN_UNIDAD" })
+        void testSubdividirCargo_AccessDenied_Returns403() throws Exception {
+                SubdividirCargoRequest req = buildValidSubdividirRequest();
+
+                when(cargoService.subdividirCargo(any(SubdividirCargoRequest.class), eq("admin_unidad")))
+                                .thenThrow(new AccessDeniedException("No tiene permisos"));
+
+                mockMvc.perform(post("/api/cargos/subdividir")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.message").value("No tiene permisos"));
+        }
+
+        @Test
+        @WithMockUser(username = "docente", roles = { "DOCENTE" })
+        void testSubdividirCargo_UnauthorizedRole_Returns403() throws Exception {
+                SubdividirCargoRequest req = buildValidSubdividirRequest();
+
+                mockMvc.perform(post("/api/cargos/subdividir")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                                .andExpect(status().isForbidden());
+        }
 }
+

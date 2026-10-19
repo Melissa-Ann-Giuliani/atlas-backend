@@ -506,4 +506,143 @@ public class CargoService {
 
         return dto;
     }
+
+    @Transactional(rollbackFor = Exception.class)
+    public List<CargoDetailDTO> subdividirCargo(SubdividirCargoRequest request, String username) throws Exception {
+        if (request == null || request.getCargoOrigenCodigo() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El código del cargo origen es obligatorio");
+        }
+
+        List<SubcargoItemRequest> subcargos = request.getSubcargos();
+        if (subcargos == null || subcargos.size() < 2 || subcargos.size() > 4) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La cantidad de subcargos debe ser entre 2 y 4");
+        }
+
+        // Validate uniqueness within payload
+        java.util.Set<Long> payloadCodigos = new java.util.HashSet<>();
+        for (SubcargoItemRequest item : subcargos) {
+            if (item.getCodigo() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El código de cada subcargo es obligatorio");
+            }
+            if (!payloadCodigos.add(item.getCodigo())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "El código " + item.getCodigo() + " está duplicado en la solicitud");
+            }
+        }
+
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        Integer userUnidadId = null;
+        boolean isUnitAdmin = false;
+        String rolNombre = usuario.getRol().getNombre();
+        if (rolNombre.equalsIgnoreCase("Admin de unidad") ||
+                rolNombre.equalsIgnoreCase("Administrador de Unidad") ||
+                rolNombre.equalsIgnoreCase("ADMIN_UNIDAD") ||
+                rolNombre.equalsIgnoreCase("ADMIN_DE_UNIDAD")) {
+            isUnitAdmin = true;
+            if (usuario.getId() != null) {
+                Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(usuario.getId().intValue());
+                if (adminUnidadOpt.isPresent() && adminUnidadOpt.get().getUnidad() != null) {
+                    userUnidadId = adminUnidadOpt.get().getUnidad().getUnidadId();
+                } else {
+                    throw new AccessDeniedException("La Unidad del Administrador no fue encontrada");
+                }
+            } else {
+                throw new AccessDeniedException("ID de usuario nulo");
+            }
+        }
+
+        Cargo parentCargo = cargoRepository.findByCodigo(request.getCargoOrigenCodigo())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo padre no encontrado"));
+
+        if (isUnitAdmin) {
+            if (userUnidadId == null || parentCargo.getUnidad() == null || !userUnidadId.equals(parentCargo.getUnidad().getUnidadId())) {
+                throw new AccessDeniedException("No tiene permisos para subdividir cargos de otra unidad");
+            }
+        }
+
+        // State validation: Only "Libre" or "Licencia" can be subdivided
+        String parentEstado = parentCargo.getEstado();
+        if (parentEstado == null || (!parentEstado.equalsIgnoreCase("Libre") && !parentEstado.equalsIgnoreCase("Licencia"))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Solo cargos en estado Libre o Licencia pueden subdividirse");
+        }
+
+        int totalSubcargoHoras = 0;
+        List<Cargo> subcargosToSave = new ArrayList<>();
+        List<Categoria> categoriasList = new ArrayList<>();
+        List<Dedicacion> dedicacionesList = new ArrayList<>();
+        List<Caracter> caracteresList = new ArrayList<>();
+
+        for (SubcargoItemRequest item : subcargos) {
+            if (cargoRepository.existsByCodigo(item.getCodigo())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "El código de cargo " + item.getCodigo() + " ya existe");
+            }
+
+            if (isUnitAdmin) {
+                if (userUnidadId == null || item.getUnidadId() == null || !userUnidadId.equals(item.getUnidadId())) {
+                    throw new AccessDeniedException("No tiene permisos para crear subcargos en otra unidad");
+                }
+            }
+
+            Origen origen = origenRepository.findById(Objects.requireNonNull(item.getOrigenId()))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Origen no encontrado"));
+
+            Caracter caracter = caracterRepository.findById(Objects.requireNonNull(item.getCaracterId()))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Carácter no encontrado"));
+
+            Categoria categoria = categoriaRepository.findById(Objects.requireNonNull(item.getCategoriaId()))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Categoría no encontrada"));
+
+            Dedicacion dedicacion = dedicacionRepository.findById(Objects.requireNonNull(item.getDedicacionId()))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dedicación no encontrada"));
+
+            Unidad unidad = unidadRepository.findById(Objects.requireNonNull(item.getUnidadId()))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Unidad no encontrada"));
+
+            totalSubcargoHoras += dedicacion.getDedicacionHoras();
+
+            Cargo subcargo = new Cargo();
+            subcargo.setCodigo(item.getCodigo());
+            subcargo.setFechaCreacion(item.getFechaCreacion());
+            subcargo.setOrigen(origen);
+            subcargo.setCaracter(caracter);
+            subcargo.setCategoria(categoria);
+            subcargo.setDedicacion(dedicacion);
+            subcargo.setUnidad(unidad);
+            subcargo.setEstado("Libre");
+            subcargo.setHorasOcupadas(0);
+            subcargo.setDesignacion(null);
+            subcargo.setCargoOrigenDivision(parentCargo);
+
+            if (item.getPredecesorCodigo() != null) {
+                Cargo predecesor = cargoRepository.findByCodigo(item.getPredecesorCodigo())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo predecesor no encontrado"));
+                subcargo.setCargoPredecesor(predecesor);
+            }
+
+            subcargosToSave.add(subcargo);
+            categoriasList.add(categoria);
+            dedicacionesList.add(dedicacion);
+            caracteresList.add(caracter);
+        }
+
+        int parentHoras = parentCargo.getDedicacion() != null ? parentCargo.getDedicacion().getDedicacionHoras() : 0;
+        if (totalSubcargoHoras > parentHoras) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La suma de horas de los subcargos (" + totalSubcargoHoras + " hs) supera las horas del cargo original (" + parentHoras + " hs)");
+        }
+
+        // Update parent: 100% occupied hours, keep status
+        parentCargo.setHorasOcupadas(parentHoras);
+        cargoRepository.save(Objects.requireNonNull(parentCargo));
+
+        // Persist all subcargos and build response
+        List<CargoDetailDTO> result = new ArrayList<>();
+        for (int i = 0; i < subcargosToSave.size(); i++) {
+            Cargo saved = cargoRepository.save(Objects.requireNonNull(subcargosToSave.get(i)));
+            result.add(buildCargoDetailDTO(saved, categoriasList.get(i), dedicacionesList.get(i), caracteresList.get(i)));
+        }
+
+        return result;
+    }
 }
+

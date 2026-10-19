@@ -93,4 +93,24 @@ public class CargoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
         }
     }
+
+    @PostMapping("/subdividir")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
+    public ResponseEntity<?> subdividirCargo(
+            @Valid @RequestBody SubdividirCargoRequest request,
+            Authentication authentication) {
+        try {
+            java.util.List<CargoDetailDTO> dtos = cargoService.subdividirCargo(request, authentication.getName());
+            return ResponseEntity.status(HttpStatus.CREATED).body(dtos);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
+        } catch (ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+        }
+    }
 }
+

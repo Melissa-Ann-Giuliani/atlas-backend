@@ -118,7 +118,7 @@ The agent will automatically fill in the final Summary table and update the corr
 **Options:**
 
 - [ ] **A)** Validar mínimo 2 subcargos (`size >= 2`). Sin límite superior explícito más allá del límite impuesto por las horas del cargo padre y validaciones estándar de payload.
-- [x] **B)** Validar mínimo 2 y máximo configurable (ej. 10 subcargos).
+- [x] **B)** Validar mínimo 2 y máximo configurable (ej. 4 subcargos).
 
 - [ ] **Other:** ______
 
@@ -151,5 +151,5 @@ The agent will automatically fill in the final Summary table and update the corr
 | R1 | 01    | Risk    | Estado previo requerido en cargo padre | Option A: Permitir subdivisión únicamente si el cargo padre está en estado `"Libre"` o `"Licencia"`. Si está `"Asignado"` u `"Ocupado"` sin licencia, rechazar con 400 Bad Request / 409 Conflict. |
 | R2 | 01    | Risk    | Unidad de subcargos vs unidad del padre | Option B: `ADMIN_GLOBAL` puede asignar subcargos a diferentes unidades; `ADMIN_UNIDAD` solo puede crearlos en su propia unidad asignada. |
 | R3 | 01    | Risk    | Manejo de funciones académicas en la división | Option A: El endpoint solo crea los cargos (`cargos`) con su respectiva información base y vinculación `cargo_origen_division`. Las funciones se gestionan de forma independiente. |
-| M1 | 01    | Minor   | Validación de cantidad mín/máx subcargos | Option B: Validar mínimo 2 y máximo configurable (10 subcargos). |
+| M1 | 01    | Minor   | Validación de cantidad mín/máx subcargos | Option B: Validar mínimo 2 y máximo 4 subcargos. |
 | M2 | 01    | Minor   | Asignación de predecesor vs origen división | Option A: Son independientes: `cargoOrigenDivision` apunta al padre; `cargoPredecesor` es opcional y solo se asigna si se indica explícitamente en el subcargo. |

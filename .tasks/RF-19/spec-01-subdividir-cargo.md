@@ -26,7 +26,7 @@ As an Academic Administrator (Global or Unit Admin), I need to subdivide an exis
    - **Authorization & Unit Scoping (Decision R2)**:
      - `ADMIN_GLOBAL` can subdivide any cargo and assign subcargos to any unit.
      - `ADMIN_UNIDAD` can only subdivide cargos belonging to their assigned academic unit, and all created subcargos must also belong to their assigned academic unit (403 Forbidden otherwise).
-   - **Subcargo Count (Decision M1)**: The payload must contain between 2 and 10 subcargos inclusive ($2 \le \text{subcargos.size()} \le 10$).
+   - **Subcargo Count (Decision M1)**: The payload must contain between 2 and 4 subcargos inclusive ($2 \le \text{subcargos.size()} \le 4$).
    - **Hour Budget Validation (Decision B2)**: The total sum of hours of all generated subcargos cannot exceed the hours of the parent cargo (`sum(subcargo.dedicacion.horas) <= parent.dedicacion.horas`). It is not required to consume 100% of the parent hours.
    - **Unique Cargo Codes**: Each subcargo's `codigo` must be unique and cannot already exist in the database, nor be repeated within the payload (409 Conflict if duplicate).
    - **Parent Linkage & Predecessor (Decision M2)**:
@@ -74,7 +74,7 @@ As an Academic Administrator (Global or Unit Admin), I need to subdivide an exis
 
 ### Scenario 3: Error when cargo count is out of bounds (< 2 or > 4)
 * **Given** an existing parent cargo
-* **When** the administrator sends a subdivision request containing 1 subcargo or more than 10 subcargos
+* **When** the administrator sends a subdivision request containing 1 subcargo or more than 4 subcargos
 * **Then** the system rejects the request with HTTP 400 Bad Request
 * **And** indicates that the number of subcargos must be between 2 and 4.
 
