@@ -24,7 +24,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
-import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -63,6 +62,12 @@ public class CargoServiceTest {
 
     @Mock
     private FuncionRepository funcionRepository;
+
+    @org.springframework.lang.NonNull
+    private static Cargo anyCargo() {
+        Cargo c = any(Cargo.class);
+        return c != null ? c : new Cargo();
+    }
 
     @InjectMocks
     private CargoService cargoService;
@@ -154,7 +159,7 @@ public class CargoServiceTest {
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         when(cargoRepository.existsByCodigo(5001L)).thenReturn(false);
         mockCatalogueLookups();
-        when(cargoRepository.save(Objects.requireNonNull(any(Cargo.class))))
+        when(cargoRepository.save(anyCargo()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         CargoDetailDTO result = cargoService.crearCargo(validRequest, "admin_global");
@@ -171,7 +176,7 @@ public class CargoServiceTest {
         assertEquals("Facultad de Ingeniería", result.getUnidadNombre());
         assertEquals("Facultad", result.getTipoUnidadNombre());
         assertNull(result.getCargoPredecesor());
-        verify(cargoRepository, times(1)).save(Objects.requireNonNull(any(Cargo.class)));
+        verify(cargoRepository, times(1)).save(anyCargo());
     }
 
     @Test
@@ -188,8 +193,8 @@ public class CargoServiceTest {
         when(cargoRepository.existsByCodigo(5001L)).thenReturn(false);
         mockCatalogueLookups();
         when(cargoRepository.findByCodigo(4001L)).thenReturn(Optional.of(predecesor));
-        when(cargoRepository.save(Objects.requireNonNull(any(Cargo.class))))
-                .thenAnswer(invocation -> Objects.requireNonNull(invocation.getArgument(0)));
+        when(cargoRepository.save(anyCargo()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         CargoDetailDTO result = cargoService.crearCargo(validRequest, "admin_global");
 
@@ -206,8 +211,8 @@ public class CargoServiceTest {
         when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
         when(cargoRepository.existsByCodigo(5001L)).thenReturn(false);
         mockCatalogueLookups();
-        when(cargoRepository.save(Objects.requireNonNull(any(Cargo.class))))
-                .thenAnswer(invocation -> Objects.requireNonNull(invocation.getArgument(0)));
+        when(cargoRepository.save(anyCargo()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         CargoDetailDTO result = cargoService.crearCargo(validRequest, "admin_unidad");
 
@@ -225,7 +230,7 @@ public class CargoServiceTest {
 
         assertThrows(AccessDeniedException.class, () -> cargoService.crearCargo(validRequest, "admin_unidad"));
 
-        verify(cargoRepository, never()).save(Objects.requireNonNull(any(Cargo.class)));
+        verify(cargoRepository, never()).save(anyCargo());
     }
 
     @Test
@@ -238,7 +243,7 @@ public class CargoServiceTest {
 
         assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
         assertTrue(exception.getMessage().contains("El número de cargo ya existe"));
-        verify(cargoRepository, never()).save(Objects.requireNonNull(any(Cargo.class)));
+        verify(cargoRepository, never()).save(anyCargo());
     }
 
     @Test
@@ -290,7 +295,7 @@ public class CargoServiceTest {
         when(cargoRepository.findById(10)).thenReturn(Optional.of(existingCargo));
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         mockCatalogueLookupsForUpdate();
-        when(cargoRepository.save(Objects.requireNonNull(any(Cargo.class))))
+        when(cargoRepository.save(anyCargo()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         CargoDetailDTO result = cargoService.modificarCargo(10, updateRequest, "admin_global");
@@ -307,7 +312,7 @@ public class CargoServiceTest {
         assertEquals(10, result.getUnidadId());
         assertEquals("Facultad de Ingeniería", result.getUnidadNombre());
         assertEquals("Facultad", result.getTipoUnidadNombre());
-        verify(cargoRepository, times(1)).save(any(Cargo.class));
+        verify(cargoRepository, times(1)).save(anyCargo());
     }
 
     @Test
@@ -337,7 +342,7 @@ public class CargoServiceTest {
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         mockCatalogueLookupsForUpdate();
         when(cargoRepository.findByCodigo(4001L)).thenReturn(Optional.of(predecesor));
-        when(cargoRepository.save(Objects.requireNonNull(any(Cargo.class))))
+        when(cargoRepository.save(anyCargo()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         CargoDetailDTO result = cargoService.modificarCargo(10, updateRequest, "admin_global");
@@ -375,7 +380,7 @@ public class CargoServiceTest {
         when(cargoRepository.findById(10)).thenReturn(Optional.of(existingCargo));
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         mockCatalogueLookupsForUpdate();
-        when(cargoRepository.save(Objects.requireNonNull(any(Cargo.class))))
+        when(cargoRepository.save(anyCargo()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         CargoDetailDTO result = cargoService.modificarCargo(10, updateRequest, "admin_global");
@@ -405,7 +410,7 @@ public class CargoServiceTest {
         when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
         when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
         mockCatalogueLookupsForUpdate();
-        when(cargoRepository.save(Objects.requireNonNull(any(Cargo.class))))
+        when(cargoRepository.save(anyCargo()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         CargoDetailDTO result = cargoService.modificarCargo(10, updateRequest, "admin_unidad");
@@ -437,7 +442,7 @@ public class CargoServiceTest {
 
         assertThrows(AccessDeniedException.class, () -> cargoService.modificarCargo(10, updateRequest, "admin_unidad"));
 
-        verify(cargoRepository, never()).save(Objects.requireNonNull(any(Cargo.class)));
+        verify(cargoRepository, never()).save(anyCargo());
     }
 
     @Test
@@ -473,7 +478,7 @@ public class CargoServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         assertTrue(exception.getMessage()
                 .contains("Las horas de la dedicación no pueden ser inferiores a las horas ocupadas"));
-        verify(cargoRepository, never()).save(Objects.requireNonNull(any(Cargo.class)));
+        verify(cargoRepository, never()).save(anyCargo());
     }
 
     @Test
@@ -501,7 +506,7 @@ public class CargoServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
         assertTrue(exception.getMessage().contains("Un cargo no puede ser predecesor de sí mismo"));
-        verify(cargoRepository, never()).save(Objects.requireNonNull(any(Cargo.class)));
+        verify(cargoRepository, never()).save(anyCargo());
     }
 
     @Test
