@@ -56,7 +56,7 @@ public class UsuarioControllerTest {
                 mockMvc.perform(post("/api/usuarios/42/reset-password")
                                 .contentType(MediaType.APPLICATION_JSON_VALUE))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.message").value("Password reset successfully for user 42."));
+                                .andExpect(jsonPath("$.message").value("Contraseña generada con éxito para usuario 42."));
         }
 
         @Test
@@ -138,7 +138,7 @@ public class UsuarioControllerTest {
                 mockMvc.perform(get("/api/usuarios/generar-contrasenia"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.password").isString())
-                                .andExpect(jsonPath("$.password.length()").value(12));
+                                .andExpect(jsonPath("$.password").value(java.util.Objects.requireNonNull(org.hamcrest.Matchers.hasLength(12))));
         }
 
         @Test

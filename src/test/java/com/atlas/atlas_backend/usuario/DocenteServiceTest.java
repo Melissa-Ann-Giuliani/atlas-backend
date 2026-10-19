@@ -10,7 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDate;
 import java.util.Optional;
-import java.util.Objects;
+import org.springframework.lang.NonNull;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,6 +38,12 @@ public class DocenteServiceTest {
 
     @InjectMocks
     private DocenteService docenteService;
+
+    @NonNull
+    private static Docente anyDocente() {
+        Docente d = any(Docente.class);
+        return d != null ? d : new Docente();
+    }
 
     private DocenteRequest request;
 
@@ -74,7 +80,7 @@ public class DocenteServiceTest {
         savedUser.setEmailInstitucional("docente@test.com");
         savedUser.setTipoDni("DNI");
         savedUser.setAntigPrevia(5);
-        when(docenteRepository.save(Objects.requireNonNull(any(Docente.class)))).thenReturn(savedUser);
+        when(docenteRepository.save(anyDocente())).thenReturn(savedUser);
 
         StringBuilder warningMessage = new StringBuilder();
         Docente result = docenteService.registrarDocente(request, warningMessage);
@@ -103,7 +109,7 @@ public class DocenteServiceTest {
 
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
 
-        when(docenteRepository.save(Objects.requireNonNull(any(Docente.class)))).thenAnswer(invocation -> {
+        when(docenteRepository.save(anyDocente())).thenAnswer(invocation -> {
             return invocation.getArgument(0);
         });
 
@@ -130,7 +136,7 @@ public class DocenteServiceTest {
 
         when(passwordEncoder.encode(anyString())).thenReturn("hashed_password");
 
-        when(docenteRepository.save(Objects.requireNonNull(any(Docente.class)))).thenAnswer(invocation -> {
+        when(docenteRepository.save(anyDocente())).thenAnswer(invocation -> {
             return invocation.getArgument(0);
         });
 
@@ -150,7 +156,7 @@ public class DocenteServiceTest {
         });
 
         assertEquals("Username ya existe", exception.getMessage());
-        verify(docenteRepository, never()).save(Objects.requireNonNull(any(Docente.class)));
+        verify(docenteRepository, never()).save(anyDocente());
     }
 
     @Test
@@ -169,7 +175,7 @@ public class DocenteServiceTest {
 
         Docente savedUser = new Docente();
         savedUser.setUsername("docente_test");
-        when(docenteRepository.save(Objects.requireNonNull(any(Docente.class)))).thenReturn(savedUser);
+        when(docenteRepository.save(anyDocente())).thenReturn(savedUser);
 
         doThrow(new RuntimeException("SMTP Error")).when(emailService).sendWelcomeDocente(any(), anyString());
 

@@ -11,8 +11,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Objects;
 import java.util.Optional;
+import org.springframework.lang.NonNull;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -43,6 +43,12 @@ public class AdminUnidadServiceTest {
     @InjectMocks
     private AdminUnidadService adminUnidadService;
 
+    @NonNull
+    private static AdminUnidad anyAdminUnidad() {
+        AdminUnidad a = any(AdminUnidad.class);
+        return a != null ? a : new AdminUnidad();
+    }
+
     private AdminUnidadRequest request;
 
     @BeforeEach
@@ -62,8 +68,8 @@ public class AdminUnidadServiceTest {
         when(usuarioRepository.existsByCorreo(anyString())).thenReturn(false);
 
         Rol rol = new Rol();
-        rol.setNombre("ADMIN_UNIDAD");
-        when(rolRepository.findByNombre("ADMIN_UNIDAD")).thenReturn(Optional.of(rol));
+        rol.setNombre("Administrador de Unidad");
+        when(rolRepository.findByNombre("Administrador de Unidad")).thenReturn(Optional.of(rol));
 
         Unidad unidad = new Unidad();
         unidad.setUnidadId(1);
@@ -73,7 +79,7 @@ public class AdminUnidadServiceTest {
 
         AdminUnidad savedUser = new AdminUnidad();
         savedUser.setUsername("admin_unidad_test");
-        when(adminUnidadRepository.save(Objects.requireNonNull(any(AdminUnidad.class)))).thenReturn(savedUser);
+        when(adminUnidadRepository.save(anyAdminUnidad())).thenReturn(savedUser);
 
         StringBuilder warningMessage = new StringBuilder();
         AdminUnidad result = adminUnidadService.registrarAdminUnidad(request, warningMessage);
@@ -90,8 +96,8 @@ public class AdminUnidadServiceTest {
         when(usuarioRepository.existsByCorreo(anyString())).thenReturn(false);
 
         Rol rol = new Rol();
-        rol.setNombre("ADMIN_UNIDAD");
-        when(rolRepository.findByNombre("ADMIN_UNIDAD")).thenReturn(Optional.of(rol));
+        rol.setNombre("Administrador de Unidad");
+        when(rolRepository.findByNombre("Administrador de Unidad")).thenReturn(Optional.of(rol));
 
         Unidad unidad = new Unidad();
         unidad.setUnidadId(1);
@@ -101,7 +107,7 @@ public class AdminUnidadServiceTest {
 
         AdminUnidad savedUser = new AdminUnidad();
         savedUser.setUsername("admin_unidad_test");
-        when(adminUnidadRepository.save(Objects.requireNonNull(any(AdminUnidad.class)))).thenReturn(savedUser);
+        when(adminUnidadRepository.save(anyAdminUnidad())).thenReturn(savedUser);
 
         doThrow(new RuntimeException("SMTP Error")).when(emailService).sendWelcomeAdminUnidad(any(), anyString());
 
@@ -121,7 +127,7 @@ public class AdminUnidadServiceTest {
         });
 
         assertEquals("Username ya existe", exception.getMessage());
-        verify(adminUnidadRepository, never()).save(Objects.requireNonNull(any(AdminUnidad.class)));
+        verify(adminUnidadRepository, never()).save(anyAdminUnidad());
     }
 
     @Test
@@ -134,7 +140,7 @@ public class AdminUnidadServiceTest {
         });
 
         assertEquals("Correo ya existe", exception.getMessage());
-        verify(adminUnidadRepository, never()).save(Objects.requireNonNull(any(AdminUnidad.class)));
+        verify(adminUnidadRepository, never()).save(anyAdminUnidad());
     }
 
     @Test
@@ -143,8 +149,8 @@ public class AdminUnidadServiceTest {
         when(usuarioRepository.existsByCorreo(anyString())).thenReturn(false);
 
         Rol rol = new Rol();
-        rol.setNombre("ADMIN_UNIDAD");
-        when(rolRepository.findByNombre("ADMIN_UNIDAD")).thenReturn(Optional.of(rol));
+        rol.setNombre("Administrador de Unidad");
+        when(rolRepository.findByNombre("Administrador de Unidad")).thenReturn(Optional.of(rol));
 
         when(unidadRepository.findById(1)).thenReturn(Optional.empty());
 
@@ -153,6 +159,6 @@ public class AdminUnidadServiceTest {
         });
 
         assertEquals("Unidad no encontrada", exception.getMessage());
-        verify(adminUnidadRepository, never()).save(Objects.requireNonNull(any(AdminUnidad.class)));
+        verify(adminUnidadRepository, never()).save(anyAdminUnidad());
     }
 }
