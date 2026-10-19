@@ -128,6 +128,7 @@ public class CargoServiceTest {
         testDedicacion = new Dedicacion();
         testDedicacion.setDedicacionId(1);
         testDedicacion.setDedicacionNombre("Exclusiva");
+        testDedicacion.setDedicacionHoras(40);
 
         validRequest = new CargoCreateRequest();
         validRequest.setCodigo(5001L);
@@ -673,5 +674,258 @@ public class CargoServiceTest {
                 () -> cargoService.getCargoDetails(10, "admin_unidad"));
 
         assertTrue(exception.getMessage().contains("No tiene permisos para ver este cargo"));
+    }
+
+    // =========================================================================
+    // SUBDIVIDIR CARGO TESTS (RF-19)
+    // =========================================================================
+
+    private SubdividirCargoRequest buildValidSubdivisionRequest() {
+        SubdividirCargoRequest req = new SubdividirCargoRequest();
+        req.setCargoOrigenCodigo(8001L);
+
+        SubcargoItemRequest item1 = new SubcargoItemRequest();
+        item1.setCodigo(8002L);
+        item1.setFechaCreacion(LocalDate.of(2026, 10, 19));
+        item1.setOrigenId(1);
+        item1.setCaracterId(1);
+        item1.setCategoriaId(1);
+        item1.setDedicacionId(1); // 20 hs
+        item1.setUnidadId(10);
+
+        SubcargoItemRequest item2 = new SubcargoItemRequest();
+        item2.setCodigo(8003L);
+        item2.setFechaCreacion(LocalDate.of(2026, 10, 19));
+        item2.setOrigenId(1);
+        item2.setCaracterId(1);
+        item2.setCategoriaId(1);
+        item2.setDedicacionId(1); // 20 hs
+        item2.setUnidadId(10);
+
+        req.setSubcargos(java.util.List.of(item1, item2));
+        return req;
+    }
+
+    @Test
+    void subdividirCargo_Success_HappyPath() throws Exception {
+        SubdividirCargoRequest req = buildValidSubdivisionRequest();
+
+        Dedicacion dedParent = new Dedicacion();
+        dedParent.setDedicacionId(2);
+        dedParent.setDedicacionNombre("Exclusiva");
+        dedParent.setDedicacionHoras(40);
+
+        Cargo parent = new Cargo();
+        parent.setId(100);
+        parent.setCodigo(8001L);
+        parent.setEstado("Licencia");
+        parent.setHorasOcupadas(0);
+        parent.setDedicacion(dedParent);
+        parent.setUnidad(testUnidad);
+
+        Dedicacion dedSub = new Dedicacion();
+        dedSub.setDedicacionId(1);
+        dedSub.setDedicacionNombre("Semiexclusiva");
+        dedSub.setDedicacionHoras(20);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(cargoRepository.findByCodigo(8001L)).thenReturn(Optional.of(parent));
+        when(cargoRepository.existsByCodigo(8002L)).thenReturn(false);
+        when(cargoRepository.existsByCodigo(8003L)).thenReturn(false);
+
+        when(origenRepository.findById(1)).thenReturn(Optional.of(testOrigen));
+        when(caracterRepository.findById(1)).thenReturn(Optional.of(testCaracter));
+        when(categoriaRepository.findById(1)).thenReturn(Optional.of(testCategoria));
+        when(dedicacionRepository.findById(1)).thenReturn(Optional.of(dedSub));
+        when(unidadRepository.findById(10)).thenReturn(Optional.of(testUnidad));
+
+        when(cargoRepository.save(anyCargo())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        java.util.List<CargoDetailDTO> result = cargoService.subdividirCargo(req, "admin_global");
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals(8002L, result.get(0).getNumero());
+        assertEquals(8003L, result.get(1).getNumero());
+        assertEquals("Libre", result.get(0).getEstado());
+        assertEquals("Libre", result.get(1).getEstado());
+
+        // Verify parent hours updated to 100% (40)
+        assertEquals(40, parent.getHorasOcupadas());
+        assertEquals("Licencia", parent.getEstado());
+        verify(cargoRepository, times(3)).save(anyCargo()); // 1 parent + 2 subcargos
+    }
+
+    @Test
+    void subdividirCargo_HoursExceeded_ThrowsBadRequest() {
+        SubdividirCargoRequest req = buildValidSubdivisionRequest();
+
+        Dedicacion dedParent = new Dedicacion();
+        dedParent.setDedicacionId(2);
+        dedParent.setDedicacionNombre("Semiexclusiva");
+        dedParent.setDedicacionHoras(20);
+
+        Cargo parent = new Cargo();
+        parent.setId(100);
+        parent.setCodigo(8001L);
+        parent.setEstado("Libre");
+        parent.setHorasOcupadas(0);
+        parent.setDedicacion(dedParent);
+        parent.setUnidad(testUnidad);
+
+        Dedicacion dedSub = new Dedicacion();
+        dedSub.setDedicacionId(1);
+        dedSub.setDedicacionNombre("Semiexclusiva");
+        dedSub.setDedicacionHoras(20); // Each subcargo is 20 -> sum 40 > parent 20
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(cargoRepository.findByCodigo(8001L)).thenReturn(Optional.of(parent));
+        when(cargoRepository.existsByCodigo(anyLong())).thenReturn(false);
+
+        when(origenRepository.findById(1)).thenReturn(Optional.of(testOrigen));
+        when(caracterRepository.findById(1)).thenReturn(Optional.of(testCaracter));
+        when(categoriaRepository.findById(1)).thenReturn(Optional.of(testCategoria));
+        when(dedicacionRepository.findById(1)).thenReturn(Optional.of(dedSub));
+        when(unidadRepository.findById(10)).thenReturn(Optional.of(testUnidad));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> cargoService.subdividirCargo(req, "admin_global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertTrue(ex.getMessage().contains("supera las horas del cargo original"));
+        verify(cargoRepository, never()).save(anyCargo());
+    }
+
+    @Test
+    void subdividirCargo_InvalidParentState_ThrowsBadRequest() {
+        SubdividirCargoRequest req = buildValidSubdivisionRequest();
+
+        Cargo parent = new Cargo();
+        parent.setId(100);
+        parent.setCodigo(8001L);
+        parent.setEstado("Asignado"); // Not Libre or Licencia
+        parent.setUnidad(testUnidad);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(cargoRepository.findByCodigo(8001L)).thenReturn(Optional.of(parent));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> cargoService.subdividirCargo(req, "admin_global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertTrue(ex.getMessage().contains("Solo cargos en estado Libre o Licencia"));
+    }
+
+    @Test
+    void subdividirCargo_SubcargoCodeAlreadyExists_ThrowsConflict() {
+        SubdividirCargoRequest req = buildValidSubdivisionRequest();
+
+        Cargo parent = new Cargo();
+        parent.setId(100);
+        parent.setCodigo(8001L);
+        parent.setEstado("Libre");
+        parent.setUnidad(testUnidad);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(cargoRepository.findByCodigo(8001L)).thenReturn(Optional.of(parent));
+        when(cargoRepository.existsByCodigo(8002L)).thenReturn(true);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> cargoService.subdividirCargo(req, "admin_global"));
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        assertTrue(ex.getMessage().contains("ya existe"));
+    }
+
+    @Test
+    void subdividirCargo_DuplicateCodeInPayload_ThrowsConflict() {
+        SubdividirCargoRequest req = buildValidSubdivisionRequest();
+        req.getSubcargos().get(1).setCodigo(8002L); // Same as item 1
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> cargoService.subdividirCargo(req, "admin_global"));
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        assertTrue(ex.getMessage().contains("duplicado en la solicitud"));
+    }
+
+    @Test
+    void subdividirCargo_SubcargosOutOfBounds_ThrowsBadRequest() {
+        SubdividirCargoRequest req = new SubdividirCargoRequest();
+        req.setCargoOrigenCodigo(8001L);
+        req.setSubcargos(java.util.List.of(new SubcargoItemRequest())); // only 1
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> cargoService.subdividirCargo(req, "admin_global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertTrue(ex.getMessage().contains("entre 2 y 4"));
+    }
+
+    @Test
+    void subdividirCargo_ParentNotFound_ThrowsNotFound() {
+        SubdividirCargoRequest req = buildValidSubdivisionRequest();
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(cargoRepository.findByCodigo(8001L)).thenReturn(Optional.empty());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> cargoService.subdividirCargo(req, "admin_global"));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertTrue(ex.getMessage().contains("Cargo padre no encontrado"));
+    }
+
+    @Test
+    void subdividirCargo_AdminUnidad_CrossUnitParent_ThrowsForbidden() {
+        SubdividirCargoRequest req = buildValidSubdivisionRequest();
+
+        Unidad otherUnidad = new Unidad();
+        otherUnidad.setUnidadId(99);
+
+        Cargo parent = new Cargo();
+        parent.setId(100);
+        parent.setCodigo(8001L);
+        parent.setEstado("Libre");
+        parent.setUnidad(otherUnidad); // Different unit
+
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad)); // unit 10
+        when(cargoRepository.findByCodigo(8001L)).thenReturn(Optional.of(parent));
+
+        assertThrows(AccessDeniedException.class,
+                () -> cargoService.subdividirCargo(req, "admin_unidad"));
+    }
+
+    @Test
+    void subdividirCargo_AdminUnidad_CrossUnitSubcargo_ThrowsForbidden() {
+        SubdividirCargoRequest req = buildValidSubdivisionRequest();
+        req.getSubcargos().get(1).setUnidadId(99); // Cross unit subcargo
+
+        Cargo parent = new Cargo();
+        parent.setId(100);
+        parent.setCodigo(8001L);
+        parent.setEstado("Libre");
+        parent.setUnidad(testUnidad); // Unit 10 matches
+
+        Dedicacion dedSub = new Dedicacion();
+        dedSub.setDedicacionId(1);
+        dedSub.setDedicacionNombre("Semiexclusiva");
+        dedSub.setDedicacionHoras(20);
+
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad)); // unit 10
+        when(cargoRepository.findByCodigo(8001L)).thenReturn(Optional.of(parent));
+        when(cargoRepository.existsByCodigo(anyLong())).thenReturn(false);
+
+        // First item passes permission check and loads catalogs
+        when(origenRepository.findById(1)).thenReturn(Optional.of(testOrigen));
+        when(caracterRepository.findById(1)).thenReturn(Optional.of(testCaracter));
+        when(categoriaRepository.findById(1)).thenReturn(Optional.of(testCategoria));
+        when(dedicacionRepository.findById(1)).thenReturn(Optional.of(dedSub));
+        when(unidadRepository.findById(10)).thenReturn(Optional.of(testUnidad));
+
+        assertThrows(AccessDeniedException.class,
+                () -> cargoService.subdividirCargo(req, "admin_unidad"));
     }
 }
