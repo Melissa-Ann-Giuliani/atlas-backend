@@ -13,6 +13,7 @@ import com.atlas.atlas_backend.unidad.TipoUnidad;
 import com.atlas.atlas_backend.unidad.Unidad;
 import com.atlas.atlas_backend.unidad.UnidadRepository;
 import com.atlas.atlas_backend.usuario.*;
+import com.atlas.atlas_backend.designacion.Designacion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -927,5 +928,195 @@ public class CargoServiceTest {
 
         assertThrows(AccessDeniedException.class,
                 () -> cargoService.subdividirCargo(req, "admin_unidad"));
+    }
+
+    // --- RF-20: Baja de Cargo Tests ---
+
+    @Test
+    void darDeBajaCargo_Scenario1_Success_StandAloneCargo_ReturnsUpdatedCargo() throws Exception {
+        Cargo cargo = new Cargo();
+        cargo.setId(101);
+        cargo.setCodigo(5001L);
+        cargo.setEstado("Libre");
+        cargo.setHorasOcupadas(40);
+        cargo.setCategoria(testCategoria);
+        cargo.setDedicacion(testDedicacion);
+        cargo.setCaracter(testCaracter);
+        cargo.setOrigen(testOrigen);
+        cargo.setUnidad(testUnidad);
+        cargo.setDesignacion(null);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(cargoRepository.findById(101)).thenReturn(Optional.of(cargo));
+        when(cargoRepository.findByCargoOrigenDivisionId(101)).thenReturn(java.util.Collections.emptyList());
+        when(cargoRepository.save(anyCargo())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(funcionRepository.findByCargoIdIn(anyList())).thenReturn(java.util.Collections.emptyList());
+        when(cargoRepository.findByCargoPredecesorId(101)).thenReturn(java.util.Collections.emptyList());
+
+        CargoDetailDTO result = cargoService.darDeBajaCargo(101, "admin_global");
+
+        assertNotNull(result);
+        assertEquals("Dado de baja", result.getEstado());
+        assertEquals("Dado de baja", cargo.getEstado());
+        assertEquals(0, cargo.getHorasOcupadas());
+        verify(cargoRepository, times(1)).save(cargo);
+    }
+
+    @Test
+    void darDeBajaCargo_Scenario2_Success_FinalizedDesignation_ReturnsUpdatedCargo() throws Exception {
+        Designacion des = new Designacion();
+        des.setDesignacionId(1);
+        des.setDesignacionNumeroResolucion(1234);
+        des.setDesignacionEstadoActual("Finalizada");
+        des.setDesignacionFechaInicio(LocalDate.now().minusMonths(6));
+        des.setDesignacionFechaFin(LocalDate.now().minusDays(1));
+
+        Cargo cargo = new Cargo();
+        cargo.setId(102);
+        cargo.setCodigo(5002L);
+        cargo.setEstado("Libre");
+        cargo.setHorasOcupadas(0);
+        cargo.setCategoria(testCategoria);
+        cargo.setDedicacion(testDedicacion);
+        cargo.setCaracter(testCaracter);
+        cargo.setOrigen(testOrigen);
+        cargo.setUnidad(testUnidad);
+        cargo.setDesignacion(des);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(cargoRepository.findById(102)).thenReturn(Optional.of(cargo));
+        when(cargoRepository.findByCargoOrigenDivisionId(102)).thenReturn(java.util.Collections.emptyList());
+        when(cargoRepository.save(anyCargo())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(funcionRepository.findByCargoIdIn(anyList())).thenReturn(java.util.Collections.emptyList());
+        when(cargoRepository.findByCargoPredecesorId(102)).thenReturn(java.util.Collections.emptyList());
+
+        CargoDetailDTO result = cargoService.darDeBajaCargo(102, "admin_global");
+
+        assertNotNull(result);
+        assertEquals("Dado de baja", result.getEstado());
+        assertEquals("Dado de baja", cargo.getEstado());
+        verify(cargoRepository, times(1)).save(cargo);
+    }
+
+    @Test
+    void darDeBajaCargo_Scenario3_Error_ActiveDesignation_ThrowsBadRequest() {
+        Designacion des = new Designacion();
+        des.setDesignacionId(1);
+        des.setDesignacionNumeroResolucion(1234);
+        des.setDesignacionEstadoActual("Activa");
+        des.setDesignacionFechaInicio(LocalDate.now().minusMonths(1));
+        des.setDesignacionFechaFin(LocalDate.now().plusMonths(5));
+
+        Cargo cargo = new Cargo();
+        cargo.setId(103);
+        cargo.setCodigo(5003L);
+        cargo.setEstado("Asignado");
+        cargo.setDesignacion(des);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(cargoRepository.findById(103)).thenReturn(Optional.of(cargo));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> cargoService.darDeBajaCargo(103, "admin_global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertTrue(ex.getMessage().contains("designación vigente"));
+        verify(cargoRepository, never()).save(anyCargo());
+    }
+
+    @Test
+    void darDeBajaCargo_Scenario4_Error_CargoNotFound_ThrowsNotFound() {
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(cargoRepository.findById(99999)).thenReturn(Optional.empty());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> cargoService.darDeBajaCargo(99999, "admin_global"));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void darDeBajaCargo_Scenario5_Error_AlreadyDecommissioned_ThrowsBadRequest() {
+        Cargo cargo = new Cargo();
+        cargo.setId(104);
+        cargo.setCodigo(5004L);
+        cargo.setEstado("Dado de baja");
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(cargoRepository.findById(104)).thenReturn(Optional.of(cargo));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> cargoService.darDeBajaCargo(104, "admin_global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertTrue(ex.getMessage().contains("ya se encuentra dado de baja"));
+        verify(cargoRepository, never()).save(anyCargo());
+    }
+
+    @Test
+    void darDeBajaCargo_Scenario6_Error_AdminUnidad_ThrowsForbidden() {
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+
+        assertThrows(AccessDeniedException.class,
+                () -> cargoService.darDeBajaCargo(101, "admin_unidad"));
+
+        verify(cargoRepository, never()).findById(anyInt());
+    }
+
+    @Test
+    void darDeBajaCargo_Scenario7_Error_ActiveSubcargosFromDivision_ThrowsBadRequest() {
+        Cargo parent = new Cargo();
+        parent.setId(105);
+        parent.setCodigo(5005L);
+        parent.setEstado("Libre");
+
+        Cargo subcargo = new Cargo();
+        subcargo.setId(106);
+        subcargo.setCodigo(5006L);
+        subcargo.setEstado("Libre");
+        subcargo.setCargoOrigenDivision(parent);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(cargoRepository.findById(105)).thenReturn(Optional.of(parent));
+        when(cargoRepository.findByCargoOrigenDivisionId(105)).thenReturn(java.util.List.of(subcargo));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> cargoService.darDeBajaCargo(105, "admin_global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertTrue(ex.getMessage().contains("posee subcargos activos"));
+        verify(cargoRepository, never()).save(anyCargo());
+    }
+
+    @Test
+    void darDeBajaCargo_SubcargosFromDivisionDecommissioned_Success() throws Exception {
+        Cargo parent = new Cargo();
+        parent.setId(105);
+        parent.setCodigo(5005L);
+        parent.setEstado("Libre");
+        parent.setCategoria(testCategoria);
+        parent.setDedicacion(testDedicacion);
+        parent.setCaracter(testCaracter);
+        parent.setOrigen(testOrigen);
+        parent.setUnidad(testUnidad);
+
+        Cargo subcargo = new Cargo();
+        subcargo.setId(106);
+        subcargo.setCodigo(5006L);
+        subcargo.setEstado("Dado de baja");
+        subcargo.setCargoOrigenDivision(parent);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(cargoRepository.findById(105)).thenReturn(Optional.of(parent));
+        when(cargoRepository.findByCargoOrigenDivisionId(105)).thenReturn(java.util.List.of(subcargo));
+        when(cargoRepository.save(anyCargo())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(funcionRepository.findByCargoIdIn(anyList())).thenReturn(java.util.Collections.emptyList());
+        when(cargoRepository.findByCargoPredecesorId(105)).thenReturn(java.util.Collections.emptyList());
+
+        CargoDetailDTO result = cargoService.darDeBajaCargo(105, "admin_global");
+
+        assertNotNull(result);
+        assertEquals("Dado de baja", result.getEstado());
+        assertEquals(0, parent.getHorasOcupadas());
     }
 }

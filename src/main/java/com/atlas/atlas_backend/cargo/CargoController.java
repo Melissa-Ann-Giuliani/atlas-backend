@@ -112,5 +112,24 @@ public class CargoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
         }
     }
+
+    @PatchMapping("/{id}/baja")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL')")
+    public ResponseEntity<?> darDeBajaCargo(
+            @PathVariable @NonNull Integer id,
+            Authentication authentication) {
+        try {
+            CargoDetailDTO dto = cargoService.darDeBajaCargo(id, authentication.getName());
+            return ResponseEntity.ok(dto);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
+        } catch (ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+        }
+    }
 }
 
