@@ -634,8 +634,8 @@ INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fec
 -- Materias
 INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, materia_plan_estudio, unidad_id) VALUES
 ('Matemática I', 80, '1°', 'Anual', 2023, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
-('Fisica I', 60, '1°', 'Cuatrimestral', 2023, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Física, Química y Tec.' LIMIT 1)),
-('Historia del Arte', 40, '2°', 'Cuatrimestral', 2020, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Artes Visuales' LIMIT 1)),
+('Fisica I', 60, '1°', 'Primer Semestre', 2023, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Física, Química y Tec.' LIMIT 1)),
+('Historia del Arte', 40, '2°', 'Segundo Semestre', 2020, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Artes Visuales' LIMIT 1)),
 ('Coro Universitario', 120, '1°', 'Anual', 2022, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Creación. Art. Coral' LIMIT 1));
 
 -- Cargos 
