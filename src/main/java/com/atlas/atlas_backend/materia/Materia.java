@@ -20,11 +20,14 @@ public class Materia {
     @Column(name = "materia_horas", nullable = false)
     private Integer horas;
 
-    @Column(name = "materia_anio", nullable = false)
-    private Integer anio;
+    @Column(name = "materia_anio", nullable = false, length = 10)
+    private String anio;
 
     @Column(name = "materia_despliegue", nullable = false, length = 50)
     private String despliegue;
+
+    @Column(name = "materia_plan_estudio", nullable = false)
+    private Integer planEstudio;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unidad_id", nullable = false)

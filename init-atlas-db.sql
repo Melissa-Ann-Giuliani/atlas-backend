@@ -134,8 +134,9 @@ CREATE TABLE IF NOT EXISTS public.materias
     materia_id serial NOT NULL,
     materia_nombre character varying(50) NOT NULL,
     materia_horas integer NOT NULL,
-    materia_anio integer NOT NULL,
+    materia_anio character varying(10) NOT NULL,
     materia_despliegue character varying(50) NOT NULL,
+    materia_plan_estudio integer NOT NULL,
     unidad_id integer NOT NULL,
     PRIMARY KEY (materia_id)
 );
@@ -631,11 +632,11 @@ INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fec
 (1005, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'sfernandez'));
 
 -- Materias
-INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, unidad_id) VALUES
-('Matemática I', 80, 1, 'Anual', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
-('Fisica I', 60, 1, 'Cuatrimestral', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Física, Química y Tec.' LIMIT 1)),
-('Historia del Arte', 40, 2, 'Cuatrimestral', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Artes Visuales' LIMIT 1)),
-('Coro Universitario', 120, 1, 'Anual', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Creación. Art. Coral' LIMIT 1));
+INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, materia_plan_estudio, unidad_id) VALUES
+('Matemática I', 80, '1°', 'Anual', 2023, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
+('Fisica I', 60, '1°', 'Cuatrimestral', 2023, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Física, Química y Tec.' LIMIT 1)),
+('Historia del Arte', 40, '2°', 'Cuatrimestral', 2020, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Artes Visuales' LIMIT 1)),
+('Coro Universitario', 120, '1°', 'Anual', 2022, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Creación. Art. Coral' LIMIT 1));
 
 -- Cargos 
 -- jperez: Titular, Exclusiva, Matemática
@@ -801,8 +802,8 @@ INSERT INTO public.licencias (licencia_nro_resolucion, licencia_fecha_inicio, li
 ('RES-2026-500', '2026-06-10', NULL, '2026-12-10', 1, 183, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2') LIMIT 1));
 
 -- 6. Insert new Materia for Historia
-INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, unidad_id) VALUES
-('Historia Argentina I', 60, 1, 'Anual', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Historia' LIMIT 1));
+INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, materia_plan_estudio, unidad_id) VALUES
+('Historia Argentina I', 60, '1°', 'Anual', 2023, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Historia' LIMIT 1));
 
 -- 7. Insert Funciones for docentes on Licencia
 INSERT INTO public.funciones (funcion_nombre, funcion_horas, cargo_id, materia_id) VALUES
