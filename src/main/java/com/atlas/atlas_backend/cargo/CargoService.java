@@ -202,7 +202,10 @@ public class CargoService {
             sd.setNumero(sc.getCodigo());
             sd.setEstado(sc.getEstado());
             sd.setCategoria(sc.getCategoria() != null ? sc.getCategoria().getCategoriaNombre() : null);
-            subcargos.add(sd);
+            boolean isDadoDeBaja = sd.getEstado() != null && sd.getEstado().equalsIgnoreCase("Dado de baja");
+            if (!isDadoDeBaja) {
+                subcargos.add(sd);
+            }
         }
 
         List<Cargo> subcargosDivision = cargoRepository.findByCargoOrigenDivisionId(cargo.getId());
@@ -213,7 +216,11 @@ public class CargoService {
             sd.setEstado(sc.getEstado());
             sd.setCategoria(sc.getCategoria() != null ? sc.getCategoria().getCategoriaNombre() : null);
             cargosSubdivididos.add(sd);
-            subcargos.add(sd);
+            boolean exists = subcargos.stream().anyMatch(e -> java.util.Objects.equals(e.getNumero(), sd.getNumero()));
+            boolean isDadoDeBaja = sd.getEstado() != null && sd.getEstado().equalsIgnoreCase("Dado de baja");
+            if (!exists && !isDadoDeBaja) {
+                subcargos.add(sd);
+            }
         }
         dto.setSubcargosActivos(subcargos);
         dto.setCargosSubdivididos(cargosSubdivididos);
