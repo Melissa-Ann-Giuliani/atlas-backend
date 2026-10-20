@@ -42,6 +42,9 @@ public class AuthService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private com.atlas.atlas_backend.usuario.AdminUnidadRepository adminUnidadRepository;
+
     public AuthResponse authenticate(AuthRequest authRequest) throws Exception {
         try {
             authenticationManager.authenticate(
@@ -62,9 +65,46 @@ public class AuthService {
         }
 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
-        final String jwt = jwtUtil.generateToken(userDetails);
+        
+        java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
+        Integer unidadId = null;
+        String unidadNombre = null;
+        Integer tipoUnidadId = null;
+        String tipoUnidadNombre = null;
 
-        return new AuthResponse(jwt);
+        if (usuario.getId() != null) {
+            java.util.Optional<com.atlas.atlas_backend.usuario.AdminUnidad> adminOpt = adminUnidadRepository.findById(usuario.getId().intValue());
+            if (adminOpt.isPresent() && adminOpt.get().getUnidad() != null) {
+                com.atlas.atlas_backend.unidad.Unidad u = adminOpt.get().getUnidad();
+                unidadId = u.getUnidadId();
+                unidadNombre = u.getUnidadNombre();
+                extraClaims.put("unidadId", unidadId);
+                extraClaims.put("unidadNombre", unidadNombre);
+
+                if (u.getTipoUnidad() != null) {
+                    tipoUnidadId = u.getTipoUnidad().getTipoUnidadId();
+                    tipoUnidadNombre = u.getTipoUnidad().getTipoUnidadNombre();
+                    extraClaims.put("tipoUnidadId", tipoUnidadId);
+                    extraClaims.put("tipoUnidadNombre", tipoUnidadNombre);
+                }
+            }
+        }
+
+        final String jwt = jwtUtil.generateToken(userDetails, extraClaims);
+
+        AuthResponse authResponse = new AuthResponse(jwt);
+        authResponse.setUsername(usuario.getUsername());
+        String roleStr = userDetails.getAuthorities().isEmpty() ? null : userDetails.getAuthorities().iterator().next().getAuthority();
+        if (roleStr != null && roleStr.startsWith("ROLE_")) {
+            roleStr = roleStr.substring(5);
+        }
+        authResponse.setRol(roleStr);
+        authResponse.setUnidadId(unidadId);
+        authResponse.setUnidadNombre(unidadNombre);
+        authResponse.setTipoUnidadId(tipoUnidadId);
+        authResponse.setTipoUnidadNombre(tipoUnidadNombre);
+
+        return authResponse;
     }
 
     public void register(RegisterRequest request) throws Exception {
