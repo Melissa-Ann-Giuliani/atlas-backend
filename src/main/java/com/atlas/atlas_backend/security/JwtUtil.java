@@ -50,7 +50,14 @@ public class JwtUtil {
     }
 
     public String generateToken(UserDetails userDetails) {
+        return generateToken(userDetails, new HashMap<>());
+    }
+
+    public String generateToken(UserDetails userDetails, Map<String, Object> extraClaims) {
         Map<String, Object> claims = new HashMap<>();
+        if (extraClaims != null) {
+            claims.putAll(extraClaims);
+        }
         String role = userDetails.getAuthorities().iterator().next().getAuthority();
         claims.put("role", role);
         return createToken(claims, userDetails.getUsername());
@@ -78,8 +85,11 @@ public class JwtUtil {
             throw new RuntimeException("Token expired too long ago");
         }
 
-        Map<String, Object> newClaims = new HashMap<>();
-        newClaims.put("role", claims.get("role"));
+        Map<String, Object> newClaims = new HashMap<>(claims);
+        // Remove standard JWT registered claims before resigning
+        newClaims.remove("sub");
+        newClaims.remove("iat");
+        newClaims.remove("exp");
         return createToken(newClaims, claims.getSubject());
     }
 
