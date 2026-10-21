@@ -7,15 +7,20 @@ import com.atlas.atlas_backend.usuario.AdminUnidadRepository;
 import com.atlas.atlas_backend.usuario.Usuario;
 import com.atlas.atlas_backend.usuario.UsuarioRepository;
 import com.atlas.atlas_backend.catedra.CatedraRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 
 @Service
 public class MateriaService {
@@ -224,20 +229,85 @@ public class MateriaService {
         Materia saved = materiaRepository.save(Objects.requireNonNull(materia));
 
         // 8. Retornar DTO
-        Unidad unidad = saved.getUnidad();
+        return toDetailDTO(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MateriaDetailDTO> listarMaterias(String search, Pageable pageable, String username) {
+        Integer unidadId = getScoperUnidadId(username);
+        String cleanSearch = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        return materiaRepository.searchMaterias(unidadId, cleanSearch, pageable).map(this::toDetailDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MateriaDetailDTO> listarMaterias(String search, String username) {
+        Integer unidadId = getScoperUnidadId(username);
+        String cleanSearch = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        return materiaRepository.searchMateriasList(unidadId, cleanSearch).stream()
+                .map(this::toDetailDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public MateriaDetailDTO obtenerMateriaPorId(Integer id, String username) {
+        Objects.requireNonNull(id, "ID must not be null");
+        Materia materia = materiaRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Materia no encontrada"));
+
+        Integer scopedUnidadId = getScoperUnidadId(username);
+        if (scopedUnidadId != null) {
+            Integer materiaUnidadId = materia.getUnidad() != null ? materia.getUnidad().getUnidadId() : null;
+            if (!scopedUnidadId.equals(materiaUnidadId)) {
+                throw new AccessDeniedException("No tiene permisos para acceder a esta materia");
+            }
+        }
+
+        return toDetailDTO(materia);
+    }
+
+    private Integer getScoperUnidadId(String username) {
+        if (username == null) return null;
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        String rolNombre = usuario.getRol() != null ? usuario.getRol().getNombre() : "";
+        if (rolNombre.equalsIgnoreCase("Admin de unidad") ||
+                rolNombre.equalsIgnoreCase("Administrador de Unidad") ||
+                rolNombre.equalsIgnoreCase("ADMIN_UNIDAD") ||
+                rolNombre.equalsIgnoreCase("ADMIN_DE_UNIDAD") ||
+                rolNombre.equalsIgnoreCase("ADMINISTRADOR_DE_UNIDAD")) {
+            Integer usuarioId = usuario.getId();
+            if (usuarioId != null) {
+                return adminUnidadRepository.findById(usuarioId)
+                        .filter(au -> au.getUnidad() != null)
+                        .map(au -> au.getUnidad().getUnidadId())
+                        .orElseThrow(() -> new AccessDeniedException("La unidad del administrador no fue encontrada"));
+            } else {
+                throw new AccessDeniedException("ID de usuario nulo");
+            }
+        }
+        return null;
+    }
+
+    private MateriaDetailDTO toDetailDTO(Materia m) {
+        if (m == null) return null;
+        Unidad unidad = m.getUnidad();
         MateriaDetailDTO dto = new MateriaDetailDTO();
-        dto.setId(saved.getId());
-        dto.setNombre(saved.getNombre());
-        dto.setHoras(saved.getHoras());
-        dto.setAnio(saved.getAnio());
-        dto.setDespliegue(saved.getDespliegue());
-        dto.setPlanEstudio(saved.getPlanEstudio());
+        dto.setId(m.getId());
+        dto.setNombre(m.getNombre());
+        dto.setHoras(m.getHoras());
+        dto.setAnio(m.getAnio());
+        dto.setDespliegue(m.getDespliegue());
+        dto.setPlanEstudio(m.getPlanEstudio());
         if (unidad != null) {
             dto.setUnidadId(unidad.getUnidadId());
             dto.setUnidadNombre(unidad.getUnidadNombre());
-            dto.setDependenciaId(unidad.getTipoUnidad() != null ? unidad.getTipoUnidad().getId() : null);
-            dto.setDependenciaNombre(unidad.getTipoUnidad() != null ? unidad.getTipoUnidad().getNombre() : null);
+            if (unidad.getTipoUnidad() != null) {
+                dto.setDependenciaId(unidad.getTipoUnidad().getId());
+                dto.setDependenciaNombre(unidad.getTipoUnidad().getNombre());
+            }
         }
         return dto;
     }
 }
+

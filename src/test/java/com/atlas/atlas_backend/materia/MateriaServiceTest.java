@@ -537,4 +537,109 @@ public class MateriaServiceTest {
                 verify(materiaRepository, never()).existsByNombreIgnoreCaseAndUnidad_UnidadIdAndPlanEstudioAndIdNot(any(), any(), any(), any());
                 verify(materiaRepository).save(existing);
         }
+
+        // ==================== Tests for listarMaterias ====================
+
+        @Test
+        @DisplayName("listarMaterias - Paginated for ADMIN_GLOBAL passes null unitId")
+        void testListarMaterias_GlobalAdmin_Paginated() {
+                when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(userGlobalAdmin));
+                Materia m = new Materia();
+                m.setId(1);
+                m.setNombre("Algoritmos");
+                m.setUnidad(unidad1);
+                org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
+                org.springframework.data.domain.Page<Materia> page = new org.springframework.data.domain.PageImpl<>(java.util.List.of(m));
+
+                when(materiaRepository.searchMaterias(isNull(), eq("Algo"), eq(pageable))).thenReturn(page);
+
+                org.springframework.data.domain.Page<MateriaDetailDTO> result = 
+                        materiaService.listarMaterias("Algo", pageable, "admin_global");
+
+                assertNotNull(result);
+                assertEquals(1, result.getTotalElements());
+                assertEquals("Algoritmos", result.getContent().get(0).getNombre());
+                verify(materiaRepository).searchMaterias(isNull(), eq("Algo"), eq(pageable));
+        }
+
+        @Test
+        @DisplayName("listarMaterias - Scoped for ADMIN_UNIDAD uses admin's unitId")
+        void testListarMaterias_AdminUnidad_List() {
+                when(usuarioRepository.findByUsername("admin_unidad_1")).thenReturn(Optional.of(userAdminUnidad));
+                AdminUnidad adminUnidad = new AdminUnidad();
+                adminUnidad.setId(200);
+                adminUnidad.setUnidad(unidad1);
+                when(adminUnidadRepository.findById(200)).thenReturn(Optional.of(adminUnidad));
+
+                Materia m = new Materia();
+                m.setId(1);
+                m.setNombre("Algoritmos");
+                m.setUnidad(unidad1);
+
+                when(materiaRepository.searchMateriasList(eq(1), isNull())).thenReturn(java.util.List.of(m));
+
+                java.util.List<MateriaDetailDTO> result = materiaService.listarMaterias(null, "admin_unidad_1");
+
+                assertNotNull(result);
+                assertEquals(1, result.size());
+                assertEquals(1, result.get(0).getUnidadId());
+                verify(materiaRepository).searchMateriasList(eq(1), isNull());
+        }
+
+        // ==================== Tests for obtenerMateriaPorId ====================
+
+        @Test
+        @DisplayName("obtenerMateriaPorId - Success for ADMIN_GLOBAL")
+        void testObtenerMateriaPorId_Success() {
+                Materia m = new Materia();
+                m.setId(10);
+                m.setNombre("Fisica");
+                m.setUnidad(unidad1);
+
+                when(materiaRepository.findById(10)).thenReturn(Optional.of(m));
+                when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(userGlobalAdmin));
+
+                MateriaDetailDTO dto = materiaService.obtenerMateriaPorId(10, "admin_global");
+
+                assertNotNull(dto);
+                assertEquals(10, dto.getId());
+                assertEquals("Fisica", dto.getNombre());
+        }
+
+        @Test
+        @DisplayName("obtenerMateriaPorId - 403 Forbidden for ADMIN_UNIDAD when subject belongs to another unit")
+        void testObtenerMateriaPorId_Forbidden() {
+                Materia m = new Materia();
+                m.setId(10);
+                m.setNombre("Fisica");
+                m.setUnidad(unidad2); // Belongs to unit 2
+
+                when(materiaRepository.findById(10)).thenReturn(Optional.of(m));
+                when(usuarioRepository.findByUsername("admin_unidad_1")).thenReturn(Optional.of(userAdminUnidad));
+                AdminUnidad adminUnidad = new AdminUnidad();
+                adminUnidad.setId(200);
+                adminUnidad.setUnidad(unidad1); // Admin belongs to unit 1
+                when(adminUnidadRepository.findById(200)).thenReturn(Optional.of(adminUnidad));
+
+                AccessDeniedException ex = assertThrows(
+                        AccessDeniedException.class,
+                        () -> materiaService.obtenerMateriaPorId(10, "admin_unidad_1")
+                );
+
+                assertTrue(ex.getMessage().contains("No tiene permisos"));
+        }
+
+        @Test
+        @DisplayName("obtenerMateriaPorId - 404 Not Found when subject does not exist")
+        void testObtenerMateriaPorId_NotFound() {
+                when(materiaRepository.findById(9999)).thenReturn(Optional.empty());
+
+                ResponseStatusException ex = assertThrows(
+                        ResponseStatusException.class,
+                        () -> materiaService.obtenerMateriaPorId(9999, "admin_global")
+                );
+
+                assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        }
 }
+
