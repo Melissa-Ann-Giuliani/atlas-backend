@@ -20,6 +20,7 @@ import java.util.Objects;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -193,5 +194,120 @@ public class MateriaControllerTest {
                         .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
                         .content(Objects.requireNonNull(objectMapper.writeValueAsString(validRequest))))
                 .andExpect(status().isForbidden());
+    }
+
+    // ==================== Tests for PATCH /api/materias/{id} ====================
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id} - 200 OK for ADMIN_GLOBAL")
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void testModificarMateria_AdminGlobal_Returns200() throws Exception {
+        MateriaPatchRequest patchRequest = new MateriaPatchRequest();
+        patchRequest.setNombre("Álgebra Lineal");
+        patchRequest.setAnio("2°");
+
+        when(materiaService.modificarMateria(eq(10), any(MateriaPatchRequest.class), eq("admin_global")))
+                .thenReturn(expectedDto);
+
+        mockMvc.perform(patch("/api/materias/10")
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(patchRequest))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(101))
+                .andExpect(jsonPath("$.nombre").value("Álgebra Lineal"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id} - 403 Forbidden for unit mismatch")
+    @WithMockUser(username = "admin_unidad", roles = {"ADMIN_UNIDAD"})
+    void testModificarMateria_Forbidden_UnitMismatch() throws Exception {
+        MateriaPatchRequest patchRequest = new MateriaPatchRequest();
+        patchRequest.setNombre("Nuevo Nombre");
+
+        when(materiaService.modificarMateria(eq(10), any(MateriaPatchRequest.class), eq("admin_unidad")))
+                .thenThrow(new AccessDeniedException("No tiene permisos para modificar materias en esta unidad académica"));
+
+        mockMvc.perform(patch("/api/materias/10")
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(patchRequest))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("No tiene permisos para modificar materias en esta unidad académica"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id} - 404 Not Found when subject does not exist")
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void testModificarMateria_NotFound() throws Exception {
+        MateriaPatchRequest patchRequest = new MateriaPatchRequest();
+        patchRequest.setNombre("Nuevo");
+
+        when(materiaService.modificarMateria(eq(9999), any(MateriaPatchRequest.class), eq("admin_global")))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Materia no encontrada"));
+
+        mockMvc.perform(patch("/api/materias/9999")
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(patchRequest))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Materia no encontrada"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id} - 409 Conflict when active chairs exist")
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void testModificarMateria_Conflict_ActiveCatedras() throws Exception {
+        MateriaPatchRequest patchRequest = new MateriaPatchRequest();
+        patchRequest.setHoras(8);
+
+        when(materiaService.modificarMateria(eq(10), any(MateriaPatchRequest.class), eq("admin_global")))
+                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "No se pueden modificar horas o despliegue porque la materia tiene cátedras activas asociadas"));
+
+        mockMvc.perform(patch("/api/materias/10")
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(patchRequest))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("No se pueden modificar horas o despliegue porque la materia tiene cátedras activas asociadas"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id} - 409 Conflict when duplicate name in unit and plan")
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void testModificarMateria_Conflict_DuplicateName() throws Exception {
+        MateriaPatchRequest patchRequest = new MateriaPatchRequest();
+        patchRequest.setNombre("Física I");
+
+        when(materiaService.modificarMateria(eq(11), any(MateriaPatchRequest.class), eq("admin_global")))
+                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe otra materia con ese nombre para esta unidad y plan de estudio"));
+
+        mockMvc.perform(patch("/api/materias/11")
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(patchRequest))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Ya existe otra materia con ese nombre para esta unidad y plan de estudio"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id} - 400 Bad Request on invalid hours (> 40)")
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void testModificarMateria_ValidationError_Horas() throws Exception {
+        MateriaPatchRequest patchRequest = new MateriaPatchRequest();
+        patchRequest.setHoras(50);
+
+        mockMvc.perform(patch("/api/materias/10")
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(patchRequest))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id} - 400 Bad Request on invalid despliegue")
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void testModificarMateria_ValidationError_Despliegue() throws Exception {
+        MateriaPatchRequest patchRequest = new MateriaPatchRequest();
+        patchRequest.setDespliegue("Cuatrimestral");
+
+        mockMvc.perform(patch("/api/materias/10")
+                        .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(patchRequest))))
+                .andExpect(status().isBadRequest());
     }
 }

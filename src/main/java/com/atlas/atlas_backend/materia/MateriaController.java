@@ -9,6 +9,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -35,6 +37,26 @@ public class MateriaController {
             String username = authentication != null ? authentication.getName() : null;
             MateriaDetailDTO dto = materiaService.crearMateria(request, username);
             return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
+        } catch (ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR_GLOBAL') or hasRole('ADMIN_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD')")
+    public ResponseEntity<?> modificarMateria(
+            @PathVariable("id") @NonNull Integer id,
+            @Valid @RequestBody @NonNull MateriaPatchRequest request,
+            Authentication authentication) {
+        try {
+            String username = authentication != null ? authentication.getName() : null;
+            MateriaDetailDTO dto = materiaService.modificarMateria(id, request, username);
+            return ResponseEntity.ok(dto);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
         } catch (ResponseStatusException e) {

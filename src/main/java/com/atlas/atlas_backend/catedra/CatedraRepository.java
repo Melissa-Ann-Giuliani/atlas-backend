@@ -5,4 +5,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface CatedraRepository extends JpaRepository<Catedra, Integer> {
+    boolean existsByMateria_IdAndEstadoIgnoreCase(Integer materiaId, String estado);
 }
