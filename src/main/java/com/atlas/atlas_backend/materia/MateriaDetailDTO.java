@@ -13,6 +13,7 @@ public class MateriaDetailDTO {
     private String anio;
     private String despliegue;
     private Integer planEstudio;
+    private String estado;
     private Integer unidadId;
     private String unidadNombre;
     private Integer dependenciaId;

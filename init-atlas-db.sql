@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS public.materias
     materia_anio character varying(10) NOT NULL,
     materia_despliegue character varying(50) NOT NULL,
     materia_plan_estudio integer NOT NULL,
+    materia_estado character varying(20) NOT NULL DEFAULT 'Activa',
     unidad_id integer NOT NULL,
     PRIMARY KEY (materia_id)
 );

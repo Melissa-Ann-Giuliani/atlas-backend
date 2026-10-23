@@ -323,7 +323,7 @@ public class MateriaControllerTest {
         dto.setId(1);
         dto.setNombre("Algoritmos");
         org.springframework.data.domain.Page<MateriaDetailDTO> pageResult = 
-                new org.springframework.data.domain.PageImpl<>(java.util.List.of(dto));
+                new org.springframework.data.domain.PageImpl<>(Objects.requireNonNull(java.util.List.of(dto)));
 
         when(materiaService.listarMaterias(eq("Algo"), any(org.springframework.data.domain.Pageable.class), eq("admin_global")))
                 .thenReturn(pageResult);
@@ -395,6 +395,82 @@ public class MateriaControllerTest {
         mockMvc.perform(get("/api/materias/10"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.message").value("No tiene permisos para acceder a esta materia"));
+    }
+
+    // ==================== Tests for PATCH /api/materias/{id}/baja (RF-26) ====================
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id}/baja - 200 OK decommission success")
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void testDarDeBajaMateria_Success() throws Exception {
+        MateriaDetailDTO dto = new MateriaDetailDTO();
+        dto.setId(101);
+        dto.setNombre("Algoritmos");
+        dto.setEstado("Dada de baja");
+
+        when(materiaService.darDeBajaMateria(eq(101), eq("admin_global")))
+                .thenReturn(dto);
+
+        mockMvc.perform(patch("/api/materias/101/baja"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(101))
+                .andExpect(jsonPath("$.nombre").value("Algoritmos"))
+                .andExpect(jsonPath("$.estado").value("Dada de baja"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id}/baja - 409 Conflict when subject has active cátedras")
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void testDarDeBajaMateria_Conflict_ActiveCatedras() throws Exception {
+        when(materiaService.darDeBajaMateria(eq(103), eq("admin_global")))
+                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "No se puede dar de baja la materia porque tiene cátedras activas asociadas"));
+
+        mockMvc.perform(patch("/api/materias/103/baja"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("No se puede dar de baja la materia porque tiene cátedras activas asociadas"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id}/baja - 400 Bad Request when subject is already decommissioned")
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void testDarDeBajaMateria_BadRequest_AlreadyDecommissioned() throws Exception {
+        when(materiaService.darDeBajaMateria(eq(104), eq("admin_global")))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "La materia ya se encuentra dada de baja"));
+
+        mockMvc.perform(patch("/api/materias/104/baja"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("La materia ya se encuentra dada de baja"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id}/baja - 404 Not Found when subject does not exist")
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void testDarDeBajaMateria_NotFound() throws Exception {
+        when(materiaService.darDeBajaMateria(eq(99999), eq("admin_global")))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Materia no encontrada"));
+
+        mockMvc.perform(patch("/api/materias/99999/baja"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Materia no encontrada"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id}/baja - 403 Forbidden for unit mismatch")
+    @WithMockUser(username = "admin_unidad", roles = {"ADMIN_UNIDAD"})
+    void testDarDeBajaMateria_Forbidden() throws Exception {
+        when(materiaService.darDeBajaMateria(eq(201), eq("admin_unidad")))
+                .thenThrow(new AccessDeniedException("No tiene permisos para dar de baja materias en esta unidad académica"));
+
+        mockMvc.perform(patch("/api/materias/201/baja"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("No tiene permisos para dar de baja materias en esta unidad académica"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/materias/{id}/baja - 401/403 for unauthenticated request")
+    void testDarDeBajaMateria_Unauthorized() throws Exception {
+        mockMvc.perform(patch("/api/materias/101/baja"))
+                .andExpect(status().isForbidden());
     }
 }
 

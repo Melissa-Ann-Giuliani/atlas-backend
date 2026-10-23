@@ -29,6 +29,9 @@ public class Materia {
     @Column(name = "materia_plan_estudio", nullable = false)
     private Integer planEstudio;
 
+    @Column(name = "materia_estado", nullable = false, length = 20)
+    private String estado = "Activa";
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unidad_id", nullable = false)
     private Unidad unidad;

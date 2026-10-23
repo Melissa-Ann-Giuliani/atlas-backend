@@ -549,7 +549,7 @@ public class MateriaServiceTest {
                 m.setNombre("Algoritmos");
                 m.setUnidad(unidad1);
                 org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(0, 10);
-                org.springframework.data.domain.Page<Materia> page = new org.springframework.data.domain.PageImpl<>(java.util.List.of(m));
+                org.springframework.data.domain.Page<Materia> page = new org.springframework.data.domain.PageImpl<>(Objects.requireNonNull(java.util.List.of(m)));
 
                 when(materiaRepository.searchMaterias(isNull(), eq("Algo"), eq(pageable))).thenReturn(page);
 
@@ -640,6 +640,158 @@ public class MateriaServiceTest {
                 );
 
                 assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        }
+
+        // ==================== Tests for darDeBajaMateria (RF-26) ====================
+
+        @Test
+        @DisplayName("darDeBajaMateria - Success for ADMIN_GLOBAL when subject has no cátedras")
+        void testDarDeBajaMateria_Success_GlobalAdmin() {
+                Materia m = new Materia();
+                m.setId(101);
+                m.setNombre("Algoritmos");
+                m.setHoras(4);
+                m.setAnio("2026");
+                m.setDespliegue("Primer Semestre");
+                m.setPlanEstudio(2023);
+                m.setEstado("Activa");
+                m.setUnidad(unidad1);
+
+                when(materiaRepository.findById(101)).thenReturn(Optional.of(m));
+                when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(userGlobalAdmin));
+                when(catedraRepository.existsByMateria_IdAndEstadoIgnoreCase(101, "ACTIVA")).thenReturn(false);
+                when(materiaRepository.save(anyMateria())).thenAnswer(invocation -> invocation.getArgument(0));
+
+                MateriaDetailDTO result = materiaService.darDeBajaMateria(101, "admin_global");
+
+                assertNotNull(result);
+                assertEquals(101, result.getId());
+                assertEquals("Dada de baja", result.getEstado());
+                verify(materiaRepository).save(m);
+                assertEquals("Dada de baja", m.getEstado());
+        }
+
+        @Test
+        @DisplayName("darDeBajaMateria - Success for ADMIN_UNIDAD when subject belongs to their assigned unit")
+        void testDarDeBajaMateria_Success_AdminUnidad() {
+                Materia m = new Materia();
+                m.setId(102);
+                m.setNombre("Física I");
+                m.setEstado("Activa");
+                m.setUnidad(unidad1);
+
+                when(materiaRepository.findById(102)).thenReturn(Optional.of(m));
+                when(usuarioRepository.findByUsername("admin_unidad_1")).thenReturn(Optional.of(userAdminUnidad));
+                when(adminUnidadRepository.findById(200)).thenReturn(Optional.of(adminUnidadRecord));
+                when(catedraRepository.existsByMateria_IdAndEstadoIgnoreCase(102, "ACTIVA")).thenReturn(false);
+                when(materiaRepository.save(anyMateria())).thenAnswer(invocation -> invocation.getArgument(0));
+
+                MateriaDetailDTO result = materiaService.darDeBajaMateria(102, "admin_unidad_1");
+
+                assertNotNull(result);
+                assertEquals("Dada de baja", result.getEstado());
+                verify(materiaRepository).save(m);
+        }
+
+        @Test
+        @DisplayName("darDeBajaMateria - Success when subject has only inactive or finished cátedras")
+        void testDarDeBajaMateria_Success_OnlyInactiveCatedras() {
+                Materia m = new Materia();
+                m.setId(103);
+                m.setNombre("Química");
+                m.setEstado("Activa");
+                m.setUnidad(unidad1);
+
+                when(materiaRepository.findById(103)).thenReturn(Optional.of(m));
+                when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(userGlobalAdmin));
+                when(catedraRepository.existsByMateria_IdAndEstadoIgnoreCase(103, "ACTIVA")).thenReturn(false);
+                when(materiaRepository.save(anyMateria())).thenAnswer(invocation -> invocation.getArgument(0));
+
+                MateriaDetailDTO result = materiaService.darDeBajaMateria(103, "admin_global");
+
+                assertNotNull(result);
+                assertEquals("Dada de baja", result.getEstado());
+        }
+
+        @Test
+        @DisplayName("darDeBajaMateria - 404 Not Found when subject does not exist")
+        void testDarDeBajaMateria_NotFound() {
+                when(materiaRepository.findById(9999)).thenReturn(Optional.empty());
+
+                ResponseStatusException ex = assertThrows(
+                        ResponseStatusException.class,
+                        () -> materiaService.darDeBajaMateria(9999, "admin_global")
+                );
+
+                assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+                assertTrue(Objects.requireNonNull(ex.getReason()).contains("Materia no encontrada"));
+                verify(materiaRepository, never()).save(anyMateria());
+        }
+
+        @Test
+        @DisplayName("darDeBajaMateria - 400 Bad Request when subject is already decommissioned")
+        void testDarDeBajaMateria_AlreadyDecommissioned() {
+                Materia m = new Materia();
+                m.setId(104);
+                m.setNombre("Historia");
+                m.setEstado("Dada de baja");
+                m.setUnidad(unidad1);
+
+                when(materiaRepository.findById(104)).thenReturn(Optional.of(m));
+
+                ResponseStatusException ex = assertThrows(
+                        ResponseStatusException.class,
+                        () -> materiaService.darDeBajaMateria(104, "admin_global")
+                );
+
+                assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+                assertTrue(Objects.requireNonNull(ex.getReason()).contains("ya se encuentra dada de baja"));
+                verify(materiaRepository, never()).save(anyMateria());
+        }
+
+        @Test
+        @DisplayName("darDeBajaMateria - 403 Forbidden when ADMIN_UNIDAD attempts decommission of another unit's subject")
+        void testDarDeBajaMateria_Forbidden_AnotherUnit() {
+                Materia m = new Materia();
+                m.setId(201);
+                m.setNombre("Programación");
+                m.setEstado("Activa");
+                m.setUnidad(unidad2); // Unit 2
+
+                when(materiaRepository.findById(201)).thenReturn(Optional.of(m));
+                when(usuarioRepository.findByUsername("admin_unidad_1")).thenReturn(Optional.of(userAdminUnidad));
+                when(adminUnidadRepository.findById(200)).thenReturn(Optional.of(adminUnidadRecord)); // Unit 1
+
+                AccessDeniedException ex = assertThrows(
+                        AccessDeniedException.class,
+                        () -> materiaService.darDeBajaMateria(201, "admin_unidad_1")
+                );
+
+                assertTrue(ex.getMessage().contains("No tiene permisos para dar de baja materias en esta unidad académica"));
+                verify(materiaRepository, never()).save(anyMateria());
+        }
+
+        @Test
+        @DisplayName("darDeBajaMateria - 409 Conflict when subject has active cátedras")
+        void testDarDeBajaMateria_Conflict_ActiveCatedras() {
+                Materia m = new Materia();
+                m.setId(105);
+                m.setNombre("Sistemas Operativos");
+                m.setEstado("Activa");
+                m.setUnidad(unidad1);
+
+                when(materiaRepository.findById(105)).thenReturn(Optional.of(m));
+                when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(userGlobalAdmin));
+                when(catedraRepository.existsByMateria_IdAndEstadoIgnoreCase(105, "ACTIVA")).thenReturn(true);
+
+                ResponseStatusException ex = assertThrows(
+                        ResponseStatusException.class,
+                        () -> materiaService.darDeBajaMateria(105, "admin_global")
+                );
+
+                assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+                assertTrue(Objects.requireNonNull(ex.getReason()).contains("tiene cátedras activas asociadas"));
+                verify(materiaRepository, never()).save(anyMateria());
         }
 }
 

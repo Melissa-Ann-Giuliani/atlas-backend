@@ -113,23 +113,13 @@ public class MateriaService {
         materia.setAnio(request.getAnio().trim());
         materia.setDespliegue(request.getDespliegue());
         materia.setPlanEstudio(request.getPlanEstudio());
+        materia.setEstado("Activa");
         materia.setUnidad(unidad);
 
         Materia saved = materiaRepository.save(materia);
 
         // 8. Retornar DTO
-        MateriaDetailDTO dto = new MateriaDetailDTO();
-        dto.setId(saved.getId());
-        dto.setNombre(saved.getNombre());
-        dto.setHoras(saved.getHoras());
-        dto.setAnio(saved.getAnio());
-        dto.setDespliegue(saved.getDespliegue());
-        dto.setPlanEstudio(saved.getPlanEstudio());
-        dto.setUnidadId(unidad.getUnidadId());
-        dto.setUnidadNombre(unidad.getUnidadNombre());
-        dto.setDependenciaId(unidad.getTipoUnidad() != null ? unidad.getTipoUnidad().getId() : null);
-        dto.setDependenciaNombre(unidad.getTipoUnidad() != null ? unidad.getTipoUnidad().getNombre() : null);
-        return dto;
+        return toDetailDTO(saved);
     }
 
     @Transactional
@@ -289,6 +279,60 @@ public class MateriaService {
         return null;
     }
 
+    @Transactional
+    public MateriaDetailDTO darDeBajaMateria(Integer id, String username) {
+        Objects.requireNonNull(id, "ID must not be null");
+
+        // 1. Validar existencia de la materia
+        Materia materia = materiaRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Materia no encontrada"));
+
+        // 2. Validar si ya se encuentra dada de baja
+        if ("Dada de baja".equalsIgnoreCase(materia.getEstado())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La materia ya se encuentra dada de baja");
+        }
+
+        // 3. Validar permisos y scoping de unidad para ADMIN_UNIDAD
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        String rolNombre = usuario.getRol() != null ? usuario.getRol().getNombre() : "";
+        if (rolNombre.equalsIgnoreCase("Admin de unidad") ||
+                rolNombre.equalsIgnoreCase("Administrador de Unidad") ||
+                rolNombre.equalsIgnoreCase("ADMIN_UNIDAD") ||
+                rolNombre.equalsIgnoreCase("ADMIN_DE_UNIDAD") ||
+                rolNombre.equalsIgnoreCase("ADMINISTRADOR_DE_UNIDAD")) {
+            Integer usuarioId = usuario.getId();
+            if (usuarioId != null) {
+                Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(Objects.requireNonNull(usuarioId));
+                if (adminUnidadOpt.isPresent() && adminUnidadOpt.get().getUnidad() != null) {
+                    Integer userUnidadId = adminUnidadOpt.get().getUnidad().getUnidadId();
+                    Integer materiaUnidadId = materia.getUnidad() != null ? materia.getUnidad().getUnidadId() : null;
+                    if (!userUnidadId.equals(materiaUnidadId)) {
+                        throw new AccessDeniedException("No tiene permisos para dar de baja materias en esta unidad académica");
+                    }
+                } else {
+                    throw new AccessDeniedException("La unidad del administrador no fue encontrada");
+                }
+            } else {
+                throw new AccessDeniedException("ID de usuario nulo");
+            }
+        }
+
+        // 4. Validar impacto en cátedras activas
+        boolean hasActiveCatedras = catedraRepository.existsByMateria_IdAndEstadoIgnoreCase(id, "ACTIVA");
+        if (hasActiveCatedras) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "No se puede dar de baja la materia porque tiene cátedras activas asociadas");
+        }
+
+        // 5. Aplicar transición de ciclo de vida
+        materia.setEstado("Dada de baja");
+        Materia saved = materiaRepository.save(materia);
+
+        // 6. Retornar DTO
+        return toDetailDTO(saved);
+    }
+
     private MateriaDetailDTO toDetailDTO(Materia m) {
         if (m == null) return null;
         Unidad unidad = m.getUnidad();
@@ -299,6 +343,7 @@ public class MateriaService {
         dto.setAnio(m.getAnio());
         dto.setDespliegue(m.getDespliegue());
         dto.setPlanEstudio(m.getPlanEstudio());
+        dto.setEstado(m.getEstado() != null ? m.getEstado() : "Activa");
         if (unidad != null) {
             dto.setUnidadId(unidad.getUnidadId());
             dto.setUnidadNombre(unidad.getUnidadNombre());
