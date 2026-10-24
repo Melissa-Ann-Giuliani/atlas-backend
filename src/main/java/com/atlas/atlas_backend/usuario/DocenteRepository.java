@@ -12,6 +12,8 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
 
     boolean existsByEmailInstitucional(String emailInstitucional);
 
+    boolean existsByEmailInstitucionalAndIdNot(String emailInstitucional, Integer id);
+
     @org.springframework.data.jpa.repository.Query(
         value = """
             SELECT d.id AS usuarioId, d.nombre AS nombre, d.apellido AS apellido,

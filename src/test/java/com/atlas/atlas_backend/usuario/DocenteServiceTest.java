@@ -36,6 +36,39 @@ public class DocenteServiceTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private AdminUnidadRepository adminUnidadRepository;
+
+    @Mock
+    private com.atlas.atlas_backend.designacion.DesignacionRepository designacionRepository;
+
+    @Mock
+    private com.atlas.atlas_backend.cargo.CargoRepository cargoRepository;
+
+    @Mock
+    private com.atlas.atlas_backend.licencia.LicenciaRepository licenciaRepository;
+
+    @Mock
+    private com.atlas.atlas_backend.funcion.FuncionRepository funcionRepository;
+
+    @Mock
+    private com.atlas.atlas_backend.cambio.CambioService cambioService;
+
+    @Mock
+    private com.atlas.atlas_backend.categoria.CategoriaRepository categoriaRepository;
+
+    @Mock
+    private com.atlas.atlas_backend.dedicacion.DedicacionRepository dedicacionRepository;
+
+    @Mock
+    private com.atlas.atlas_backend.caracter.CaracterRepository caracterRepository;
+
+    @Mock
+    private com.atlas.atlas_backend.origen.OrigenRepository origenRepository;
+
+    @Mock
+    private com.atlas.atlas_backend.materia.MateriaRepository materiaRepository;
+
     @InjectMocks
     private DocenteService docenteService;
 
@@ -185,4 +218,146 @@ public class DocenteServiceTest {
         assertNotNull(result);
         assertTrue(warningMessage.toString().contains("falló el envío del correo"));
     }
+
+    @Test
+    public void testModificarPerfilDocente_SuccessGlobalAdmin() throws Exception {
+        Usuario adminGlobal = new Usuario();
+        adminGlobal.setUsername("admin_global");
+        Rol rol = new Rol();
+        rol.setNombre("ADMIN_GLOBAL");
+        adminGlobal.setRol(rol);
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobal));
+
+        Docente docente = new Docente();
+        docente.setId(10);
+        docente.setDni(12345678L);
+        docente.setCuil(20123456780L);
+        docente.setNombre("Carlos");
+        docente.setApellido("Lopez");
+        docente.setEmailInstitucional("carlos@facultad.edu");
+        docente.setFechaIngreso(LocalDate.of(2018, 5, 10));
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(docente));
+
+        DocenteProfileUpdateRequest updateReq = new DocenteProfileUpdateRequest();
+        updateReq.setNombre("Carlos Alberto");
+        updateReq.setApellido("Lopez Perez");
+        updateReq.setEmailInstitucional("carlos.lopez@facultad.edu");
+        updateReq.setFechaIngreso(LocalDate.of(2018, 5, 10));
+        updateReq.setDni(12345678L);
+        updateReq.setCuil(20123456780L);
+        updateReq.setDomicilio("Calle Falsa 123");
+        updateReq.setAntigPrevia(6);
+
+        when(docenteRepository.existsByEmailInstitucionalAndIdNot(eq("carlos.lopez@facultad.edu"), eq(10))).thenReturn(false);
+        when(usuarioRepository.existsByCorreoAndIdNot(eq("carlos.lopez@facultad.edu"), eq(10))).thenReturn(false);
+        when(designacionRepository.findByUsuarioId(10)).thenReturn(java.util.List.of());
+
+        DocenteDetailsDTO dto = docenteService.modificarPerfilDocente(10, updateReq, "admin_global");
+
+        assertNotNull(dto);
+        assertEquals("Carlos Alberto", docente.getNombre());
+        assertEquals("Lopez Perez", docente.getApellido());
+        assertEquals("carlos.lopez@facultad.edu", docente.getEmailInstitucional());
+        verify(cambioService, atLeastOnce()).registrarCambio(eq("docentes"), anyString(), any(), any(), eq(adminGlobal));
+        verify(docenteRepository, times(1)).save(docente);
+    }
+
+    @Test
+    public void testModificarPerfilDocente_DniChangeThrowsBadRequest() {
+        Usuario adminGlobal = new Usuario();
+        adminGlobal.setUsername("admin_global");
+        Rol rol = new Rol();
+        rol.setNombre("ADMIN_GLOBAL");
+        adminGlobal.setRol(rol);
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobal));
+
+        Docente docente = new Docente();
+        docente.setId(10);
+        docente.setDni(12345678L);
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(docente));
+
+        DocenteProfileUpdateRequest updateReq = new DocenteProfileUpdateRequest();
+        updateReq.setDni(99999999L); // Attempt to change immutable DNI
+        updateReq.setNombre("Carlos");
+        updateReq.setApellido("Lopez");
+        updateReq.setEmailInstitucional("carlos@facultad.edu");
+        updateReq.setFechaIngreso(LocalDate.of(2018, 5, 10));
+
+        org.springframework.web.server.ResponseStatusException ex = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> docenteService.modificarPerfilDocente(10, updateReq, "admin_global")
+        );
+
+        assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertTrue(ex.getReason().contains("DNI es inmutable"));
+    }
+
+    @Test
+    public void testModificarPerfilDocente_DuplicateEmailThrowsBadRequest() {
+        Usuario adminGlobal = new Usuario();
+        adminGlobal.setUsername("admin_global");
+        Rol rol = new Rol();
+        rol.setNombre("ADMIN_GLOBAL");
+        adminGlobal.setRol(rol);
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobal));
+
+        Docente docente = new Docente();
+        docente.setId(10);
+        docente.setDni(12345678L);
+        docente.setEmailInstitucional("original@facultad.edu");
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(docente));
+
+        DocenteProfileUpdateRequest updateReq = new DocenteProfileUpdateRequest();
+        updateReq.setDni(12345678L);
+        updateReq.setNombre("Carlos");
+        updateReq.setApellido("Lopez");
+        updateReq.setEmailInstitucional("otro@facultad.edu");
+        updateReq.setFechaIngreso(LocalDate.of(2018, 5, 10));
+
+        when(docenteRepository.existsByEmailInstitucionalAndIdNot("otro@facultad.edu", 10)).thenReturn(true);
+
+        org.springframework.web.server.ResponseStatusException ex = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> docenteService.modificarPerfilDocente(10, updateReq, "admin_global")
+        );
+
+        assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertTrue(ex.getReason().contains("correo institucional ya se encuentra registrado"));
+    }
+
+    @Test
+    public void testModificarPerfilDocente_UnitAdminOtherUnitThrowsForbidden() {
+        Usuario adminUnidad = new Usuario();
+        adminUnidad.setId(5);
+        adminUnidad.setUsername("admin_unidad_1");
+        Rol rol = new Rol();
+        rol.setNombre("ADMIN_UNIDAD");
+        adminUnidad.setRol(rol);
+        when(usuarioRepository.findByUsername("admin_unidad_1")).thenReturn(Optional.of(adminUnidad));
+
+        AdminUnidad adminUnidadEntity = new AdminUnidad();
+        com.atlas.atlas_backend.unidad.Unidad unidad1 = new com.atlas.atlas_backend.unidad.Unidad();
+        unidad1.setUnidadId(1);
+        adminUnidadEntity.setUnidad(unidad1);
+        when(adminUnidadRepository.findById(5)).thenReturn(Optional.of(adminUnidadEntity));
+
+        Docente docente = new Docente();
+        docente.setId(20);
+        when(docenteRepository.findById(20)).thenReturn(Optional.of(docente));
+
+        // Teacher has no cargos in Unit 1
+        when(designacionRepository.findByUsuarioId(20)).thenReturn(java.util.List.of());
+
+        DocenteProfileUpdateRequest updateReq = new DocenteProfileUpdateRequest();
+        updateReq.setNombre("Docente");
+        updateReq.setApellido("Ajeno");
+
+        org.springframework.security.access.AccessDeniedException ex = assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
+                () -> docenteService.modificarPerfilDocente(20, updateReq, "admin_unidad_1")
+        );
+
+        assertTrue(ex.getMessage().contains("No tiene permisos"));
+    }
 }
+

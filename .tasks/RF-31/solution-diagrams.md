@@ -27,7 +27,7 @@ sequenceDiagram
     Admin->>Ctrl: PUT /docentes/{id} (DocenteProfileUpdateRequest)
     Ctrl->>Sec: Obtener usuario autenticado y rol
     Ctrl->>Svc: modificarPerfilDocente(id, request, usuarioAutenticado)
-    
+
     Svc->>DocRepo: findById(id)
     alt Docente no existe
         DocRepo-->>Svc: empty
