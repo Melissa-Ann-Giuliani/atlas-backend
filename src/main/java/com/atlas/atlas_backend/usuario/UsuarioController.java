@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -28,6 +29,151 @@ public class UsuarioController {
 
     @Autowired
     private DocenteService docenteService;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private AdminGlobalRepository adminGlobalRepository;
+
+    @Autowired
+    private AdminUnidadRepository adminUnidadRepository;
+
+    @Autowired
+    private AuditorRepository auditorRepository;
+
+    @Autowired
+    private DocenteRepository docenteRepository;
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD') or hasRole('AUDITOR')")
+    public ResponseEntity<org.springframework.data.domain.Page<UsuarioListDTO>> getUsuarios(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String rol,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        
+        String cleanSearch = (search != null && search.trim().isEmpty()) ? null : (search != null ? search.trim() : null);
+        String cleanRol = (rol != null && rol.trim().isEmpty()) ? null : (rol != null ? rol.trim() : null);
+
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<Usuario> usuariosPage = usuarioRepository.searchUsuarios(cleanSearch, cleanRol, pageable);
+
+        org.springframework.data.domain.Page<UsuarioListDTO> dtoPage = usuariosPage.map(u -> {
+            UsuarioListDTO dto = new UsuarioListDTO();
+            dto.setId(u.getId());
+            dto.setUsuarioId(u.getId());
+            dto.setUsername(u.getUsername());
+            dto.setNombre(u.getNombre());
+            dto.setApellido(u.getApellido());
+            dto.setCorreo(u.getCorreo());
+            dto.setActivo(u.getActivo());
+            dto.setRol(u.getRol() != null ? u.getRol().getNombre() : null);
+
+            // Populate specific fields if available
+            adminGlobalRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(ag -> {
+                if (ag.getCargoNombre() != null) {
+                    dto.setCargo(ag.getCargoNombre().name());
+                }
+            });
+
+            adminUnidadRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(au -> {
+                if (au.getCargoNombre() != null) {
+                    dto.setCargo(au.getCargoNombre().name());
+                }
+                if (au.getUnidad() != null) {
+                    dto.setUnidad(au.getUnidad().getUnidadNombre());
+                }
+            });
+
+            auditorRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(aud -> {
+                if (aud.getCargoNombre() != null) {
+                    dto.setCargo(aud.getCargoNombre().name());
+                }
+            });
+
+            docenteRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(doc -> {
+                if (doc.getDni() != null) {
+                    dto.setDni(String.valueOf(doc.getDni()));
+                }
+            });
+
+            return dto;
+        });
+
+        return ResponseEntity.ok(dtoPage);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD') or hasRole('AUDITOR')")
+    public ResponseEntity<?> getUsuarioById(@PathVariable @NonNull Integer id) {
+        return usuarioRepository.findById(id).map(u -> {
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("id", u.getId());
+            map.put("usuarioId", u.getId());
+            map.put("username", u.getUsername());
+            map.put("nombre", u.getNombre());
+            map.put("apellido", u.getApellido());
+            map.put("correo", u.getCorreo());
+            map.put("activo", u.getActivo());
+            map.put("rol", u.getRol() != null ? u.getRol().getNombre() : null);
+
+            adminGlobalRepository.findById(id).ifPresent(ag -> {
+                if (ag.getCargoNombre() != null) {
+                    map.put("cargo", ag.getCargoNombre().name());
+                    map.put("cargoNombre", ag.getCargoNombre().name());
+                }
+            });
+
+            adminUnidadRepository.findById(id).ifPresent(au -> {
+                if (au.getCargoNombre() != null) {
+                    map.put("cargo", au.getCargoNombre().name());
+                    map.put("cargoNombre", au.getCargoNombre().name());
+                }
+                if (au.getUnidad() != null) {
+                    map.put("unidadId", au.getUnidad().getUnidadId());
+                    map.put("unidad", au.getUnidad().getUnidadNombre());
+                    if (au.getUnidad().getTipoUnidad() != null) {
+                        map.put("dependencia", au.getUnidad().getTipoUnidad().getId());
+                        map.put("tipoUnidadId", au.getUnidad().getTipoUnidad().getId());
+                    }
+                }
+            });
+
+            auditorRepository.findById(id).ifPresent(aud -> {
+                if (aud.getCargoNombre() != null) {
+                    map.put("cargo", aud.getCargoNombre().name());
+                    map.put("cargoNombre", aud.getCargoNombre().name());
+                }
+            });
+
+            docenteRepository.findById(id).ifPresent(doc -> {
+                if (doc.getDni() != null) {
+                    map.put("dni", String.valueOf(doc.getDni()));
+                }
+                if (doc.getCuil() != null) {
+                    map.put("cuil", String.valueOf(doc.getCuil()));
+                }
+                if (doc.getTipoDni() != null) {
+                    map.put("tipoDni", doc.getTipoDni());
+                }
+                if (doc.getDomicilio() != null) {
+                    map.put("domicilio", doc.getDomicilio());
+                }
+                if (doc.getEmailInstitucional() != null) {
+                    map.put("emailInstitucional", doc.getEmailInstitucional());
+                }
+                if (doc.getFechaIngreso() != null) {
+                    map.put("fechaIngreso", doc.getFechaIngreso().toString());
+                }
+                if (doc.getAntigPrevia() != null) {
+                    map.put("antigPrevia", doc.getAntigPrevia());
+                }
+            });
+
+            return ResponseEntity.ok((Object) map);
+        }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
 
     @GetMapping({ "/generar-password", "/generar-contrasenia" })
     public ResponseEntity<?> generarPassword() {
