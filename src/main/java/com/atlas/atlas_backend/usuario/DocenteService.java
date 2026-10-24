@@ -184,8 +184,15 @@ public class DocenteService {
         DocenteDetailsDTO dto = new DocenteDetailsDTO();
 
         DocenteDetailsDTO.PersonalData pd = new DocenteDetailsDTO.PersonalData();
+        pd.setUsuarioId(docente.getId());
+        pd.setUsername(docente.getUsername());
+        pd.setCorreo(docente.getCorreo());
         pd.setTipoDni(docente.getTipoDni());
         pd.setDni(docente.getDni());
+        pd.setCuil(docente.getCuil());
+        pd.setDomicilio(docente.getDomicilio());
+        pd.setAntigPrevia(docente.getAntigPrevia());
+        pd.setFechaIngreso(docente.getFechaIngreso());
         pd.setEmailInstitucional(docente.getEmailInstitucional());
         pd.setTelefonos(docente.getTelefonos());
         pd.setNombre(docente.getNombre());
@@ -401,8 +408,9 @@ public class DocenteService {
         Usuario usuarioResponsable = usuarioRepository.findByUsername(authUsername)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario autenticado no encontrado"));
 
-        Docente docente = docenteRepository.findById(docenteId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Docente no encontrado"));
+        if (!docenteRepository.existsById(docenteId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Docente no encontrado");
+        }
 
         validarAccesoDocente(usuarioResponsable, docenteId);
 
@@ -418,16 +426,21 @@ public class DocenteService {
             throw new AccessDeniedException("No tiene permisos para modificar cargos de otra unidad");
         }
 
-        com.atlas.atlas_backend.categoria.Categoria categoria = categoriaRepository.findById(request.getCategoriaId())
+        if (request.getCategoriaId() == null || request.getDedicacionId() == null ||
+                request.getCaracterId() == null || request.getOrigenId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Los datos de categoría, dedicación, carácter y origen son obligatorios");
+        }
+
+        com.atlas.atlas_backend.categoria.Categoria categoria = categoriaRepository.findById(Objects.requireNonNull(request.getCategoriaId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Categoría no encontrada"));
 
-        com.atlas.atlas_backend.dedicacion.Dedicacion dedicacion = dedicacionRepository.findById(request.getDedicacionId())
+        com.atlas.atlas_backend.dedicacion.Dedicacion dedicacion = dedicacionRepository.findById(Objects.requireNonNull(request.getDedicacionId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dedicación no encontrada"));
 
-        com.atlas.atlas_backend.caracter.Caracter caracter = caracterRepository.findById(request.getCaracterId())
+        com.atlas.atlas_backend.caracter.Caracter caracter = caracterRepository.findById(Objects.requireNonNull(request.getCaracterId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Carácter no encontrado"));
 
-        com.atlas.atlas_backend.origen.Origen origen = origenRepository.findById(request.getOrigenId())
+        com.atlas.atlas_backend.origen.Origen origen = origenRepository.findById(Objects.requireNonNull(request.getOrigenId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Origen no encontrado"));
 
         if (cargo.getHorasOcupadas() != null && cargo.getHorasOcupadas() > 0) {
@@ -484,8 +497,9 @@ public class DocenteService {
         Usuario usuarioResponsable = usuarioRepository.findByUsername(authUsername)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario autenticado no encontrado"));
 
-        Docente docente = docenteRepository.findById(docenteId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Docente no encontrado"));
+        if (!docenteRepository.existsById(docenteId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Docente no encontrado");
+        }
 
         validarAccesoDocente(usuarioResponsable, docenteId);
 
@@ -502,7 +516,11 @@ public class DocenteService {
             throw new AccessDeniedException("No tiene permisos para modificar funciones de un cargo de otra unidad");
         }
 
-        com.atlas.atlas_backend.materia.Materia materia = materiaRepository.findById(request.getMateriaId())
+        if (request.getMateriaId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La materia es obligatoria");
+        }
+
+        com.atlas.atlas_backend.materia.Materia materia = materiaRepository.findById(Objects.requireNonNull(request.getMateriaId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Materia no encontrada"));
 
         // Validate dedication hours limit

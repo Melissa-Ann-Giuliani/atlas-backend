@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -70,13 +71,13 @@ public class UsuarioController {
             dto.setRol(u.getRol() != null ? u.getRol().getNombre() : null);
 
             // Populate specific fields if available
-            adminGlobalRepository.findById(u.getId()).ifPresent(ag -> {
+            adminGlobalRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(ag -> {
                 if (ag.getCargoNombre() != null) {
                     dto.setCargo(ag.getCargoNombre().name());
                 }
             });
 
-            adminUnidadRepository.findById(u.getId()).ifPresent(au -> {
+            adminUnidadRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(au -> {
                 if (au.getCargoNombre() != null) {
                     dto.setCargo(au.getCargoNombre().name());
                 }
@@ -85,13 +86,13 @@ public class UsuarioController {
                 }
             });
 
-            auditorRepository.findById(u.getId()).ifPresent(aud -> {
+            auditorRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(aud -> {
                 if (aud.getCargoNombre() != null) {
                     dto.setCargo(aud.getCargoNombre().name());
                 }
             });
 
-            docenteRepository.findById(u.getId()).ifPresent(doc -> {
+            docenteRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(doc -> {
                 if (doc.getDni() != null) {
                     dto.setDni(String.valueOf(doc.getDni()));
                 }
@@ -117,14 +118,14 @@ public class UsuarioController {
             map.put("activo", u.getActivo());
             map.put("rol", u.getRol() != null ? u.getRol().getNombre() : null);
 
-            adminGlobalRepository.findById(u.getId()).ifPresent(ag -> {
+            adminGlobalRepository.findById(id).ifPresent(ag -> {
                 if (ag.getCargoNombre() != null) {
                     map.put("cargo", ag.getCargoNombre().name());
                     map.put("cargoNombre", ag.getCargoNombre().name());
                 }
             });
 
-            adminUnidadRepository.findById(u.getId()).ifPresent(au -> {
+            adminUnidadRepository.findById(id).ifPresent(au -> {
                 if (au.getCargoNombre() != null) {
                     map.put("cargo", au.getCargoNombre().name());
                     map.put("cargoNombre", au.getCargoNombre().name());
@@ -139,14 +140,14 @@ public class UsuarioController {
                 }
             });
 
-            auditorRepository.findById(u.getId()).ifPresent(aud -> {
+            auditorRepository.findById(id).ifPresent(aud -> {
                 if (aud.getCargoNombre() != null) {
                     map.put("cargo", aud.getCargoNombre().name());
                     map.put("cargoNombre", aud.getCargoNombre().name());
                 }
             });
 
-            docenteRepository.findById(u.getId()).ifPresent(doc -> {
+            docenteRepository.findById(id).ifPresent(doc -> {
                 if (doc.getDni() != null) {
                     map.put("dni", String.valueOf(doc.getDni()));
                 }

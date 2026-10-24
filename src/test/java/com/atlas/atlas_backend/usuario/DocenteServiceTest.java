@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.Optional;
 import org.springframework.lang.NonNull;
 
@@ -289,7 +290,8 @@ public class DocenteServiceTest {
         );
 
         assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST, ex.getStatusCode());
-        assertTrue(ex.getReason().contains("DNI es inmutable"));
+        assertNotNull(ex.getReason());
+        assertTrue(Objects.requireNonNull(ex.getReason()).contains("DNI es inmutable"));
     }
 
     @Test
@@ -322,7 +324,8 @@ public class DocenteServiceTest {
         );
 
         assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST, ex.getStatusCode());
-        assertTrue(ex.getReason().contains("correo institucional ya se encuentra registrado"));
+        assertNotNull(ex.getReason());
+        assertTrue(Objects.requireNonNull(ex.getReason()).contains("correo institucional ya se encuentra registrado"));
     }
 
     @Test
@@ -358,6 +361,48 @@ public class DocenteServiceTest {
         );
 
         assertTrue(ex.getMessage().contains("No tiene permisos"));
+    }
+
+    @Test
+    public void testGetTeacherProfile_MapsFullPersonalData() throws Exception {
+        Docente docente = new Docente();
+        docente.setId(10);
+        docente.setUsername("jdoe");
+        docente.setCorreo("jdoe@facultad.edu");
+        docente.setTipoDni("DNI");
+        docente.setDni(12345678L);
+        docente.setCuil(20123456780L);
+        docente.setDomicilio("Av. Siempreviva 742");
+        docente.setAntigPrevia(4);
+        docente.setFechaIngreso(LocalDate.of(2019, 3, 1));
+        docente.setEmailInstitucional("jdoe@facultad.edu");
+        docente.setNombre("John");
+        docente.setApellido("Doe");
+        docente.setEstado("Activo");
+        docente.setTelefonos(java.util.List.of("1234567", "7654321"));
+
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(docente));
+        when(designacionRepository.findByUsuarioId(10)).thenReturn(java.util.List.of());
+
+        DocenteDetailsDTO dto = docenteService.getTeacherProfile(10);
+
+        assertNotNull(dto);
+        assertNotNull(dto.getDatosPersonales());
+        DocenteDetailsDTO.PersonalData pd = dto.getDatosPersonales();
+        assertEquals(10, pd.getUsuarioId());
+        assertEquals("jdoe", pd.getUsername());
+        assertEquals("jdoe@facultad.edu", pd.getCorreo());
+        assertEquals("DNI", pd.getTipoDni());
+        assertEquals(12345678L, pd.getDni());
+        assertEquals(20123456780L, pd.getCuil());
+        assertEquals("Av. Siempreviva 742", pd.getDomicilio());
+        assertEquals(4, pd.getAntigPrevia());
+        assertEquals(LocalDate.of(2019, 3, 1), pd.getFechaIngreso());
+        assertEquals("jdoe@facultad.edu", pd.getEmailInstitucional());
+        assertEquals("John", pd.getNombre());
+        assertEquals("Doe", pd.getApellido());
+        assertEquals("Activo", pd.getEstado());
+        assertEquals(2, pd.getTelefonos().size());
     }
 }
 

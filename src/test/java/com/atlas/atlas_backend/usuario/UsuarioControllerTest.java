@@ -209,7 +209,7 @@ public class UsuarioControllerTest {
                 user.setRol(rol);
 
                 org.springframework.data.domain.Page<Usuario> page = new org.springframework.data.domain.PageImpl<>(
-                                java.util.List.of(user),
+                                java.util.Objects.requireNonNull(java.util.List.of(user)),
                                 org.springframework.data.domain.PageRequest.of(0, 10),
                                 1
                 );

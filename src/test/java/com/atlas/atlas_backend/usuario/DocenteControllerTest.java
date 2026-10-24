@@ -133,7 +133,7 @@ public class DocenteControllerTest {
                         """;
 
                 mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/docentes/1")
-                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .contentType(Objects.requireNonNull(org.springframework.http.MediaType.APPLICATION_JSON))
                                 .content(requestJson))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.datosPersonales.nombre").value("Carlos"))
@@ -156,7 +156,7 @@ public class DocenteControllerTest {
                         """;
 
                 mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/docentes/1")
-                                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                                .contentType(Objects.requireNonNull(org.springframework.http.MediaType.APPLICATION_JSON))
                                 .content(requestJson))
                                 .andExpect(status().isForbidden())
                                 .andExpect(jsonPath("$.message").value("No tiene permisos para modificar docentes de otra unidad"));
