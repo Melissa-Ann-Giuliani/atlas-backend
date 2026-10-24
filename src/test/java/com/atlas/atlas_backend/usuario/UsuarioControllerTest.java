@@ -42,6 +42,21 @@ public class UsuarioControllerTest {
         private DocenteService docenteService;
 
         @MockBean
+        private UsuarioRepository usuarioRepository;
+
+        @MockBean
+        private AdminGlobalRepository adminGlobalRepository;
+
+        @MockBean
+        private AdminUnidadRepository adminUnidadRepository;
+
+        @MockBean
+        private AuditorRepository auditorRepository;
+
+        @MockBean
+        private DocenteRepository docenteRepository;
+
+        @MockBean
         private com.atlas.atlas_backend.security.JwtUtil jwtUtil;
 
         @MockBean
@@ -176,5 +191,65 @@ public class UsuarioControllerTest {
                                 .andExpect(jsonPath("$[0].nombre").value("DNI"))
                                 .andExpect(jsonPath("$[1].value").value("PASAPORTE"))
                                 .andExpect(jsonPath("$[1].nombre").value("Pasaporte"));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN_GLOBAL")
+        public void testGetUsuarios_FilterByRoleAndSearch_Success() throws Exception {
+                Usuario user = new Usuario();
+                user.setId(10);
+                user.setUsername("admin_test");
+                user.setNombre("Carlos");
+                user.setApellido("Gomez");
+                user.setCorreo("carlos@atlas.com");
+                user.setActivo(true);
+                Rol rol = new Rol();
+                rol.setId(2);
+                rol.setNombre("ADMIN_UNIDAD");
+                user.setRol(rol);
+
+                org.springframework.data.domain.Page<Usuario> page = new org.springframework.data.domain.PageImpl<>(
+                                java.util.List.of(user),
+                                org.springframework.data.domain.PageRequest.of(0, 10),
+                                1
+                );
+
+                org.mockito.Mockito.when(usuarioRepository.searchUsuarios(
+                                org.mockito.ArgumentMatchers.eq("Carlos"),
+                                org.mockito.ArgumentMatchers.eq("ADMIN_UNIDAD"),
+                                org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class)
+                )).thenReturn(page);
+
+                mockMvc.perform(get("/api/usuarios?search=Carlos&rol=ADMIN_UNIDAD"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.content[0].id").value(10))
+                                .andExpect(jsonPath("$.content[0].username").value("admin_test"))
+                                .andExpect(jsonPath("$.content[0].nombre").value("Carlos"))
+                                .andExpect(jsonPath("$.content[0].apellido").value("Gomez"))
+                                .andExpect(jsonPath("$.content[0].rol").value("ADMIN_UNIDAD"));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMIN_GLOBAL")
+        public void testGetUsuarioById_Success() throws Exception {
+                Usuario user = new Usuario();
+                user.setId(10);
+                user.setUsername("admin_test");
+                user.setNombre("Carlos");
+                user.setApellido("Gomez");
+                user.setCorreo("carlos@atlas.com");
+                user.setActivo(true);
+                Rol rol = new Rol();
+                rol.setId(2);
+                rol.setNombre("ADMIN_UNIDAD");
+                user.setRol(rol);
+
+                org.mockito.Mockito.when(usuarioRepository.findById(10)).thenReturn(java.util.Optional.of(user));
+
+                mockMvc.perform(get("/api/usuarios/10"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.id").value(10))
+                                .andExpect(jsonPath("$.username").value("admin_test"))
+                                .andExpect(jsonPath("$.nombre").value("Carlos"));
         }
 }
