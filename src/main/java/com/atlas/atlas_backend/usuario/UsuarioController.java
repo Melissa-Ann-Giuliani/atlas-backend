@@ -227,6 +227,62 @@ public class UsuarioController {
         }
     }
 
+    @PutMapping("/admin-global/{id}")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL')")
+    public ResponseEntity<?> modificarAdminGlobal(
+            @PathVariable @NonNull Integer id,
+            @Valid @RequestBody AdminGlobalUpdateRequest request,
+            java.security.Principal principal) {
+        try {
+            String authUsername = principal != null ? principal.getName() : null;
+            if (authUsername == null) {
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null) {
+                    authUsername = auth.getName();
+                }
+            }
+
+            AdminGlobal updatedAdmin = adminGlobalService.modificarAdminGlobal(id, request, authUsername);
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("message", "Administrador Global modificado exitosamente");
+            response.put("usuario", updatedAdmin);
+            return ResponseEntity.ok(response);
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/admin-unidad/{id}")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL')")
+    public ResponseEntity<?> modificarAdminUnidad(
+            @PathVariable @NonNull Integer id,
+            @Valid @RequestBody AdminUnidadUpdateRequest request,
+            java.security.Principal principal) {
+        try {
+            String authUsername = principal != null ? principal.getName() : null;
+            if (authUsername == null) {
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null) {
+                    authUsername = auth.getName();
+                }
+            }
+
+            AdminUnidad updatedAdmin = adminUnidadService.modificarAdminUnidad(id, request, authUsername);
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("message", "Administrador de Unidad modificado exitosamente");
+            response.put("usuario", updatedAdmin);
+            return ResponseEntity.ok(response);
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
     @GetMapping("/admin-global/cargos")
     @PreAuthorize("hasRole('ADMIN_GLOBAL')")
     public ResponseEntity<CargoAdminGlobal[]> getCargosAdminGlobal() {
