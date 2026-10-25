@@ -12,6 +12,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -232,7 +233,7 @@ public class AuditorServiceTest {
 
         assertEquals(org.springframework.http.HttpStatus.NOT_FOUND, ex.getStatusCode());
         assertNotNull(ex.getReason());
-        assertTrue(ex.getReason().contains("Auditor no encontrado"));
+        assertTrue(Objects.requireNonNull(ex.getReason()).contains("Auditor no encontrado"));
     }
 
     @Test
@@ -266,7 +267,7 @@ public class AuditorServiceTest {
 
         assertEquals(org.springframework.http.HttpStatus.CONFLICT, ex.getStatusCode());
         assertNotNull(ex.getReason());
-        assertTrue(ex.getReason().contains("El nombre de usuario ya se encuentra en uso"));
+        assertTrue(Objects.requireNonNull(ex.getReason()).contains("El nombre de usuario ya se encuentra en uso"));
         verify(auditorRepository, never()).save(anyAuditor());
     }
 
@@ -298,7 +299,7 @@ public class AuditorServiceTest {
 
         assertEquals(org.springframework.http.HttpStatus.CONFLICT, ex.getStatusCode());
         assertNotNull(ex.getReason());
-        assertTrue(ex.getReason().contains("El correo electrónico ya se encuentra en uso"));
+        assertTrue(Objects.requireNonNull(ex.getReason()).contains("El correo electrónico ya se encuentra en uso"));
         verify(auditorRepository, never()).save(anyAuditor());
     }
 
@@ -320,6 +321,6 @@ public class AuditorServiceTest {
 
         assertEquals(org.springframework.http.HttpStatus.NOT_FOUND, ex.getStatusCode());
         assertNotNull(ex.getReason());
-        assertTrue(ex.getReason().contains("Usuario autenticado no encontrado"));
+        assertTrue(Objects.requireNonNull(ex.getReason()).contains("Usuario autenticado no encontrado"));
     }
 }
