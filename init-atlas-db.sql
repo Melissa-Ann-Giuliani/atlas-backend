@@ -568,7 +568,11 @@ INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_corr
 ('jperez', crypt('docente123', gen_salt('bf', 10)), 'jperez@atlas.edu', 'Perez', 'Juan', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente')),
 ('mgomez', crypt('admin123', gen_salt('bf', 10)), 'mgomez@atlas.edu', 'Gomez', 'Maria', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Administrador de Unidad'));
 
--- 6.1 Insert Admin de Unidad details
+-- 6.1 Insert Admin Global details
+INSERT INTO public.admin_globales (usuario_id, cargo_ag_nombre) VALUES
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'admin'), 'DIRECCION_DE_PERSONAL');
+
+-- 6.2 Insert Admin de Unidad details
 INSERT INTO public.admin_de_unidad (usuario_id, cargo_ad_nombre, unidad_id) VALUES
 ((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'mgomez'), 'DIRECTOR', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1));
 

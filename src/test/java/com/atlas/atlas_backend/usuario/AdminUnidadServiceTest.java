@@ -40,6 +40,9 @@ public class AdminUnidadServiceTest {
     @Mock
     private EmailService emailService;
 
+    @Mock
+    private com.atlas.atlas_backend.cambio.CambioService cambioService;
+
     @InjectMocks
     private AdminUnidadService adminUnidadService;
 
@@ -61,6 +64,7 @@ public class AdminUnidadServiceTest {
         request.setCargoNombre(CargoAdminUnidad.DIRECTOR);
         request.setUnidadId(1);
     }
+
 
     @Test
     public void testRegistrarAdminUnidad_Success() throws Exception {
@@ -159,6 +163,154 @@ public class AdminUnidadServiceTest {
         });
 
         assertEquals("Unidad no encontrada", exception.getMessage());
+        verify(adminUnidadRepository, never()).save(anyAdminUnidad());
+    }
+
+    @Test
+    public void testModificarAdminUnidad_Success() {
+        Usuario authUser = new Usuario();
+        authUser.setUsername("auth_admin");
+        when(usuarioRepository.findByUsername("auth_admin")).thenReturn(Optional.of(authUser));
+
+        Unidad oldUnidad = new Unidad();
+        oldUnidad.setUnidadId(1);
+        oldUnidad.setUnidadNombre("Facultad de Ciencias");
+
+        AdminUnidad existing = new AdminUnidad();
+        existing.setId(7);
+        existing.setUsername("old_user");
+        existing.setNombre("Maria");
+        existing.setApellido("Gomez");
+        existing.setCorreo("maria.gomez@unc.edu.ar");
+        existing.setCargoNombre(CargoAdminUnidad.DIRECTOR);
+        existing.setUnidad(oldUnidad);
+
+        when(adminUnidadRepository.findById(7)).thenReturn(Optional.of(existing));
+
+        Unidad newUnidad = new Unidad();
+        newUnidad.setUnidadId(2);
+        newUnidad.setUnidadNombre("Facultad de Artes");
+        when(unidadRepository.findById(2)).thenReturn(Optional.of(newUnidad));
+
+        when(usuarioRepository.findByUsername("new_user")).thenReturn(Optional.empty());
+        when(usuarioRepository.existsByCorreoAndIdNot("maria.new@unc.edu.ar", 7)).thenReturn(false);
+        when(adminUnidadRepository.save(anyAdminUnidad())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
+        updateReq.setUsername("new_user");
+        updateReq.setNombre("Maria Ana");
+        updateReq.setApellido("Gomez Lopez");
+        updateReq.setCorreo("maria.new@unc.edu.ar");
+        updateReq.setCargoNombre(CargoAdminUnidad.VICEDIRECTOR);
+        updateReq.setUnidadId(2);
+
+        AdminUnidad result = adminUnidadService.modificarAdminUnidad(7, updateReq, "auth_admin");
+
+        assertNotNull(result);
+        assertEquals("new_user", result.getUsername());
+        assertEquals("Maria Ana", result.getNombre());
+        assertEquals("Gomez Lopez", result.getApellido());
+        assertEquals("maria.new@unc.edu.ar", result.getCorreo());
+        assertEquals(CargoAdminUnidad.VICEDIRECTOR, result.getCargoNombre());
+        assertEquals(2, result.getUnidad().getUnidadId());
+
+        verify(cambioService).registrarCambio("admin_de_unidad", "username", "old_user", "new_user", authUser);
+        verify(cambioService).registrarCambio("admin_de_unidad", "nombre", "Maria", "Maria Ana", authUser);
+        verify(cambioService).registrarCambio("admin_de_unidad", "apellido", "Gomez", "Gomez Lopez", authUser);
+        verify(cambioService).registrarCambio("admin_de_unidad", "correo", "maria.gomez@unc.edu.ar", "maria.new@unc.edu.ar", authUser);
+        verify(cambioService).registrarCambio("admin_de_unidad", "cargo_ad_nombre", CargoAdminUnidad.DIRECTOR, CargoAdminUnidad.VICEDIRECTOR, authUser);
+        verify(cambioService).registrarCambio("admin_de_unidad", "unidad_id", 1, 2, authUser);
+        verify(adminUnidadRepository).save(existing);
+    }
+
+    @Test
+    public void testModificarAdminUnidad_NotFound() {
+        Usuario authUser = new Usuario();
+        authUser.setUsername("auth_admin");
+        when(usuarioRepository.findByUsername("auth_admin")).thenReturn(Optional.of(authUser));
+        when(adminUnidadRepository.findById(999)).thenReturn(Optional.empty());
+
+        AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
+        updateReq.setUsername("user");
+        updateReq.setNombre("Name");
+        updateReq.setApellido("Lastname");
+        updateReq.setCorreo("email@test.com");
+        updateReq.setCargoNombre(CargoAdminUnidad.DIRECTOR);
+        updateReq.setUnidadId(1);
+
+        org.springframework.web.server.ResponseStatusException ex = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> adminUnidadService.modificarAdminUnidad(999, updateReq, "auth_admin")
+        );
+
+        assertEquals(org.springframework.http.HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertTrue(java.util.Objects.requireNonNull(ex.getReason()).contains("Administrador de Unidad no encontrado"));
+    }
+
+    @Test
+    public void testModificarAdminUnidad_UsernameConflict() {
+        Usuario authUser = new Usuario();
+        authUser.setUsername("auth_admin");
+        when(usuarioRepository.findByUsername("auth_admin")).thenReturn(Optional.of(authUser));
+
+        AdminUnidad existing = new AdminUnidad();
+        existing.setId(7);
+        existing.setUsername("old_user");
+        existing.setCorreo("email@test.com");
+        when(adminUnidadRepository.findById(7)).thenReturn(Optional.of(existing));
+
+        Usuario otherUser = new Usuario();
+        otherUser.setId(10);
+        otherUser.setUsername("duplicate_user");
+        when(usuarioRepository.findByUsername("duplicate_user")).thenReturn(Optional.of(otherUser));
+
+        AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
+        updateReq.setUsername("duplicate_user");
+        updateReq.setNombre("Name");
+        updateReq.setApellido("Lastname");
+        updateReq.setCorreo("email@test.com");
+        updateReq.setCargoNombre(CargoAdminUnidad.DIRECTOR);
+        updateReq.setUnidadId(1);
+
+        org.springframework.web.server.ResponseStatusException ex = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> adminUnidadService.modificarAdminUnidad(7, updateReq, "auth_admin")
+        );
+
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT, ex.getStatusCode());
+        assertTrue(java.util.Objects.requireNonNull(ex.getReason()).contains("El nombre de usuario ya se encuentra en uso"));
+        verify(adminUnidadRepository, never()).save(anyAdminUnidad());
+    }
+
+    @Test
+    public void testModificarAdminUnidad_EmailConflict() {
+        Usuario authUser = new Usuario();
+        authUser.setUsername("auth_admin");
+        when(usuarioRepository.findByUsername("auth_admin")).thenReturn(Optional.of(authUser));
+
+        AdminUnidad existing = new AdminUnidad();
+        existing.setId(7);
+        existing.setUsername("admin_u");
+        existing.setCorreo("old@test.com");
+        when(adminUnidadRepository.findById(7)).thenReturn(Optional.of(existing));
+
+        when(usuarioRepository.existsByCorreoAndIdNot("taken@test.com", 7)).thenReturn(true);
+
+        AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
+        updateReq.setUsername("admin_u");
+        updateReq.setNombre("Name");
+        updateReq.setApellido("Lastname");
+        updateReq.setCorreo("taken@test.com");
+        updateReq.setCargoNombre(CargoAdminUnidad.DIRECTOR);
+        updateReq.setUnidadId(1);
+
+        org.springframework.web.server.ResponseStatusException ex = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> adminUnidadService.modificarAdminUnidad(7, updateReq, "auth_admin")
+        );
+
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT, ex.getStatusCode());
+        assertTrue(java.util.Objects.requireNonNull(ex.getReason()).contains("El correo electrónico ya se encuentra en uso"));
         verify(adminUnidadRepository, never()).save(anyAdminUnidad());
     }
 }

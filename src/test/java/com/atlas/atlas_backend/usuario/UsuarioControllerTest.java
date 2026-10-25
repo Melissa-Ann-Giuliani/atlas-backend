@@ -349,4 +349,77 @@ public class UsuarioControllerTest {
                                 .andExpect(status().isNotFound())
                                 .andExpect(jsonPath("$.message").value("Administrador Global no encontrado"));
         }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testModificarAdminUnidad_Success() throws Exception {
+                AdminUnidad updated = new AdminUnidad();
+                updated.setId(7);
+                updated.setUsername("admin_u_mod");
+                updated.setNombre("Maria Ana");
+                updated.setApellido("Gomez");
+                updated.setCorreo("maria@atlas.com");
+                updated.setCargoNombre(CargoAdminUnidad.DIRECTOR);
+
+                when(adminUnidadService.modificarAdminUnidad(eq(7), any(AdminUnidadUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                                .thenReturn(updated);
+
+                AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
+                updateReq.setUsername("admin_u_mod");
+                updateReq.setNombre("Maria Ana");
+                updateReq.setApellido("Gomez");
+                updateReq.setCorreo("maria@atlas.com");
+                updateReq.setCargoNombre(CargoAdminUnidad.DIRECTOR);
+                updateReq.setUnidadId(1);
+
+                mockMvc.perform(put("/api/usuarios/admin-unidad/7")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(updateReq))))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value("Administrador de Unidad modificado exitosamente"))
+                                .andExpect(jsonPath("$.usuario.username").value("admin_u_mod"))
+                                .andExpect(jsonPath("$.usuario.nombre").value("Maria Ana"))
+                                .andExpect(jsonPath("$.usuario.cargoNombre").value("DIRECTOR"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testModificarAdminUnidad_ValidationError() throws Exception {
+                AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
+                updateReq.setUsername(""); // blank username
+                updateReq.setNombre("Maria");
+                updateReq.setApellido("Gomez");
+                updateReq.setCorreo("invalid-email");
+                updateReq.setCargoNombre(null);
+                updateReq.setUnidadId(null);
+
+                mockMvc.perform(put("/api/usuarios/admin-unidad/7")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(updateReq))))
+                                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testModificarAdminUnidad_Conflict() throws Exception {
+                when(adminUnidadService.modificarAdminUnidad(eq(7), any(AdminUnidadUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                                                org.springframework.http.HttpStatus.CONFLICT,
+                                                "El nombre de usuario ya se encuentra en uso"
+                                ));
+
+                AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
+                updateReq.setUsername("existing_user");
+                updateReq.setNombre("Maria");
+                updateReq.setApellido("Gomez");
+                updateReq.setCorreo("maria@atlas.com");
+                updateReq.setCargoNombre(CargoAdminUnidad.DIRECTOR);
+                updateReq.setUnidadId(1);
+
+                mockMvc.perform(put("/api/usuarios/admin-unidad/7")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(updateReq))))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.message").value("El nombre de usuario ya se encuentra en uso"));
+        }
 }
