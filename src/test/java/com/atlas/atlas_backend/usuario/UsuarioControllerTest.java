@@ -470,4 +470,97 @@ public class UsuarioControllerTest {
                                 .andExpect(status().isNotFound())
                                 .andExpect(jsonPath("$.message").value("Unidad no encontrada"));
         }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testModificarAuditor_Success() throws Exception {
+                Auditor updated = new Auditor();
+                updated.setId(15);
+                updated.setUsername("carlos_lopez_decano");
+                updated.setNombre("Carlos Alberto");
+                updated.setApellido("Lopez Martinez");
+                updated.setCorreo("c.lopez@unc.edu.ar");
+                updated.setCargoNombre(CargoAuditor.DECANO);
+
+                when(auditorService.modificarAuditor(eq(15), any(AuditorUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                                .thenReturn(updated);
+
+                AuditorUpdateRequest updateReq = new AuditorUpdateRequest();
+                updateReq.setUsername("carlos_lopez_decano");
+                updateReq.setNombre("Carlos Alberto");
+                updateReq.setApellido("Lopez Martinez");
+                updateReq.setCorreo("c.lopez@unc.edu.ar");
+                updateReq.setCargoNombre(CargoAuditor.DECANO);
+
+                mockMvc.perform(put("/api/usuarios/auditor/15")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(updateReq))))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value("Auditor modificado exitosamente"))
+                                .andExpect(jsonPath("$.usuario.username").value("carlos_lopez_decano"))
+                                .andExpect(jsonPath("$.usuario.nombre").value("Carlos Alberto"))
+                                .andExpect(jsonPath("$.usuario.cargoNombre").value("DECANO"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testModificarAuditor_ValidationFailure() throws Exception {
+                AuditorUpdateRequest updateReq = new AuditorUpdateRequest();
+                updateReq.setUsername("");
+                updateReq.setNombre("");
+                updateReq.setApellido("Lopez");
+                updateReq.setCorreo("invalid-email");
+                updateReq.setCargoNombre(null);
+
+                mockMvc.perform(put("/api/usuarios/auditor/15")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(updateReq))))
+                                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testModificarAuditor_Conflict() throws Exception {
+                when(auditorService.modificarAuditor(eq(15), any(AuditorUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                                                org.springframework.http.HttpStatus.CONFLICT,
+                                                "El nombre de usuario ya se encuentra en uso"
+                                ));
+
+                AuditorUpdateRequest updateReq = new AuditorUpdateRequest();
+                updateReq.setUsername("juan_perez");
+                updateReq.setNombre("Carlos");
+                updateReq.setApellido("Lopez");
+                updateReq.setCorreo("carlos@unc.edu.ar");
+                updateReq.setCargoNombre(CargoAuditor.VICEDECANO);
+
+                mockMvc.perform(put("/api/usuarios/auditor/15")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(updateReq))))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.message").value("El nombre de usuario ya se encuentra en uso"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testModificarAuditor_NotFound() throws Exception {
+                when(auditorService.modificarAuditor(eq(9999), any(AuditorUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                                                org.springframework.http.HttpStatus.NOT_FOUND,
+                                                "Auditor no encontrado"
+                                ));
+
+                AuditorUpdateRequest updateReq = new AuditorUpdateRequest();
+                updateReq.setUsername("non_existent");
+                updateReq.setNombre("Carlos");
+                updateReq.setApellido("Lopez");
+                updateReq.setCorreo("carlos@unc.edu.ar");
+                updateReq.setCargoNombre(CargoAuditor.DECANO);
+
+                mockMvc.perform(put("/api/usuarios/auditor/9999")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(updateReq))))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("Auditor no encontrado"));
+        }
 }
