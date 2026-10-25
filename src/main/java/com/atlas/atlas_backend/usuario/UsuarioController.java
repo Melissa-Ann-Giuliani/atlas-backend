@@ -287,6 +287,36 @@ public class UsuarioController {
         }
     }
 
+    @PutMapping("/auditor/{id}")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL')")
+    public ResponseEntity<?> modificarAuditor(
+            @PathVariable @NonNull Integer id,
+            @Valid @RequestBody AuditorUpdateRequest request,
+            org.springframework.security.core.Authentication authentication) {
+        try {
+            String authUsername = authentication != null ? authentication.getName() : null;
+            if (authUsername == null) {
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                if (auth != null) {
+                    authUsername = auth.getName();
+                }
+            }
+
+            Auditor updatedAuditor = auditorService.modificarAuditor(id, request, authUsername);
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("message", "Auditor modificado exitosamente");
+            response.put("usuario", buildAuditorMap(updatedAuditor));
+            return ResponseEntity.ok(response);
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse(e.getMessage() != null ? e.getMessage() : "Error interno del servidor"));
+        }
+    }
+
     @GetMapping("/admin-global/cargos")
     @PreAuthorize("hasRole('ADMIN_GLOBAL')")
     public ResponseEntity<CargoAdminGlobal[]> getCargosAdminGlobal() {
@@ -451,6 +481,28 @@ public class UsuarioController {
         if (ag.getCargoNombre() != null) {
             map.put("cargoNombre", ag.getCargoNombre().name());
             map.put("cargo", ag.getCargoNombre().name());
+        }
+        return map;
+    }
+
+    private java.util.Map<String, Object> buildAuditorMap(Auditor aud) {
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        if (aud == null) {
+            return map;
+        }
+        map.put("id", aud.getId());
+        map.put("usuarioId", aud.getId());
+        map.put("username", aud.getUsername());
+        map.put("nombre", aud.getNombre());
+        map.put("apellido", aud.getApellido());
+        map.put("correo", aud.getCorreo());
+        map.put("activo", aud.getActivo());
+        if (aud.getRol() != null) {
+            map.put("rol", aud.getRol().getNombre());
+        }
+        if (aud.getCargoNombre() != null) {
+            map.put("cargoNombre", aud.getCargoNombre().name());
+            map.put("cargo", aud.getCargoNombre().name());
         }
         return map;
     }
