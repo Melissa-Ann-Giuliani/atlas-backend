@@ -215,10 +215,10 @@ public class UsuarioController {
             if (warningMessage.length() > 0) {
                 return ResponseEntity.status(HttpStatus.CREATED)
                         .body(java.util.Map.of("message", "Usuario registrado, pero: " + warningMessage.toString(),
-                                "usuario", user));
+                                "usuario", buildAdminGlobalMap(user)));
             }
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(java.util.Map.of("message", "Administrador Global registrado exitosamente", "usuario", user));
+                    .body(java.util.Map.of("message", "Administrador Global registrado exitosamente", "usuario", buildAdminGlobalMap(user)));
         } catch (Exception e) {
             if (e.getMessage().contains("ya existe")) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(e.getMessage()));
@@ -232,9 +232,9 @@ public class UsuarioController {
     public ResponseEntity<?> modificarAdminGlobal(
             @PathVariable @NonNull Integer id,
             @Valid @RequestBody AdminGlobalUpdateRequest request,
-            java.security.Principal principal) {
+            org.springframework.security.core.Authentication authentication) {
         try {
-            String authUsername = principal != null ? principal.getName() : null;
+            String authUsername = authentication != null ? authentication.getName() : null;
             if (authUsername == null) {
                 org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
                 if (auth != null) {
@@ -245,13 +245,15 @@ public class UsuarioController {
             AdminGlobal updatedAdmin = adminGlobalService.modificarAdminGlobal(id, request, authUsername);
             java.util.Map<String, Object> response = new java.util.HashMap<>();
             response.put("message", "Administrador Global modificado exitosamente");
-            response.put("usuario", updatedAdmin);
+            response.put("usuario", buildAdminGlobalMap(updatedAdmin));
             return ResponseEntity.ok(response);
         } catch (org.springframework.web.server.ResponseStatusException e) {
             String msg = e.getReason() != null ? e.getReason() : e.getMessage();
             return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse(e.getMessage() != null ? e.getMessage() : "Error interno del servidor"));
         }
     }
 
@@ -260,9 +262,9 @@ public class UsuarioController {
     public ResponseEntity<?> modificarAdminUnidad(
             @PathVariable @NonNull Integer id,
             @Valid @RequestBody AdminUnidadUpdateRequest request,
-            java.security.Principal principal) {
+            org.springframework.security.core.Authentication authentication) {
         try {
-            String authUsername = principal != null ? principal.getName() : null;
+            String authUsername = authentication != null ? authentication.getName() : null;
             if (authUsername == null) {
                 org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
                 if (auth != null) {
@@ -273,13 +275,15 @@ public class UsuarioController {
             AdminUnidad updatedAdmin = adminUnidadService.modificarAdminUnidad(id, request, authUsername);
             java.util.Map<String, Object> response = new java.util.HashMap<>();
             response.put("message", "Administrador de Unidad modificado exitosamente");
-            response.put("usuario", updatedAdmin);
+            response.put("usuario", buildAdminUnidadMap(updatedAdmin));
             return ResponseEntity.ok(response);
         } catch (org.springframework.web.server.ResponseStatusException e) {
             String msg = e.getReason() != null ? e.getReason() : e.getMessage();
             return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse(e.getMessage() != null ? e.getMessage() : "Error interno del servidor"));
         }
     }
 
@@ -335,11 +339,11 @@ public class UsuarioController {
             if (warningMessage.length() > 0) {
                 return ResponseEntity.status(HttpStatus.CREATED)
                         .body(java.util.Map.of("message", "Usuario registrado, pero: " + warningMessage.toString(),
-                                "usuario", user));
+                                "usuario", buildAdminUnidadMap(user)));
             }
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(java.util.Map.of("message", "Administrador de Unidad registrado exitosamente", "usuario",
-                            user));
+                            buildAdminUnidadMap(user)));
         } catch (Exception e) {
             e.printStackTrace();
             if (e.getMessage() != null && e.getMessage().contains("ya existe")) {
@@ -394,6 +398,61 @@ public class UsuarioController {
             String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(msg));
         }
+    }
+
+    private java.util.Map<String, Object> buildAdminUnidadMap(AdminUnidad au) {
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        if (au == null) {
+            return map;
+        }
+        map.put("id", au.getId());
+        map.put("usuarioId", au.getId());
+        map.put("username", au.getUsername());
+        map.put("nombre", au.getNombre());
+        map.put("apellido", au.getApellido());
+        map.put("correo", au.getCorreo());
+        map.put("activo", au.getActivo());
+        if (au.getRol() != null) {
+            map.put("rol", au.getRol().getNombre());
+        }
+        if (au.getCargoNombre() != null) {
+            map.put("cargoNombre", au.getCargoNombre().name());
+            map.put("cargo", au.getCargoNombre().name());
+        }
+        if (au.getUnidad() != null) {
+            map.put("unidadId", au.getUnidad().getUnidadId());
+            map.put("unidad", au.getUnidad().getUnidadNombre());
+            try {
+                if (au.getUnidad().getTipoUnidad() != null) {
+                    map.put("tipoUnidadId", au.getUnidad().getTipoUnidad().getId());
+                    map.put("dependencia", au.getUnidad().getTipoUnidad().getId());
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return map;
+    }
+
+    private java.util.Map<String, Object> buildAdminGlobalMap(AdminGlobal ag) {
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        if (ag == null) {
+            return map;
+        }
+        map.put("id", ag.getId());
+        map.put("usuarioId", ag.getId());
+        map.put("username", ag.getUsername());
+        map.put("nombre", ag.getNombre());
+        map.put("apellido", ag.getApellido());
+        map.put("correo", ag.getCorreo());
+        map.put("activo", ag.getActivo());
+        if (ag.getRol() != null) {
+            map.put("rol", ag.getRol().getNombre());
+        }
+        if (ag.getCargoNombre() != null) {
+            map.put("cargoNombre", ag.getCargoNombre().name());
+            map.put("cargo", ag.getCargoNombre().name());
+        }
+        return map;
     }
 
 }

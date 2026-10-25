@@ -422,4 +422,52 @@ public class UsuarioControllerTest {
                                 .andExpect(status().isConflict())
                                 .andExpect(jsonPath("$.message").value("El nombre de usuario ya se encuentra en uso"));
         }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testModificarAdminUnidad_NotFound() throws Exception {
+                when(adminUnidadService.modificarAdminUnidad(eq(999), any(AdminUnidadUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                                                org.springframework.http.HttpStatus.NOT_FOUND,
+                                                "Administrador de Unidad no encontrado"
+                                ));
+
+                AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
+                updateReq.setUsername("non_existent");
+                updateReq.setNombre("Maria");
+                updateReq.setApellido("Gomez");
+                updateReq.setCorreo("maria@atlas.com");
+                updateReq.setCargoNombre(CargoAdminUnidad.DIRECTOR);
+                updateReq.setUnidadId(1);
+
+                mockMvc.perform(put("/api/usuarios/admin-unidad/999")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(updateReq))))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("Administrador de Unidad no encontrado"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testModificarAdminUnidad_UnidadNotFound() throws Exception {
+                when(adminUnidadService.modificarAdminUnidad(eq(7), any(AdminUnidadUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                                                org.springframework.http.HttpStatus.NOT_FOUND,
+                                                "Unidad no encontrada"
+                                ));
+
+                AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
+                updateReq.setUsername("maria");
+                updateReq.setNombre("Maria");
+                updateReq.setApellido("Gomez");
+                updateReq.setCorreo("maria@atlas.com");
+                updateReq.setCargoNombre(CargoAdminUnidad.DIRECTOR);
+                updateReq.setUnidadId(999);
+
+                mockMvc.perform(put("/api/usuarios/admin-unidad/7")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(updateReq))))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("Unidad no encontrada"));
+        }
 }

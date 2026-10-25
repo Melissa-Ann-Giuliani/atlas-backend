@@ -19,6 +19,7 @@ public class Usuario {
     @Column(name = "usuario_username", nullable = false, length = 50)
     private String username;
 
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "usuario_contrasenia", nullable = false, length = 255)
     private String contrasenia;
 

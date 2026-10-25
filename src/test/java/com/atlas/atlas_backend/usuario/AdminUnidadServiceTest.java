@@ -313,4 +313,36 @@ public class AdminUnidadServiceTest {
         assertTrue(java.util.Objects.requireNonNull(ex.getReason()).contains("El correo electrónico ya se encuentra en uso"));
         verify(adminUnidadRepository, never()).save(anyAdminUnidad());
     }
+
+    @Test
+    public void testModificarAdminUnidad_UnidadNotFound() {
+        Usuario authUser = new Usuario();
+        authUser.setUsername("auth_admin");
+        when(usuarioRepository.findByUsername("auth_admin")).thenReturn(Optional.of(authUser));
+
+        AdminUnidad existing = new AdminUnidad();
+        existing.setId(7);
+        existing.setUsername("admin_u");
+        existing.setCorreo("test@test.com");
+        when(adminUnidadRepository.findById(7)).thenReturn(Optional.of(existing));
+
+        when(unidadRepository.findById(999)).thenReturn(Optional.empty());
+
+        AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
+        updateReq.setUsername("admin_u");
+        updateReq.setNombre("Name");
+        updateReq.setApellido("Lastname");
+        updateReq.setCorreo("test@test.com");
+        updateReq.setCargoNombre(CargoAdminUnidad.DIRECTOR);
+        updateReq.setUnidadId(999);
+
+        org.springframework.web.server.ResponseStatusException ex = assertThrows(
+                org.springframework.web.server.ResponseStatusException.class,
+                () -> adminUnidadService.modificarAdminUnidad(7, updateReq, "auth_admin")
+        );
+
+        assertEquals(org.springframework.http.HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertTrue(java.util.Objects.requireNonNull(ex.getReason()).contains("Unidad no encontrada"));
+        verify(adminUnidadRepository, never()).save(anyAdminUnidad());
+    }
 }
