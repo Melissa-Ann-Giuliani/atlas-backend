@@ -124,15 +124,16 @@ public class UsuarioService {
             if (doc.getCuil() != null) {
                 map.put("cuil", String.valueOf(doc.getCuil()));
             }
-        } else {
-            adminGlobalRepository.findById(u.getId()).ifPresent(ag -> {
+        } else if (u.getId() != null) {
+            Integer userId = Objects.requireNonNull(u.getId());
+            adminGlobalRepository.findById(userId).ifPresent(ag -> {
                 if (ag.getCargoNombre() != null) {
                     map.put("cargo", ag.getCargoNombre().name());
                     map.put("cargoNombre", ag.getCargoNombre().name());
                 }
             });
 
-            adminUnidadRepository.findById(u.getId()).ifPresent(au -> {
+            adminUnidadRepository.findById(userId).ifPresent(au -> {
                 if (au.getCargoNombre() != null) {
                     map.put("cargo", au.getCargoNombre().name());
                     map.put("cargoNombre", au.getCargoNombre().name());
@@ -143,7 +144,7 @@ public class UsuarioService {
                 }
             });
 
-            auditorRepository.findById(u.getId()).ifPresent(aud -> {
+            auditorRepository.findById(userId).ifPresent(aud -> {
                 if (aud.getCargoNombre() != null) {
                     map.put("cargo", aud.getCargoNombre().name());
                     map.put("cargoNombre", aud.getCargoNombre().name());

@@ -55,12 +55,14 @@ public class UsuarioController {
             @RequestParam(required = false) String rol,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
-        String cleanSearch = (search != null && search.trim().isEmpty()) ? null : (search != null ? search.trim() : null);
+
+        String cleanSearch = (search != null && search.trim().isEmpty()) ? null
+                : (search != null ? search.trim() : null);
         String cleanRol = (rol != null && rol.trim().isEmpty()) ? null : (rol != null ? rol.trim() : null);
 
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
-        org.springframework.data.domain.Page<Usuario> usuariosPage = usuarioRepository.searchUsuarios(cleanSearch, cleanRol, pageable);
+        org.springframework.data.domain.Page<Usuario> usuariosPage = usuarioRepository.searchUsuarios(cleanSearch,
+                cleanRol, pageable);
 
         org.springframework.data.domain.Page<UsuarioListDTO> dtoPage = usuariosPage.map(u -> {
             UsuarioListDTO dto = new UsuarioListDTO();
@@ -221,7 +223,8 @@ public class UsuarioController {
                                 "usuario", buildAdminGlobalMap(user)));
             }
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(java.util.Map.of("message", "Administrador Global registrado exitosamente", "usuario", buildAdminGlobalMap(user)));
+                    .body(java.util.Map.of("message", "Administrador Global registrado exitosamente", "usuario",
+                            buildAdminGlobalMap(user)));
         } catch (Exception e) {
             if (e.getMessage().contains("ya existe")) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(e.getMessage()));
@@ -239,7 +242,8 @@ public class UsuarioController {
         try {
             String authUsername = authentication != null ? authentication.getName() : null;
             if (authUsername == null) {
-                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication();
                 if (auth != null) {
                     authUsername = auth.getName();
                 }
@@ -269,7 +273,8 @@ public class UsuarioController {
         try {
             String authUsername = authentication != null ? authentication.getName() : null;
             if (authUsername == null) {
-                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication();
                 if (auth != null) {
                     authUsername = auth.getName();
                 }
@@ -299,7 +304,8 @@ public class UsuarioController {
         try {
             String authUsername = authentication != null ? authentication.getName() : null;
             if (authUsername == null) {
-                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication();
                 if (auth != null) {
                     authUsername = auth.getName();
                 }
@@ -328,7 +334,8 @@ public class UsuarioController {
         try {
             String authUsername = authentication != null ? authentication.getName() : null;
             if (authUsername == null) {
-                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication();
                 if (auth != null) {
                     authUsername = auth.getName();
                 }

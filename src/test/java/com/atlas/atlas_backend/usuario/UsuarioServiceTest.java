@@ -10,11 +10,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,6 +25,18 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class UsuarioServiceTest {
+
+    @NonNull
+    private static Usuario anyUsuario() {
+        Usuario u = any(Usuario.class);
+        return u != null ? u : new Usuario();
+    }
+
+    @NonNull
+    private static Docente anyDocente() {
+        Docente d = any(Docente.class);
+        return d != null ? d : new Docente();
+    }
 
     @Mock
     private UsuarioRepository usuarioRepository;
@@ -105,10 +119,10 @@ public class UsuarioServiceTest {
         assertEquals("target.user", usuarioMap.get("username"));
 
         assertFalse(targetUser.getActivo());
-        verify(usuarioRepository).save(targetUser);
+        verify(usuarioRepository).save(Objects.requireNonNull(targetUser));
         verify(cambioService).registrarCambio(eq("usuarios"), eq("usuario_activo"), eq("true"), eq("false"),
                 eq(adminUser));
-        verify(docenteRepository, never()).save(any());
+        verify(docenteRepository, never()).save(anyDocente());
     }
 
     @Test
@@ -149,8 +163,8 @@ public class UsuarioServiceTest {
         assertFalse(docente.getActivo());
         assertEquals("Inactivo", docente.getEstado());
 
-        verify(usuarioRepository).save(docente);
-        verify(docenteRepository).save(docente);
+        verify(usuarioRepository).save(Objects.requireNonNull(docente));
+        verify(docenteRepository).save(Objects.requireNonNull(docente));
         verify(cambioService).registrarCambio(eq("usuarios"), eq("usuario_activo"), eq("true"), eq("false"),
                 eq(adminUser));
         verify(cambioService).registrarCambio(eq("docentes"), eq("docente_estado"), eq("Activo"), eq("Inactivo"),
@@ -181,8 +195,8 @@ public class UsuarioServiceTest {
                 () -> usuarioService.darDeBajaUsuario(25, "superadmin"));
 
         assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
-        assertTrue(ex.getReason().contains("posee cargos vigentes"));
-        verify(usuarioRepository, never()).save(any());
+        assertTrue(Objects.requireNonNull(ex.getReason()).contains("posee cargos vigentes"));
+        verify(usuarioRepository, never()).save(anyUsuario());
         verify(cambioService, never()).registrarCambio(any(), any(), any(), any(), any());
     }
 
@@ -194,7 +208,7 @@ public class UsuarioServiceTest {
                 () -> usuarioService.darDeBajaUsuario(99999, "superadmin"));
 
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
-        assertTrue(ex.getReason().contains("Usuario no encontrado"));
+        assertTrue(Objects.requireNonNull(ex.getReason()).contains("Usuario no encontrado"));
     }
 
     @Test
@@ -208,8 +222,8 @@ public class UsuarioServiceTest {
                 () -> usuarioService.darDeBajaUsuario(30, "superadmin"));
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-        assertTrue(ex.getReason().contains("ya se encuentra inactivo"));
-        verify(usuarioRepository, never()).save(any());
+        assertTrue(Objects.requireNonNull(ex.getReason()).contains("ya se encuentra inactivo"));
+        verify(usuarioRepository, never()).save(anyUsuario());
     }
 
     @Test
@@ -221,8 +235,8 @@ public class UsuarioServiceTest {
                 () -> usuarioService.darDeBajaUsuario(1, "superadmin"));
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-        assertTrue(ex.getReason().contains("No puede darse de baja a sí mismo"));
-        verify(usuarioRepository, never()).save(any());
+        assertTrue(Objects.requireNonNull(ex.getReason()).contains("No puede darse de baja a sí mismo"));
+        verify(usuarioRepository, never()).save(anyUsuario());
     }
 
     @Test
@@ -249,6 +263,6 @@ public class UsuarioServiceTest {
                 () -> usuarioService.darDeBajaUsuario(26, "superadmin"));
 
         assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
-        assertTrue(ex.getReason().contains("posee cargos vigentes"));
+        assertTrue(Objects.requireNonNull(ex.getReason()).contains("posee cargos vigentes"));
     }
 }
