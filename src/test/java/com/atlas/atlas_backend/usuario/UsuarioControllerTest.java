@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -44,6 +45,9 @@ public class UsuarioControllerTest {
 
         @MockBean
         private DocenteService docenteService;
+
+        @MockBean
+        private UsuarioService usuarioService;
 
         @MockBean
         private UsuarioRepository usuarioRepository;
@@ -562,5 +566,69 @@ public class UsuarioControllerTest {
                                 .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(updateReq))))
                                 .andExpect(status().isNotFound())
                                 .andExpect(jsonPath("$.message").value("Auditor no encontrado"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testDarDeBajaUsuario_Success() throws Exception {
+                java.util.Map<String, Object> respMap = java.util.Map.of(
+                                "message", "Usuario dado de baja exitosamente",
+                                "usuario", java.util.Map.of("id", 10, "username", "juan", "activo", false)
+                );
+
+                when(usuarioService.darDeBajaUsuario(eq(10), eq("admin_auth")))
+                                .thenReturn(respMap);
+
+                mockMvc.perform(patch("/api/usuarios/10/baja")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value("Usuario dado de baja exitosamente"))
+                                .andExpect(jsonPath("$.usuario.id").value(10))
+                                .andExpect(jsonPath("$.usuario.activo").value(false));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testDarDeBajaUsuario_Conflict_ActiveCargos() throws Exception {
+                when(usuarioService.darDeBajaUsuario(eq(25), eq("admin_auth")))
+                                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                                                org.springframework.http.HttpStatus.CONFLICT,
+                                                "No se puede dar de baja el usuario porque posee cargos vigentes"
+                                ));
+
+                mockMvc.perform(patch("/api/usuarios/25/baja")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.message").value("No se puede dar de baja el usuario porque posee cargos vigentes"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testDarDeBajaUsuario_NotFound() throws Exception {
+                when(usuarioService.darDeBajaUsuario(eq(99999), eq("admin_auth")))
+                                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                                                org.springframework.http.HttpStatus.NOT_FOUND,
+                                                "Usuario no encontrado"
+                                ));
+
+                mockMvc.perform(patch("/api/usuarios/99999/baja")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("Usuario no encontrado"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testDarDeBajaUsuario_SelfDecommission_BadRequest() throws Exception {
+                when(usuarioService.darDeBajaUsuario(eq(1), eq("admin_auth")))
+                                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                                                org.springframework.http.HttpStatus.BAD_REQUEST,
+                                                "No puede darse de baja a sí mismo"
+                                ));
+
+                mockMvc.perform(patch("/api/usuarios/1/baja")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("No puede darse de baja a sí mismo"));
         }
 }
