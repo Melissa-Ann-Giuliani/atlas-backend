@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -44,6 +45,9 @@ public class UsuarioControllerTest {
 
         @MockBean
         private DocenteService docenteService;
+
+        @MockBean
+        private UsuarioService usuarioService;
 
         @MockBean
         private UsuarioRepository usuarioRepository;
@@ -75,7 +79,8 @@ public class UsuarioControllerTest {
                 mockMvc.perform(post("/api/usuarios/42/reset-password")
                                 .contentType(MediaType.APPLICATION_JSON_VALUE))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.message").value("Contraseña generada con éxito para usuario 42."));
+                                .andExpect(jsonPath("$.message")
+                                                .value("Contraseña generada con éxito para usuario 42."));
         }
 
         @Test
@@ -157,7 +162,8 @@ public class UsuarioControllerTest {
                 mockMvc.perform(get("/api/usuarios/generar-contrasenia"))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.password").isString())
-                                .andExpect(jsonPath("$.password").value(java.util.Objects.requireNonNull(org.hamcrest.Matchers.hasLength(12))));
+                                .andExpect(jsonPath("$.password").value(
+                                                java.util.Objects.requireNonNull(org.hamcrest.Matchers.hasLength(12))));
         }
 
         @Test
@@ -215,14 +221,13 @@ public class UsuarioControllerTest {
                 org.springframework.data.domain.Page<Usuario> page = new org.springframework.data.domain.PageImpl<>(
                                 java.util.Objects.requireNonNull(java.util.List.of(user)),
                                 org.springframework.data.domain.PageRequest.of(0, 10),
-                                1
-                );
+                                1);
 
                 org.mockito.Mockito.when(usuarioRepository.searchUsuarios(
                                 org.mockito.ArgumentMatchers.eq("Carlos"),
                                 org.mockito.ArgumentMatchers.eq("ADMIN_UNIDAD"),
-                                org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class)
-                )).thenReturn(page);
+                                org.mockito.ArgumentMatchers.any(org.springframework.data.domain.Pageable.class)))
+                                .thenReturn(page);
 
                 mockMvc.perform(get("/api/usuarios?search=Carlos&rol=ADMIN_UNIDAD"))
                                 .andExpect(status().isOk())
@@ -268,7 +273,8 @@ public class UsuarioControllerTest {
                 updated.setCorreo("carlos@atlas.com");
                 updated.setCargoNombre(CargoAdminGlobal.DESPACHO);
 
-                when(adminGlobalService.modificarAdminGlobal(eq(5), any(AdminGlobalUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                when(adminGlobalService.modificarAdminGlobal(eq(5), any(AdminGlobalUpdateRequest.class),
+                                org.mockito.ArgumentMatchers.nullable(String.class)))
                                 .thenReturn(updated);
 
                 AdminGlobalUpdateRequest updateReq = new AdminGlobalUpdateRequest();
@@ -307,11 +313,11 @@ public class UsuarioControllerTest {
         @Test
         @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
         public void testModificarAdminGlobal_Conflict() throws Exception {
-                when(adminGlobalService.modificarAdminGlobal(eq(5), any(AdminGlobalUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                when(adminGlobalService.modificarAdminGlobal(eq(5), any(AdminGlobalUpdateRequest.class),
+                                org.mockito.ArgumentMatchers.nullable(String.class)))
                                 .thenThrow(new org.springframework.web.server.ResponseStatusException(
                                                 org.springframework.http.HttpStatus.CONFLICT,
-                                                "El nombre de usuario ya se encuentra en uso"
-                                ));
+                                                "El nombre de usuario ya se encuentra en uso"));
 
                 AdminGlobalUpdateRequest updateReq = new AdminGlobalUpdateRequest();
                 updateReq.setUsername("existing_user");
@@ -330,11 +336,11 @@ public class UsuarioControllerTest {
         @Test
         @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
         public void testModificarAdminGlobal_NotFound() throws Exception {
-                when(adminGlobalService.modificarAdminGlobal(eq(999), any(AdminGlobalUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                when(adminGlobalService.modificarAdminGlobal(eq(999), any(AdminGlobalUpdateRequest.class),
+                                org.mockito.ArgumentMatchers.nullable(String.class)))
                                 .thenThrow(new org.springframework.web.server.ResponseStatusException(
                                                 org.springframework.http.HttpStatus.NOT_FOUND,
-                                                "Administrador Global no encontrado"
-                                ));
+                                                "Administrador Global no encontrado"));
 
                 AdminGlobalUpdateRequest updateReq = new AdminGlobalUpdateRequest();
                 updateReq.setUsername("non_existent");
@@ -361,7 +367,8 @@ public class UsuarioControllerTest {
                 updated.setCorreo("maria@atlas.com");
                 updated.setCargoNombre(CargoAdminUnidad.DIRECTOR);
 
-                when(adminUnidadService.modificarAdminUnidad(eq(7), any(AdminUnidadUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                when(adminUnidadService.modificarAdminUnidad(eq(7), any(AdminUnidadUpdateRequest.class),
+                                org.mockito.ArgumentMatchers.nullable(String.class)))
                                 .thenReturn(updated);
 
                 AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
@@ -376,7 +383,8 @@ public class UsuarioControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                                 .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(updateReq))))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.message").value("Administrador de Unidad modificado exitosamente"))
+                                .andExpect(jsonPath("$.message")
+                                                .value("Administrador de Unidad modificado exitosamente"))
                                 .andExpect(jsonPath("$.usuario.username").value("admin_u_mod"))
                                 .andExpect(jsonPath("$.usuario.nombre").value("Maria Ana"))
                                 .andExpect(jsonPath("$.usuario.cargoNombre").value("DIRECTOR"));
@@ -402,11 +410,11 @@ public class UsuarioControllerTest {
         @Test
         @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
         public void testModificarAdminUnidad_Conflict() throws Exception {
-                when(adminUnidadService.modificarAdminUnidad(eq(7), any(AdminUnidadUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                when(adminUnidadService.modificarAdminUnidad(eq(7), any(AdminUnidadUpdateRequest.class),
+                                org.mockito.ArgumentMatchers.nullable(String.class)))
                                 .thenThrow(new org.springframework.web.server.ResponseStatusException(
                                                 org.springframework.http.HttpStatus.CONFLICT,
-                                                "El nombre de usuario ya se encuentra en uso"
-                                ));
+                                                "El nombre de usuario ya se encuentra en uso"));
 
                 AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
                 updateReq.setUsername("existing_user");
@@ -426,11 +434,11 @@ public class UsuarioControllerTest {
         @Test
         @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
         public void testModificarAdminUnidad_NotFound() throws Exception {
-                when(adminUnidadService.modificarAdminUnidad(eq(999), any(AdminUnidadUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                when(adminUnidadService.modificarAdminUnidad(eq(999), any(AdminUnidadUpdateRequest.class),
+                                org.mockito.ArgumentMatchers.nullable(String.class)))
                                 .thenThrow(new org.springframework.web.server.ResponseStatusException(
                                                 org.springframework.http.HttpStatus.NOT_FOUND,
-                                                "Administrador de Unidad no encontrado"
-                                ));
+                                                "Administrador de Unidad no encontrado"));
 
                 AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
                 updateReq.setUsername("non_existent");
@@ -450,11 +458,11 @@ public class UsuarioControllerTest {
         @Test
         @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
         public void testModificarAdminUnidad_UnidadNotFound() throws Exception {
-                when(adminUnidadService.modificarAdminUnidad(eq(7), any(AdminUnidadUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                when(adminUnidadService.modificarAdminUnidad(eq(7), any(AdminUnidadUpdateRequest.class),
+                                org.mockito.ArgumentMatchers.nullable(String.class)))
                                 .thenThrow(new org.springframework.web.server.ResponseStatusException(
                                                 org.springframework.http.HttpStatus.NOT_FOUND,
-                                                "Unidad no encontrada"
-                                ));
+                                                "Unidad no encontrada"));
 
                 AdminUnidadUpdateRequest updateReq = new AdminUnidadUpdateRequest();
                 updateReq.setUsername("maria");
@@ -482,7 +490,8 @@ public class UsuarioControllerTest {
                 updated.setCorreo("c.lopez@unc.edu.ar");
                 updated.setCargoNombre(CargoAuditor.DECANO);
 
-                when(auditorService.modificarAuditor(eq(15), any(AuditorUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                when(auditorService.modificarAuditor(eq(15), any(AuditorUpdateRequest.class),
+                                org.mockito.ArgumentMatchers.nullable(String.class)))
                                 .thenReturn(updated);
 
                 AuditorUpdateRequest updateReq = new AuditorUpdateRequest();
@@ -521,11 +530,11 @@ public class UsuarioControllerTest {
         @Test
         @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
         public void testModificarAuditor_Conflict() throws Exception {
-                when(auditorService.modificarAuditor(eq(15), any(AuditorUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                when(auditorService.modificarAuditor(eq(15), any(AuditorUpdateRequest.class),
+                                org.mockito.ArgumentMatchers.nullable(String.class)))
                                 .thenThrow(new org.springframework.web.server.ResponseStatusException(
                                                 org.springframework.http.HttpStatus.CONFLICT,
-                                                "El nombre de usuario ya se encuentra en uso"
-                                ));
+                                                "El nombre de usuario ya se encuentra en uso"));
 
                 AuditorUpdateRequest updateReq = new AuditorUpdateRequest();
                 updateReq.setUsername("juan_perez");
@@ -544,11 +553,11 @@ public class UsuarioControllerTest {
         @Test
         @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
         public void testModificarAuditor_NotFound() throws Exception {
-                when(auditorService.modificarAuditor(eq(9999), any(AuditorUpdateRequest.class), org.mockito.ArgumentMatchers.nullable(String.class)))
+                when(auditorService.modificarAuditor(eq(9999), any(AuditorUpdateRequest.class),
+                                org.mockito.ArgumentMatchers.nullable(String.class)))
                                 .thenThrow(new org.springframework.web.server.ResponseStatusException(
                                                 org.springframework.http.HttpStatus.NOT_FOUND,
-                                                "Auditor no encontrado"
-                                ));
+                                                "Auditor no encontrado"));
 
                 AuditorUpdateRequest updateReq = new AuditorUpdateRequest();
                 updateReq.setUsername("non_existent");
@@ -562,5 +571,66 @@ public class UsuarioControllerTest {
                                 .content(java.util.Objects.requireNonNull(objectMapper.writeValueAsString(updateReq))))
                                 .andExpect(status().isNotFound())
                                 .andExpect(jsonPath("$.message").value("Auditor no encontrado"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testDarDeBajaUsuario_Success() throws Exception {
+                java.util.Map<String, Object> respMap = java.util.Map.of(
+                                "message", "Usuario dado de baja exitosamente",
+                                "usuario", java.util.Map.of("id", 10, "username", "juan", "activo", false));
+
+                when(usuarioService.darDeBajaUsuario(eq(10), eq("admin_auth")))
+                                .thenReturn(respMap);
+
+                mockMvc.perform(patch("/api/usuarios/10/baja")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value("Usuario dado de baja exitosamente"))
+                                .andExpect(jsonPath("$.usuario.id").value(10))
+                                .andExpect(jsonPath("$.usuario.activo").value(false));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testDarDeBajaUsuario_Conflict_ActiveCargos() throws Exception {
+                when(usuarioService.darDeBajaUsuario(eq(25), eq("admin_auth")))
+                                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                                                org.springframework.http.HttpStatus.CONFLICT,
+                                                "No se puede dar de baja el usuario porque posee cargos vigentes"));
+
+                mockMvc.perform(patch("/api/usuarios/25/baja")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                                .andExpect(status().isConflict())
+                                .andExpect(jsonPath("$.message").value(
+                                                "No se puede dar de baja el usuario porque posee cargos vigentes"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testDarDeBajaUsuario_NotFound() throws Exception {
+                when(usuarioService.darDeBajaUsuario(eq(99999), eq("admin_auth")))
+                                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                                                org.springframework.http.HttpStatus.NOT_FOUND,
+                                                "Usuario no encontrado"));
+
+                mockMvc.perform(patch("/api/usuarios/99999/baja")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("Usuario no encontrado"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_auth", roles = "ADMIN_GLOBAL")
+        public void testDarDeBajaUsuario_SelfDecommission_BadRequest() throws Exception {
+                when(usuarioService.darDeBajaUsuario(eq(1), eq("admin_auth")))
+                                .thenThrow(new org.springframework.web.server.ResponseStatusException(
+                                                org.springframework.http.HttpStatus.BAD_REQUEST,
+                                                "No puede darse de baja a sí mismo"));
+
+                mockMvc.perform(patch("/api/usuarios/1/baja")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("No puede darse de baja a sí mismo"));
         }
 }
