@@ -885,3 +885,4 @@ INSERT INTO public.funciones (funcion_nombre, funcion_horas, cargo_id, materia_i
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matemática I' LIMIT 1)
 );
 
+COMMIT;
