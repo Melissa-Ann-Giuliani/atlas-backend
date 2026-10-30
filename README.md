@@ -14,21 +14,7 @@ Servicio backend para automatizar la automatizar la gestión de trámites corres
 
 ## Cómo empezar
 
-### Opción 1: Con Docker (Recomendada - Levanta Base de Datos y Backend automáticamente)
-
-Requisitos: Tener instalado Docker Desktop.
-
-```bash
-docker compose up -d
-```
-
-- La base de datos PostgreSQL se creará e inicializará automáticamente con los datos de prueba (`init-atlas-db.sql`).
-- La aplicación se iniciará en `http://localhost:8081`.
-- Para detener los servicios: `docker compose down`.
-
----
-
-### Opción 2: Ejecución local con Maven
+### Ejecución local con Maven
 
 Requisitos:
 - JDK 17
