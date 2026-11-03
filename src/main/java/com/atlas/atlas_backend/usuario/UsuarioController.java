@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/usuarios")
@@ -28,6 +29,156 @@ public class UsuarioController {
 
     @Autowired
     private DocenteService docenteService;
+
+    @Autowired
+    private UsuarioService usuarioService;
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private AdminGlobalRepository adminGlobalRepository;
+
+    @Autowired
+    private AdminUnidadRepository adminUnidadRepository;
+
+    @Autowired
+    private AuditorRepository auditorRepository;
+
+    @Autowired
+    private DocenteRepository docenteRepository;
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD') or hasRole('AUDITOR')")
+    public ResponseEntity<org.springframework.data.domain.Page<UsuarioListDTO>> getUsuarios(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String rol,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        String cleanSearch = (search != null && search.trim().isEmpty()) ? null
+                : (search != null ? search.trim() : null);
+        String cleanRol = (rol != null && rol.trim().isEmpty()) ? null : (rol != null ? rol.trim() : null);
+
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        org.springframework.data.domain.Page<Usuario> usuariosPage = usuarioRepository.searchUsuarios(cleanSearch,
+                cleanRol, pageable);
+
+        org.springframework.data.domain.Page<UsuarioListDTO> dtoPage = usuariosPage.map(u -> {
+            UsuarioListDTO dto = new UsuarioListDTO();
+            dto.setId(u.getId());
+            dto.setUsuarioId(u.getId());
+            dto.setUsername(u.getUsername());
+            dto.setNombre(u.getNombre());
+            dto.setApellido(u.getApellido());
+            dto.setCorreo(u.getCorreo());
+            dto.setActivo(u.getActivo());
+            dto.setRol(u.getRol() != null ? u.getRol().getNombre() : null);
+
+            // Populate specific fields if available
+            adminGlobalRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(ag -> {
+                if (ag.getCargoNombre() != null) {
+                    dto.setCargo(ag.getCargoNombre().name());
+                }
+            });
+
+            adminUnidadRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(au -> {
+                if (au.getCargoNombre() != null) {
+                    dto.setCargo(au.getCargoNombre().name());
+                }
+                if (au.getUnidad() != null) {
+                    dto.setUnidad(au.getUnidad().getUnidadNombre());
+                }
+            });
+
+            auditorRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(aud -> {
+                if (aud.getCargoNombre() != null) {
+                    dto.setCargo(aud.getCargoNombre().name());
+                }
+            });
+
+            docenteRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(doc -> {
+                if (doc.getDni() != null) {
+                    dto.setDni(String.valueOf(doc.getDni()));
+                }
+            });
+
+            return dto;
+        });
+
+        return ResponseEntity.ok(dtoPage);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD') or hasRole('AUDITOR')")
+    public ResponseEntity<?> getUsuarioById(@PathVariable @NonNull Integer id) {
+        return usuarioRepository.findById(id).map(u -> {
+            java.util.Map<String, Object> map = new java.util.HashMap<>();
+            map.put("id", u.getId());
+            map.put("usuarioId", u.getId());
+            map.put("username", u.getUsername());
+            map.put("nombre", u.getNombre());
+            map.put("apellido", u.getApellido());
+            map.put("correo", u.getCorreo());
+            map.put("activo", u.getActivo());
+            map.put("rol", u.getRol() != null ? u.getRol().getNombre() : null);
+
+            adminGlobalRepository.findById(id).ifPresent(ag -> {
+                if (ag.getCargoNombre() != null) {
+                    map.put("cargo", ag.getCargoNombre().name());
+                    map.put("cargoNombre", ag.getCargoNombre().name());
+                }
+            });
+
+            adminUnidadRepository.findById(id).ifPresent(au -> {
+                if (au.getCargoNombre() != null) {
+                    map.put("cargo", au.getCargoNombre().name());
+                    map.put("cargoNombre", au.getCargoNombre().name());
+                }
+                if (au.getUnidad() != null) {
+                    map.put("unidadId", au.getUnidad().getUnidadId());
+                    map.put("unidad", au.getUnidad().getUnidadNombre());
+                    if (au.getUnidad().getTipoUnidad() != null) {
+                        map.put("dependencia", au.getUnidad().getTipoUnidad().getId());
+                        map.put("tipoUnidadId", au.getUnidad().getTipoUnidad().getId());
+                    }
+                }
+            });
+
+            auditorRepository.findById(id).ifPresent(aud -> {
+                if (aud.getCargoNombre() != null) {
+                    map.put("cargo", aud.getCargoNombre().name());
+                    map.put("cargoNombre", aud.getCargoNombre().name());
+                }
+            });
+
+            docenteRepository.findById(id).ifPresent(doc -> {
+                if (doc.getDni() != null) {
+                    map.put("dni", String.valueOf(doc.getDni()));
+                }
+                if (doc.getCuil() != null) {
+                    map.put("cuil", String.valueOf(doc.getCuil()));
+                }
+                if (doc.getTipoDni() != null) {
+                    map.put("tipoDni", doc.getTipoDni());
+                }
+                if (doc.getDomicilio() != null) {
+                    map.put("domicilio", doc.getDomicilio());
+                }
+                if (doc.getEmailInstitucional() != null) {
+                    map.put("emailInstitucional", doc.getEmailInstitucional());
+                }
+                if (doc.getFechaIngreso() != null) {
+                    map.put("fechaIngreso", doc.getFechaIngreso().toString());
+                }
+                if (doc.getAntigPrevia() != null) {
+                    map.put("antigPrevia", doc.getAntigPrevia());
+                }
+            });
+
+            return ResponseEntity.ok((Object) map);
+        }).orElseGet(() -> ResponseEntity.notFound().build());
+    }
 
     @GetMapping({ "/generar-password", "/generar-contrasenia" })
     public ResponseEntity<?> generarPassword() {
@@ -69,15 +220,136 @@ public class UsuarioController {
             if (warningMessage.length() > 0) {
                 return ResponseEntity.status(HttpStatus.CREATED)
                         .body(java.util.Map.of("message", "Usuario registrado, pero: " + warningMessage.toString(),
-                                "usuario", user));
+                                "usuario", buildAdminGlobalMap(user)));
             }
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(java.util.Map.of("message", "Administrador Global registrado exitosamente", "usuario", user));
+                    .body(java.util.Map.of("message", "Administrador Global registrado exitosamente", "usuario",
+                            buildAdminGlobalMap(user)));
         } catch (Exception e) {
             if (e.getMessage().contains("ya existe")) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(new ErrorResponse(e.getMessage()));
             }
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/admin-global/{id}")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL')")
+    public ResponseEntity<?> modificarAdminGlobal(
+            @PathVariable @NonNull Integer id,
+            @Valid @RequestBody AdminGlobalUpdateRequest request,
+            org.springframework.security.core.Authentication authentication) {
+        try {
+            String authUsername = authentication != null ? authentication.getName() : null;
+            if (authUsername == null) {
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication();
+                if (auth != null) {
+                    authUsername = auth.getName();
+                }
+            }
+
+            AdminGlobal updatedAdmin = adminGlobalService.modificarAdminGlobal(id, request, authUsername);
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("message", "Administrador Global modificado exitosamente");
+            response.put("usuario", buildAdminGlobalMap(updatedAdmin));
+            return ResponseEntity.ok(response);
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse(e.getMessage() != null ? e.getMessage() : "Error interno del servidor"));
+        }
+    }
+
+    @PutMapping("/admin-unidad/{id}")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL')")
+    public ResponseEntity<?> modificarAdminUnidad(
+            @PathVariable @NonNull Integer id,
+            @Valid @RequestBody AdminUnidadUpdateRequest request,
+            org.springframework.security.core.Authentication authentication) {
+        try {
+            String authUsername = authentication != null ? authentication.getName() : null;
+            if (authUsername == null) {
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication();
+                if (auth != null) {
+                    authUsername = auth.getName();
+                }
+            }
+
+            AdminUnidad updatedAdmin = adminUnidadService.modificarAdminUnidad(id, request, authUsername);
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("message", "Administrador de Unidad modificado exitosamente");
+            response.put("usuario", buildAdminUnidadMap(updatedAdmin));
+            return ResponseEntity.ok(response);
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse(e.getMessage() != null ? e.getMessage() : "Error interno del servidor"));
+        }
+    }
+
+    @PutMapping("/auditor/{id}")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL')")
+    public ResponseEntity<?> modificarAuditor(
+            @PathVariable @NonNull Integer id,
+            @Valid @RequestBody AuditorUpdateRequest request,
+            org.springframework.security.core.Authentication authentication) {
+        try {
+            String authUsername = authentication != null ? authentication.getName() : null;
+            if (authUsername == null) {
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication();
+                if (auth != null) {
+                    authUsername = auth.getName();
+                }
+            }
+
+            Auditor updatedAuditor = auditorService.modificarAuditor(id, request, authUsername);
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("message", "Auditor modificado exitosamente");
+            response.put("usuario", buildAuditorMap(updatedAuditor));
+            return ResponseEntity.ok(response);
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse(e.getMessage() != null ? e.getMessage() : "Error interno del servidor"));
+        }
+    }
+
+    @PatchMapping("/{id}/baja")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL')")
+    public ResponseEntity<?> darDeBajaUsuario(
+            @PathVariable @NonNull Integer id,
+            org.springframework.security.core.Authentication authentication) {
+        try {
+            String authUsername = authentication != null ? authentication.getName() : null;
+            if (authUsername == null) {
+                org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                        .getContext().getAuthentication();
+                if (auth != null) {
+                    authUsername = auth.getName();
+                }
+            }
+
+            java.util.Map<String, Object> response = usuarioService.darDeBajaUsuario(id, authUsername);
+            return ResponseEntity.ok(response);
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse(e.getMessage() != null ? e.getMessage() : "Error interno del servidor"));
         }
     }
 
@@ -133,11 +405,11 @@ public class UsuarioController {
             if (warningMessage.length() > 0) {
                 return ResponseEntity.status(HttpStatus.CREATED)
                         .body(java.util.Map.of("message", "Usuario registrado, pero: " + warningMessage.toString(),
-                                "usuario", user));
+                                "usuario", buildAdminUnidadMap(user)));
             }
             return ResponseEntity.status(HttpStatus.CREATED)
                     .body(java.util.Map.of("message", "Administrador de Unidad registrado exitosamente", "usuario",
-                            user));
+                            buildAdminUnidadMap(user)));
         } catch (Exception e) {
             e.printStackTrace();
             if (e.getMessage() != null && e.getMessage().contains("ya existe")) {
@@ -192,6 +464,83 @@ public class UsuarioController {
             String msg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(msg));
         }
+    }
+
+    private java.util.Map<String, Object> buildAdminUnidadMap(AdminUnidad au) {
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        if (au == null) {
+            return map;
+        }
+        map.put("id", au.getId());
+        map.put("usuarioId", au.getId());
+        map.put("username", au.getUsername());
+        map.put("nombre", au.getNombre());
+        map.put("apellido", au.getApellido());
+        map.put("correo", au.getCorreo());
+        map.put("activo", au.getActivo());
+        if (au.getRol() != null) {
+            map.put("rol", au.getRol().getNombre());
+        }
+        if (au.getCargoNombre() != null) {
+            map.put("cargoNombre", au.getCargoNombre().name());
+            map.put("cargo", au.getCargoNombre().name());
+        }
+        if (au.getUnidad() != null) {
+            map.put("unidadId", au.getUnidad().getUnidadId());
+            map.put("unidad", au.getUnidad().getUnidadNombre());
+            try {
+                if (au.getUnidad().getTipoUnidad() != null) {
+                    map.put("tipoUnidadId", au.getUnidad().getTipoUnidad().getId());
+                    map.put("dependencia", au.getUnidad().getTipoUnidad().getId());
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return map;
+    }
+
+    private java.util.Map<String, Object> buildAdminGlobalMap(AdminGlobal ag) {
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        if (ag == null) {
+            return map;
+        }
+        map.put("id", ag.getId());
+        map.put("usuarioId", ag.getId());
+        map.put("username", ag.getUsername());
+        map.put("nombre", ag.getNombre());
+        map.put("apellido", ag.getApellido());
+        map.put("correo", ag.getCorreo());
+        map.put("activo", ag.getActivo());
+        if (ag.getRol() != null) {
+            map.put("rol", ag.getRol().getNombre());
+        }
+        if (ag.getCargoNombre() != null) {
+            map.put("cargoNombre", ag.getCargoNombre().name());
+            map.put("cargo", ag.getCargoNombre().name());
+        }
+        return map;
+    }
+
+    private java.util.Map<String, Object> buildAuditorMap(Auditor aud) {
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        if (aud == null) {
+            return map;
+        }
+        map.put("id", aud.getId());
+        map.put("usuarioId", aud.getId());
+        map.put("username", aud.getUsername());
+        map.put("nombre", aud.getNombre());
+        map.put("apellido", aud.getApellido());
+        map.put("correo", aud.getCorreo());
+        map.put("activo", aud.getActivo());
+        if (aud.getRol() != null) {
+            map.put("rol", aud.getRol().getNombre());
+        }
+        if (aud.getCargoNombre() != null) {
+            map.put("cargoNombre", aud.getCargoNombre().name());
+            map.put("cargo", aud.getCargoNombre().name());
+        }
+        return map;
     }
 
 }

@@ -18,5 +18,6 @@ public class Unidad {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tipo_unidad_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private TipoUnidad tipoUnidad;
 }

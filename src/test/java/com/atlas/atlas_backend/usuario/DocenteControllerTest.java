@@ -17,6 +17,7 @@ import java.util.Objects;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -24,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(DocenteController.class)
 @org.springframework.test.context.ActiveProfiles("test")
+@org.springframework.context.annotation.Import(com.atlas.atlas_backend.security.SecurityConfig.class)
 @AutoConfigureMockMvc
 public class DocenteControllerTest {
 
@@ -108,4 +110,56 @@ public class DocenteControllerTest {
                 mockMvc.perform(get("/api/docentes/999"))
                                 .andExpect(status().isNotFound());
         }
+
+        @Test
+        @WithMockUser(username = "admin", roles = { "ADMIN_GLOBAL" })
+        void modificarPerfilDocente_Returns200AndUpdatedProfile() throws Exception {
+                DocenteDetailsDTO dto = new DocenteDetailsDTO();
+                DocenteDetailsDTO.PersonalData personalData = new DocenteDetailsDTO.PersonalData();
+                personalData.setNombre("Carlos");
+                personalData.setApellido("Lopez");
+                dto.setDatosPersonales(personalData);
+
+                when(docenteService.modificarPerfilDocente(eq(1), any(DocenteProfileUpdateRequest.class), anyString()))
+                                .thenReturn(dto);
+
+                String requestJson = """
+                        {
+                            "nombre": "Carlos",
+                            "apellido": "Lopez",
+                            "emailInstitucional": "carlos@facultad.edu",
+                            "fechaIngreso": "2020-01-01"
+                        }
+                        """;
+
+                mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/docentes/1")
+                                .contentType(Objects.requireNonNull(org.springframework.http.MediaType.APPLICATION_JSON))
+                                .content(requestJson))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.datosPersonales.nombre").value("Carlos"))
+                                .andExpect(jsonPath("$.datosPersonales.apellido").value("Lopez"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_unidad", roles = { "ADMIN_UNIDAD" })
+        void modificarPerfilDocente_WhenForbidden_Returns403() throws Exception {
+                when(docenteService.modificarPerfilDocente(eq(1), any(DocenteProfileUpdateRequest.class), anyString()))
+                                .thenThrow(new org.springframework.security.access.AccessDeniedException("No tiene permisos para modificar docentes de otra unidad"));
+
+                String requestJson = """
+                        {
+                            "nombre": "Carlos",
+                            "apellido": "Lopez",
+                            "emailInstitucional": "carlos@facultad.edu",
+                            "fechaIngreso": "2020-01-01"
+                        }
+                        """;
+
+                mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/api/docentes/1")
+                                .contentType(Objects.requireNonNull(org.springframework.http.MediaType.APPLICATION_JSON))
+                                .content(requestJson))
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.message").value("No tiene permisos para modificar docentes de otra unidad"));
+        }
 }
+

@@ -25,153 +25,183 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 public class AuthControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockBean
-    private AuthService authService;
+        @MockBean
+        private AuthService authService;
 
-    @MockBean
-    private com.atlas.atlas_backend.security.JwtUtil jwtUtil;
+        @MockBean
+        private com.atlas.atlas_backend.security.JwtUtil jwtUtil;
 
-    @MockBean
-    private com.atlas.atlas_backend.security.JwtAuthenticationFilter jwtAuthenticationFilter;
+        @MockBean
+        private com.atlas.atlas_backend.security.JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+        @Autowired
+        private ObjectMapper objectMapper;
 
-    @Autowired
-    private LoginAttemptService loginAttemptService;
+        @Autowired
+        private LoginAttemptService loginAttemptService;
 
-    @BeforeEach
-    public void setup() {
-        loginAttemptService.loginSucceeded("127.0.0.1");
-    }
-
-    @Test
-    public void testScenario1_Success() throws Exception {
-        AuthRequest request = new AuthRequest("jdoe", "secret123");
-        when(authService.authenticate(any(AuthRequest.class))).thenReturn(new AuthResponse("fake-jwt-token"));
-
-        mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").value("fake-jwt-token"));
-    }
-
-    @Test
-    public void testScenario2_InvalidCredentials() throws Exception {
-        AuthRequest request = new AuthRequest("jdoe", "wrongpassword");
-        when(authService.authenticate(any(AuthRequest.class))).thenThrow(new Exception("Invalid username or password"));
-
-        mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Invalid username or password"));
-    }
-
-    @Test
-    public void testScenario3_AccountInactive() throws Exception {
-        AuthRequest request = new AuthRequest("jsmith", "any");
-        when(authService.authenticate(any(AuthRequest.class)))
-                .thenThrow(new Exception("Account is inactive, please contact support."));
-
-        mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Account is inactive, please contact support."));
-    }
-
-    @Test
-    public void testScenario4_EmptyCredentials() throws Exception {
-        AuthRequest request = new AuthRequest("", "secret123");
-
-        mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Username and password are required"));
-    }
-
-    @Test
-    public void testScenario5_RateLimitExceeded() throws Exception {
-        AuthRequest request = new AuthRequest("jdoe", "wrongpassword");
-        when(authService.authenticate(any(AuthRequest.class))).thenThrow(new Exception("Invalid username or password"));
-
-        // 5 failed attempts
-        for (int i = 0; i < 5; i++) {
-            mockMvc.perform(post("/api/auth/login")
-                    .contentType(MediaType.APPLICATION_JSON_VALUE)
-                    .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
-                    .andExpect(status().isUnauthorized());
+        @BeforeEach
+        public void setup() {
+                loginAttemptService.loginSucceeded("127.0.0.1");
         }
 
-        // 6th attempt should return 429
-        mockMvc.perform(post("/api/auth/login")
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
-                .andExpect(status().isTooManyRequests())
-                .andExpect(jsonPath("$.message").value("Too many failed attempts. Please try again later."));
-    }
+        @Test
+        public void testScenario1_Success() throws Exception {
+                AuthRequest request = new AuthRequest("jdoe", "secret123");
+                when(authService.authenticate(any(AuthRequest.class))).thenReturn(new AuthResponse("fake-jwt-token"));
 
-    @Test
-    public void testScenario1_ResetPassword_Success() throws Exception {
-        PasswordResetRequest request = new PasswordResetRequest();
-        request.setUsername("jdoe");
-        request.setCorreo("jdoe@example.com");
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.token").value("fake-jwt-token"));
+        }
 
-        mockMvc.perform(post("/api/auth/reset-password")
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Provisional password issued."));
-    }
+        @Test
+        public void testScenario1_Success_AdminUnidad() throws Exception {
+                AuthRequest request = new AuthRequest("mgomez", "secret123");
+                AuthResponse response = new AuthResponse("fake-jwt-token");
+                response.setUsername("mgomez");
+                response.setRol("ADMIN_UNIDAD");
+                response.setUnidadId(1);
+                response.setUnidadNombre("Matemática");
+                response.setTipoUnidadId(1);
+                response.setTipoUnidadNombre("Departamento");
 
-    @Test
-    public void testScenario2_ResetPassword_InvalidCredentials() throws Exception {
-        PasswordResetRequest request = new PasswordResetRequest();
-        request.setUsername("jdoe");
-        request.setCorreo("wrong@example.com");
-        
-        org.mockito.Mockito.doThrow(new Exception("No account found matching the provided credentials."))
-                .when(authService).resetPassword(any(String.class), any(String.class));
+                when(authService.authenticate(any(AuthRequest.class))).thenReturn(response);
 
-        mockMvc.perform(post("/api/auth/reset-password")
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("No account found matching the provided credentials."));
-    }
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.token").value("fake-jwt-token"))
+                                .andExpect(jsonPath("$.username").value("mgomez"))
+                                .andExpect(jsonPath("$.rol").value("ADMIN_UNIDAD"))
+                                .andExpect(jsonPath("$.unidadId").value(1))
+                                .andExpect(jsonPath("$.unidadNombre").value("Matemática"))
+                                .andExpect(jsonPath("$.tipoUnidadId").value(1))
+                                .andExpect(jsonPath("$.tipoUnidadNombre").value("Departamento"));
+        }
 
-    @Test
-    public void testScenario3_ResetPassword_InactiveAccount() throws Exception {
-        PasswordResetRequest request = new PasswordResetRequest();
-        request.setUsername("jsmith");
-        request.setCorreo("jsmith@example.com");
+        @Test
+        public void testScenario2_InvalidCredentials() throws Exception {
+                AuthRequest request = new AuthRequest("jdoe", "wrongpassword");
+                when(authService.authenticate(any(AuthRequest.class)))
+                                .thenThrow(new Exception("Invalid username or password"));
 
-        org.mockito.Mockito.doThrow(new Exception("Account is inactive, please contact support."))
-                .when(authService).resetPassword(any(String.class), any(String.class));
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.message").value("Invalid username or password"));
+        }
 
-        mockMvc.perform(post("/api/auth/reset-password")
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("Account is inactive, please contact support."));
-    }
-    
-    @Test
-    public void testScenario4_ResetPassword_EmptyFields() throws Exception {
-        PasswordResetRequest request = new PasswordResetRequest();
-        request.setUsername("");
-        request.setCorreo("jsmith@example.com");
+        @Test
+        public void testScenario3_AccountInactive() throws Exception {
+                AuthRequest request = new AuthRequest("jsmith", "any");
+                when(authService.authenticate(any(AuthRequest.class)))
+                                .thenThrow(new Exception("Account is inactive, please contact support."));
 
-        mockMvc.perform(post("/api/auth/reset-password")
-                .contentType(MediaType.APPLICATION_JSON_VALUE)
-                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Username and correo are required"));
-    }
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.message").value("Account is inactive, please contact support."));
+        }
+
+        @Test
+        public void testScenario4_EmptyCredentials() throws Exception {
+                AuthRequest request = new AuthRequest("", "secret123");
+
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("Username and password are required"));
+        }
+
+        @Test
+        public void testScenario5_RateLimitExceeded() throws Exception {
+                AuthRequest request = new AuthRequest("jdoe", "wrongpassword");
+                when(authService.authenticate(any(AuthRequest.class)))
+                                .thenThrow(new Exception("Invalid username or password"));
+
+                // 5 failed attempts
+                for (int i = 0; i < 5; i++) {
+                        mockMvc.perform(post("/api/auth/login")
+                                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                        .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
+                                        .andExpect(status().isUnauthorized());
+                }
+
+                // 6th attempt should return 429
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
+                                .andExpect(status().isTooManyRequests())
+                                .andExpect(jsonPath("$.message")
+                                                .value("Too many failed attempts. Please try again later."));
+        }
+
+        @Test
+        public void testScenario1_ResetPassword_Success() throws Exception {
+                PasswordResetRequest request = new PasswordResetRequest();
+                request.setUsername("jdoe");
+                request.setCorreo("jdoe@example.com");
+
+                mockMvc.perform(post("/api/auth/reset-password")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value("Provisional password issued."));
+        }
+
+        @Test
+        public void testScenario2_ResetPassword_InvalidCredentials() throws Exception {
+                PasswordResetRequest request = new PasswordResetRequest();
+                request.setUsername("jdoe");
+                request.setCorreo("wrong@example.com");
+
+                org.mockito.Mockito.doThrow(new Exception("No account found matching the provided credentials."))
+                                .when(authService).resetPassword(any(String.class), any(String.class));
+
+                mockMvc.perform(post("/api/auth/reset-password")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message")
+                                                .value("No account found matching the provided credentials."));
+        }
+
+        @Test
+        public void testScenario3_ResetPassword_InactiveAccount() throws Exception {
+                PasswordResetRequest request = new PasswordResetRequest();
+                request.setUsername("jsmith");
+                request.setCorreo("jsmith@example.com");
+
+                org.mockito.Mockito.doThrow(new Exception("Account is inactive, please contact support."))
+                                .when(authService).resetPassword(any(String.class), any(String.class));
+
+                mockMvc.perform(post("/api/auth/reset-password")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.message").value("Account is inactive, please contact support."));
+        }
+
+        @Test
+        public void testScenario4_ResetPassword_EmptyFields() throws Exception {
+                PasswordResetRequest request = new PasswordResetRequest();
+                request.setUsername("");
+                request.setCorreo("jsmith@example.com");
+
+                mockMvc.perform(post("/api/auth/reset-password")
+                                .contentType(MediaType.APPLICATION_JSON_VALUE)
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("Username and correo are required"));
+        }
 }

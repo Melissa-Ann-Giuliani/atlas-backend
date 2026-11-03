@@ -7,6 +7,12 @@ import lombok.Setter;
 @Setter
 public class AuthResponse {
     private String token;
+    private String username;
+    private String rol;
+    private Integer unidadId;
+    private String unidadNombre;
+    private Integer tipoUnidadId;
+    private String tipoUnidadNombre;
 
     public AuthResponse() {
     }
@@ -15,3 +21,4 @@ public class AuthResponse {
         this.token = token;
     }
 }
+

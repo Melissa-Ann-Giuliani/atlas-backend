@@ -24,13 +24,13 @@ public class AuthController {
 
         if (loginAttemptService.isBlocked(ip)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(new ErrorResponse("Too many failed attempts. Please try again later."));
+                    .body(new ErrorResponse("Demasiados intentos fallidos. Intente nuevamente más tarde."));
         }
 
         if (authRequest.getUsername() == null || authRequest.getUsername().trim().isEmpty() ||
-            authRequest.getPassword() == null || authRequest.getPassword().trim().isEmpty()) {
+                authRequest.getPassword() == null || authRequest.getPassword().trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse("Username and password are required"));
+                    .body(new ErrorResponse("Se requieren nombre de usuario y contraseña"));
         }
 
         try {
@@ -54,14 +54,14 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ErrorResponse(e.getMessage()));
             }
         }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Token missing"));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse("Token faltante"));
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         try {
             authService.register(request);
-            return ResponseEntity.ok("User registered successfully");
+            return ResponseEntity.ok("Usuario registrado con éxito");
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponse(e.getMessage()));
         }
@@ -73,26 +73,27 @@ public class AuthController {
 
         if (loginAttemptService.isBlocked(ip)) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body(new ErrorResponse("Too many failed attempts. Please try again later."));
+                    .body(new ErrorResponse("Demasiados intentos fallidos. Intente nuevamente más tarde."));
         }
 
         if (request.getUsername() == null || request.getUsername().trim().isEmpty() ||
-            request.getCorreo() == null || request.getCorreo().trim().isEmpty()) {
+                request.getCorreo() == null || request.getCorreo().trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponse("Username and correo are required"));
+                    .body(new ErrorResponse("Se requieren nombre de usuario y correo"));
         }
 
         try {
             authService.resetPassword(request.getUsername(), request.getCorreo());
             loginAttemptService.loginSucceeded(ip);
-            return ResponseEntity.ok(java.util.Map.of("message", "Provisional password issued."));
+            return ResponseEntity.ok(java.util.Map.of("message", "Se ha enviado la contraseña temporal."));
         } catch (Exception e) {
             loginAttemptService.loginFailed(ip);
             String msg = e.getMessage();
             if (msg.contains("inactive")) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(msg));
             }
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse("No account found matching the provided credentials."));
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("No se encontró cuenta con las credenciales dadas."));
         }
     }
 
