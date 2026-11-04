@@ -1,0 +1,14 @@
+target/
+.git/
+.github/
+.idea/
+.vscode/
+.agents/
+.tasks/
+deploy/
+uploads/
+.env
+application-local.properties
+**/application-local.properties
+Dockerfile
+.dockerignore

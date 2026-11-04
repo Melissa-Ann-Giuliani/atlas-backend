@@ -1,0 +1,71 @@
+# Stack de producción de Atlas en talampaya (detrás de nginx-proxy).
+# El workflow de deploy copia este archivo y init-atlas-db.sql a DEPLOY_DIR y escribe .env desde GitHub Secrets.
+# Solo se publica el frontend: su nginx sirve la SPA y reenvía /api/ al backend (un único dominio).
+name: atlas
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ATLAS
+      POSTGRES_USER: ${DB_USERNAME:-atlas}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Solo corre la primera vez, cuando el volumen está vacío: crea el esquema y carga los datos de prueba.
+      - ./init-atlas-db.sql:/docker-entrypoint-initdb.d/01-init-atlas-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 384m
+    networks: [internal]
+
+  backend:
+    image: ghcr.io/areadesarrollosffha-maxi/atlas-backend:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/ATLAS
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-atlas}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      SPRING_JPA_SHOW_SQL: "false"
+      # Toma esquema/host/puerto de los headers X-Forwarded-* del nginx del frontend,
+      # así los POST del mismo dominio no se rechazan como pedidos CORS.
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      SPRING_MAIL_HOST: ${MAIL_HOST:-localhost}
+      SPRING_MAIL_PORT: ${MAIL_PORT:-1025}
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      TZ: America/Argentina/San_Juan
+    volumes:
+      - uploads:/data/uploads
+    # La imagen corre java con -XX:MaxRAMPercentage=75: el heap sigue este límite (~576 MB).
+    mem_limit: 768m
+    networks: [internal]
+
+  frontend:
+    image: ghcr.io/areadesarrollosffha-maxi/atlas-frontend:latest
+    restart: unless-stopped
+    depends_on: [backend]
+    environment:
+      VIRTUAL_HOST: ${DOMAIN:?Set DOMAIN}
+      VIRTUAL_PORT: "80"
+      LETSENCRYPT_HOST: ${LETSENCRYPT_HOST:-}
+    mem_limit: 64m
+    networks: [internal, proxy]
+
+volumes:
+  pgdata:
+  uploads:
+
+networks:
+  internal:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:?Set PROXY_NETWORK to the docker network of nginx-proxy}
