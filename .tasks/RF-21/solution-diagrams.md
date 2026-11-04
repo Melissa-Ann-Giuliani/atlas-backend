@@ -41,7 +41,11 @@ sequenceDiagram
     DocenteRepo-->>Service: Docente (or 404 Not Found)
     deactivate DocenteRepo
 
-    Service->>CatedraRepo: existsByNombreAndMateriaId(nombre, materiaId)
+    opt Docente no está en estado "Activo"
+        Service-->>Controller: 400 Bad Request ("El docente debe estar en estado activo")
+    end
+
+    Service->>CatedraRepo: existsByNombreIgnoreCaseAndMateriaId(nombre, materiaId)
     activate CatedraRepo
     CatedraRepo-->>Service: boolean (true/false)
     deactivate CatedraRepo
@@ -49,15 +53,7 @@ sequenceDiagram
         Service-->>Controller: 400 Bad Request ("Ya existe una cátedra con ese nombre para la materia")
     end
 
-    Service->>CatedraRepo: existsByDirectorId(directorId)
-    activate CatedraRepo
-    CatedraRepo-->>Service: boolean (true/false)
-    deactivate CatedraRepo
-    opt Docente ya es director de otra cátedra
-        Service-->>Controller: 400 Bad Request ("El docente ya es director de otra cátedra")
-    end
-
-    Service->>Service: Construir entidad Catedra (estado="Activo"/"Activa")
+    Service->>Service: Construir entidad Catedra (estado="Activa")
     Service->>CatedraRepo: save(catedra)
     activate CatedraRepo
     CatedraRepo->>DB: INSERT INTO catedras (...)
@@ -95,7 +91,6 @@ classDiagram
     class CatedraRepository {
         <<interface>>
         +existsByNombreIgnoreCaseAndMateriaId(String nombre, Integer materiaId) boolean
-        +existsByDirectorId(Integer directorId) boolean
     }
 
     class Catedra {

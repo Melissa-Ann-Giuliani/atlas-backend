@@ -16,13 +16,13 @@ The agent will automatically fill in the final Summary table and update the corr
 
 **Options:**
 
-- [ ] **A)** Tipologías estándar numéricas (ej. `1` = Simple/Teórica, `2` = Teórico-Práctica, `3` = Taller/Laboratorio) validadas como entero positivo (> 0 o dentro de 1..5).
+- [x] **A)** Tipologías estándar numéricas (ej. `1` = Simple/Teórica, `2` = Teórico-Práctica, `3` = Taller/Laboratorio) validadas como entero positivo (> 0 o dentro de 1..5).
 - [ ] **B)** Solo valores numéricos entre `1` y `4` según ordenanza académica estándar.
 - [ ] **C)** Un entero libre `>= 1` enviado desde el frontend sin restricción adicional en backend.
 
 - [ ] **Other:** ______
 
-**Notes:**
+**Notes:** It goes from 1 to 4, but in roman numbers.
 
 ---
 
@@ -32,7 +32,7 @@ The agent will automatically fill in the final Summary table and update the corr
 
 **Options:**
 
-- [ ] **A)** Unicidad por `materiaId` + `nombre` (no pueden existir dos cátedras con el mismo nombre dentro de la misma materia, ignorando mayúsculas/minúsculas).
+- [x] **A)** Unicidad por `materiaId` + `nombre` (no pueden existir dos cátedras con el mismo nombre dentro de la misma materia, ignorando mayúsculas/minúsculas).
 - [ ] **B)** Unicidad global por `nombre` (no puede existir ninguna otra cátedra en el sistema con el mismo nombre).
 - [ ] **C)** Unicidad de cátedra por `materiaId`: sólo puede haber una cátedra por materia (o cátedra única por materia + nombre).
 
@@ -51,7 +51,7 @@ The agent will automatically fill in the final Summary table and update the corr
 - [ ] **A)** Validar previamente en el servicio que el docente no figure como director de ninguna otra cátedra activa (`existsByDirectorIdAndEstado(...)` o `existsByDirectorId(...)`), retornando HTTP `400 Bad Request` ("El docente seleccionado ya es director de otra cátedra").
 - [ ] **B)** Mantener la regla estricta: un docente sólo puede dirigir una única cátedra en todo el sistema (`existsByDirectorId(...)`). Si ya tiene una cátedra asignada (incluso de baja), se rechaza o debe desvincularse.
 
-- [ ] **Other:** ______
+- [x] **Other:** We might have to modify, because sometimes there might be a docente that is jefe de cátedra in more than one cátedra
 
 **Notes:**
 
@@ -63,7 +63,7 @@ The agent will automatically fill in the final Summary table and update the corr
 
 **Options:**
 
-- [ ] **A)** `POST /api/catedras` enviando payload JSON con `nombre`, `tipologia`, `directorId`, `materiaId`, retornando HTTP `201 Created` con el recurso creado.
+- [x] **A)** `POST /api/catedras` enviando payload JSON con `nombre`, `tipologia`, `directorId`, `materiaId`, retornando HTTP `201 Created` con el recurso creado.
 - [ ] **B)** `POST /api/materias/{materiaId}/catedras` como subrecurso de materia.
 
 - [ ] **Other:** ______
@@ -82,7 +82,7 @@ The agent will automatically fill in the final Summary table and update the corr
 
 **Options:**
 
-- [ ] **A)** Validar pertenencia: Si el usuario es `ADMIN_UNIDAD`, la materia asociada (`materia.unidad.id`) debe coincidir con la unidad del administrador. Si es `ADMIN_GLOBAL`, puede crear cátedras para cualquier materia de cualquier unidad. Si no coincide, retornar HTTP `403 Forbidden`.
+- [x] **A)** Validar pertenencia: Si el usuario es `ADMIN_UNIDAD`, la materia asociada (`materia.unidad.id`) debe coincidir con la unidad del administrador. Si es `ADMIN_GLOBAL`, puede crear cátedras para cualquier materia de cualquier unidad. Si no coincide, retornar HTTP `403 Forbidden`.
 - [ ] **B)** Ambos roles pueden operar sin validación de unidad a nivel backend (se delega el filtrado de opciones a la UI).
 
 - [ ] **Other:** ______
@@ -97,7 +97,7 @@ The agent will automatically fill in the final Summary table and update the corr
 
 **Options:**
 
-- [ ] **A)** El docente debe existir y estar en estado `"Activo"`. La materia debe existir en la base de datos.
+- [x] **A)** El docente debe existir y estar en estado `"Activo"`. La materia debe existir en la base de datos.
 - [ ] **B)** El docente debe existir (cualquier estado excepto dado de baja) y la materia debe existir.
 - [ ] **C)** Solo verificar existencia por ID (`404 Not Found` si no existe el docente o la materia).
 
@@ -117,7 +117,7 @@ The agent will automatically fill in the final Summary table and update the corr
 
 **Options:**
 
-- [ ] **A)** Usar `"Activa"` / `"De Baja"` (en concordancia gramatical femenina con "cátedra").
+- [x] **A)** Usar `"Activa"` / `"De Baja"` (en concordancia gramatical femenina con "cátedra").
 - [ ] **B)** Usar `"Activo"` / `"De Baja"` (siguiendo el estándar de otros modelos como Cargo/Docente).
 
 - [ ] **Other:** ______
@@ -130,10 +130,10 @@ The agent will automatically fill in the final Summary table and update the corr
 
 | ID | Spec | Impact | Short description | Decision |
 |---|---|---|---|---|
-| B1 | 01 | Blocker | Definición y validación de tipología de cátedra | ___ |
-| B2 | 01 | Blocker | Regla de unicidad y existencia previa de cátedra | ___ |
-| B3 | 01 | Blocker | Validación previa de exclusividad de director de cátedra | ___ |
-| B4 | 01 | Blocker | Verbo y ruta del endpoint REST para alta de cátedra | ___ |
-| R1 | 01 | Risk | Control de autorización por unidad para ADMIN_UNIDAD | ___ |
-| R2 | 01 | Risk | Validaciones de estado activo de director y materia | ___ |
-| M1 | 01 | Minor | Consistencia de valor en estado ("Activo" vs "Activa") | ___ |
+| B1 | 01 | Blocker | Definición y validación de tipología de cátedra | Valores enteros de 1 a 4 (`@Min(1)`, `@Max(4)`), representando tipologías I a IV en números romanos. |
+| B2 | 01 | Blocker | Regla de unicidad y existencia previa de cátedra | Unicidad por combinación de `materiaId` + `nombre` (case-insensitive). |
+| B3 | 01 | Blocker | Validación previa de exclusividad de director de cátedra | Se permite que un docente dirija más de una cátedra. Se elimina la restricción de exclusividad (relación `@ManyToOne` en BD/JPA, no se valida `existsByDirectorId`). |
+| B4 | 01 | Blocker | Verbo y ruta del endpoint REST para alta de cátedra | `POST /api/catedras` con payload JSON (`CatedraRequestDTO`) retornando `201 Created` (`CatedraResponseDTO`). |
+| R1 | 01 | Risk | Control de autorización por unidad para ADMIN_UNIDAD | Control por unidad: `ADMIN_UNIDAD` solo puede crear cátedras en materias de su propia unidad académica (`403 Forbidden` si no coincide); `ADMIN_GLOBAL` sin restricción. |
+| R2 | 01 | Risk | Validaciones de estado activo de director y materia | Docente debe existir y estar en estado `"Activo"`; Materia debe existir (`404 Not Found` si no existen, `400 Bad Request` si docente inactivo). |
+| M1 | 01 | Minor | Consistencia de valor en estado ("Activo" vs "Activa") | Usar `"Activa"` como estado inicial al persistir la cátedra (y `"De Baja"` para baja). |
