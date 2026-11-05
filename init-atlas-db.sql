@@ -255,8 +255,7 @@ CREATE TABLE IF NOT EXISTS public.catedras
     catedra_estado character varying(15) NOT NULL,
     catedra_director_id integer NOT NULL,
     materia_id integer NOT NULL,
-    PRIMARY KEY (catedra_id),
-    UNIQUE (catedra_director_id)
+    PRIMARY KEY (catedra_id)
 );
 
 CREATE TABLE IF NOT EXISTS public.archivos
