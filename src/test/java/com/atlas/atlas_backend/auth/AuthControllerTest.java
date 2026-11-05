@@ -165,7 +165,7 @@ public class AuthControllerTest {
                 request.setUsername("jdoe");
                 request.setCorreo("wrong@example.com");
 
-                org.mockito.Mockito.doThrow(new Exception("No account found matching the provided credentials."))
+                org.mockito.Mockito.doThrow(new Exception("No se encontró cuenta con las credenciales dadas."))
                                 .when(authService).resetPassword(any(String.class), any(String.class));
 
                 mockMvc.perform(post("/api/auth/reset-password")
