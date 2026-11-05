@@ -120,7 +120,7 @@ public class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
                                 .andExpect(status().isBadRequest())
-                                .andExpect(jsonPath("$.message").value("Username and password are required"));
+                                .andExpect(jsonPath("$.message").value("Se requieren nombre de usuario y contraseña"));
         }
 
         @Test
@@ -143,7 +143,7 @@ public class AuthControllerTest {
                                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
                                 .andExpect(status().isTooManyRequests())
                                 .andExpect(jsonPath("$.message")
-                                                .value("Too many failed attempts. Please try again later."));
+                                                .value("Demasiados intentos fallidos. Intente nuevamente más tarde."));
         }
 
         @Test
@@ -156,7 +156,7 @@ public class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.message").value("Provisional password issued."));
+                                .andExpect(jsonPath("$.message").value("Se ha enviado la contraseña temporal."));
         }
 
         @Test
@@ -165,7 +165,7 @@ public class AuthControllerTest {
                 request.setUsername("jdoe");
                 request.setCorreo("wrong@example.com");
 
-                org.mockito.Mockito.doThrow(new Exception("No account found matching the provided credentials."))
+                org.mockito.Mockito.doThrow(new Exception("No se encontró cuenta con las credenciales dadas."))
                                 .when(authService).resetPassword(any(String.class), any(String.class));
 
                 mockMvc.perform(post("/api/auth/reset-password")
@@ -173,7 +173,7 @@ public class AuthControllerTest {
                                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
                                 .andExpect(status().isNotFound())
                                 .andExpect(jsonPath("$.message")
-                                                .value("No account found matching the provided credentials."));
+                                                .value("No se encontró cuenta con las credenciales dadas."));
         }
 
         @Test
@@ -202,6 +202,6 @@ public class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(request))))
                                 .andExpect(status().isBadRequest())
-                                .andExpect(jsonPath("$.message").value("Username and correo are required"));
+                                .andExpect(jsonPath("$.message").value("Se requieren nombre de usuario y correo"));
         }
 }

@@ -24,8 +24,8 @@ public class Catedra {
     @Column(name = "catedra_estado", nullable = false, length = 15)
     private String estado;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "catedra_director_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "catedra_director_id", nullable = false)
     private Docente director;
 
     @ManyToOne(fetch = FetchType.LAZY)

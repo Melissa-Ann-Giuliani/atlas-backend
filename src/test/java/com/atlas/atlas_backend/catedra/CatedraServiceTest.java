@@ -1,0 +1,299 @@
+package com.atlas.atlas_backend.catedra;
+
+import com.atlas.atlas_backend.catedra.dto.CatedraRequestDTO;
+import com.atlas.atlas_backend.catedra.dto.CatedraResponseDTO;
+import com.atlas.atlas_backend.materia.Materia;
+import com.atlas.atlas_backend.materia.MateriaRepository;
+import com.atlas.atlas_backend.unidad.Unidad;
+import com.atlas.atlas_backend.usuario.AdminUnidad;
+import com.atlas.atlas_backend.usuario.AdminUnidadRepository;
+import com.atlas.atlas_backend.usuario.Docente;
+import com.atlas.atlas_backend.usuario.DocenteRepository;
+import com.atlas.atlas_backend.usuario.Rol;
+import com.atlas.atlas_backend.usuario.Usuario;
+import com.atlas.atlas_backend.usuario.UsuarioRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+public class CatedraServiceTest {
+
+    @Mock
+    private CatedraRepository catedraRepository;
+
+    @Mock
+    private MateriaRepository materiaRepository;
+
+    @Mock
+    private DocenteRepository docenteRepository;
+
+    @Mock
+    private UsuarioRepository usuarioRepository;
+
+    @Mock
+    private AdminUnidadRepository adminUnidadRepository;
+
+    @InjectMocks
+    private CatedraService catedraService;
+
+    @org.springframework.lang.NonNull
+    private static Catedra anyCatedra() {
+        Catedra c = any(Catedra.class);
+        return c != null ? c : new Catedra();
+    }
+
+    private Unidad unidad5;
+    private Unidad unidad9;
+    private Materia materia1;
+    private Materia materia2;
+    private Docente docenteActivo;
+    private Docente docenteInactivo;
+    private Usuario adminGlobal;
+    private Usuario adminUnidadUser;
+    private AdminUnidad adminUnidadRecord;
+    private CatedraRequestDTO validRequest;
+
+    @BeforeEach
+    void setUp() {
+        unidad5 = new Unidad();
+        unidad5.setUnidadId(5);
+        unidad5.setUnidadNombre("Facultad de Ingeniería");
+
+        unidad9 = new Unidad();
+        unidad9.setUnidadId(9);
+        unidad9.setUnidadNombre("Facultad de Medicina");
+
+        materia1 = new Materia();
+        materia1.setId(1);
+        materia1.setNombre("Programación I");
+        materia1.setUnidad(unidad5);
+
+        materia2 = new Materia();
+        materia2.setId(2);
+        materia2.setNombre("Anatomía General");
+        materia2.setUnidad(unidad9);
+
+        docenteActivo = new Docente();
+        docenteActivo.setId(10);
+        docenteActivo.setNombre("Carlos");
+        docenteActivo.setApellido("Pérez");
+        docenteActivo.setEstado("Activo");
+
+        docenteInactivo = new Docente();
+        docenteInactivo.setId(12);
+        docenteInactivo.setNombre("Ana");
+        docenteInactivo.setApellido("Gómez");
+        docenteInactivo.setEstado("De Baja");
+
+        Rol rolGlobal = new Rol();
+        rolGlobal.setNombre("ADMIN_GLOBAL");
+        adminGlobal = new Usuario();
+        adminGlobal.setId(1);
+        adminGlobal.setUsername("admin.global");
+        adminGlobal.setRol(rolGlobal);
+
+        Rol rolUnidad = new Rol();
+        rolUnidad.setNombre("ADMIN_UNIDAD");
+        adminUnidadUser = new Usuario();
+        adminUnidadUser.setId(2);
+        adminUnidadUser.setUsername("admin.unidad");
+        adminUnidadUser.setRol(rolUnidad);
+
+        adminUnidadRecord = new AdminUnidad();
+        adminUnidadRecord.setId(2);
+        adminUnidadRecord.setUnidad(unidad5);
+
+        validRequest = CatedraRequestDTO.builder()
+                .nombre("Cátedra A")
+                .tipologia(1)
+                .directorId(10)
+                .materiaId(1)
+                .build();
+    }
+
+    @Test
+    @DisplayName("Scenario 1: Admin Global crea cátedra válida exitosamente")
+    void crearCatedra_AdminGlobal_Exito() {
+        when(materiaRepository.findById(1)).thenReturn(Optional.of(materia1));
+        when(usuarioRepository.findByUsername("admin.global")).thenReturn(Optional.of(adminGlobal));
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(docenteActivo));
+        when(catedraRepository.existsByNombreIgnoreCaseAndMateria_Id("Cátedra A", 1)).thenReturn(false);
+
+        Catedra saved = new Catedra();
+        saved.setId(100);
+        saved.setNombre("Cátedra A");
+        saved.setTipologia(1);
+        saved.setEstado("Activa");
+        saved.setDirector(docenteActivo);
+        saved.setMateria(materia1);
+
+        when(catedraRepository.save(anyCatedra())).thenReturn(saved);
+
+        CatedraResponseDTO response = catedraService.crearCatedra(validRequest, "admin.global");
+
+        assertNotNull(response);
+        assertEquals(100, response.getId());
+        assertEquals("Cátedra A", response.getNombre());
+        assertEquals(1, response.getTipologia());
+        assertEquals("Activa", response.getEstado());
+        assertEquals(10, response.getDirectorId());
+        assertEquals("Carlos Pérez", response.getDirectorNombre());
+        assertEquals(1, response.getMateriaId());
+        assertEquals("Programación I", response.getMateriaNombre());
+
+        verify(catedraRepository, times(1)).save(anyCatedra());
+    }
+
+    @Test
+    @DisplayName("Scenario 2: Admin Unidad crea cátedra en materia de su propia unidad exitosamente")
+    void crearCatedra_AdminUnidad_MismaUnidad_Exito() {
+        when(materiaRepository.findById(1)).thenReturn(Optional.of(materia1));
+        when(usuarioRepository.findByUsername("admin.unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidadRecord));
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(docenteActivo));
+        when(catedraRepository.existsByNombreIgnoreCaseAndMateria_Id("Cátedra A", 1)).thenReturn(false);
+
+        Catedra saved = new Catedra();
+        saved.setId(101);
+        saved.setNombre("Cátedra A");
+        saved.setTipologia(1);
+        saved.setEstado("Activa");
+        saved.setDirector(docenteActivo);
+        saved.setMateria(materia1);
+
+        when(catedraRepository.save(anyCatedra())).thenReturn(saved);
+
+        CatedraResponseDTO response = catedraService.crearCatedra(validRequest, "admin.unidad");
+
+        assertNotNull(response);
+        assertEquals(101, response.getId());
+        assertEquals("Activa", response.getEstado());
+    }
+
+    @Test
+    @DisplayName("Scenario 3: Rechazo por cátedra ya existente en la misma materia")
+    void crearCatedra_NombreDuplicadoEnMismaMateria_LanzaBadRequest() {
+        when(materiaRepository.findById(1)).thenReturn(Optional.of(materia1));
+        when(usuarioRepository.findByUsername("admin.global")).thenReturn(Optional.of(adminGlobal));
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(docenteActivo));
+        when(catedraRepository.existsByNombreIgnoreCaseAndMateria_Id("Cátedra A", 1)).thenReturn(true);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+                catedraService.crearCatedra(validRequest, "admin.global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        String reason = exception.getReason();
+        assertNotNull(reason);
+        assertTrue(reason.contains("Ya existe una cátedra con ese nombre"));
+        verify(catedraRepository, never()).save(anyCatedra());
+    }
+
+    @Test
+    @DisplayName("Scenario 4: Rechazo por director en estado inactivo o de baja")
+    void crearCatedra_DirectorInactivo_LanzaBadRequest() {
+        validRequest.setDirectorId(12);
+
+        when(materiaRepository.findById(1)).thenReturn(Optional.of(materia1));
+        when(usuarioRepository.findByUsername("admin.global")).thenReturn(Optional.of(adminGlobal));
+        when(docenteRepository.findById(12)).thenReturn(Optional.of(docenteInactivo));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+                catedraService.crearCatedra(validRequest, "admin.global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        String reason = exception.getReason();
+        assertNotNull(reason);
+        assertTrue(reason.contains("El docente debe estar en estado activo"));
+        verify(catedraRepository, never()).save(anyCatedra());
+    }
+
+    @Test
+    @DisplayName("Scenario 4b: Alta exitosa asignando docente que ya dirige otra cátedra")
+    void crearCatedra_DirectorConOtraCatedra_PermiteCreacion() {
+        // En este escenario, no hay restricción unique, por lo que procede con normalidad
+        when(materiaRepository.findById(1)).thenReturn(Optional.of(materia1));
+        when(usuarioRepository.findByUsername("admin.global")).thenReturn(Optional.of(adminGlobal));
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(docenteActivo));
+        when(catedraRepository.existsByNombreIgnoreCaseAndMateria_Id("Cátedra A", 1)).thenReturn(false);
+
+        Catedra saved = new Catedra();
+        saved.setId(102);
+        saved.setNombre("Cátedra A");
+        saved.setTipologia(1);
+        saved.setEstado("Activa");
+        saved.setDirector(docenteActivo);
+        saved.setMateria(materia1);
+
+        when(catedraRepository.save(anyCatedra())).thenReturn(saved);
+
+        CatedraResponseDTO response = catedraService.crearCatedra(validRequest, "admin.global");
+
+        assertNotNull(response);
+        assertEquals(102, response.getId());
+        verify(catedraRepository, times(1)).save(anyCatedra());
+    }
+
+    @Test
+    @DisplayName("Scenario 5: Rechazo cuando Admin de Unidad intenta crear cátedra en materia de otra unidad")
+    void crearCatedra_AdminUnidad_MateriaDeOtraUnidad_LanzaForbidden() {
+        // Admin unidad pertenece a unidad 5, materia2 pertenece a unidad 9
+        validRequest.setMateriaId(2);
+
+        when(materiaRepository.findById(2)).thenReturn(Optional.of(materia2));
+        when(usuarioRepository.findByUsername("admin.unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidadRecord));
+
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class, () ->
+                catedraService.crearCatedra(validRequest, "admin.unidad"));
+
+        assertTrue(exception.getMessage().contains("No tiene permisos para crear cátedras en materias de otra unidad"));
+        verify(catedraRepository, never()).save(anyCatedra());
+    }
+
+    @Test
+    @DisplayName("Scenario 6a: Rechazo cuando materia no existe")
+    void crearCatedra_MateriaNoExiste_LanzaNotFound() {
+        when(materiaRepository.findById(999)).thenReturn(Optional.empty());
+        validRequest.setMateriaId(999);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+                catedraService.crearCatedra(validRequest, "admin.global"));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        String reason = exception.getReason();
+        assertNotNull(reason);
+        assertTrue(reason.contains("Materia no encontrada"));
+    }
+
+    @Test
+    @DisplayName("Scenario 6b: Rechazo cuando docente director no existe")
+    void crearCatedra_DocenteNoExiste_LanzaNotFound() {
+        when(materiaRepository.findById(1)).thenReturn(Optional.of(materia1));
+        when(usuarioRepository.findByUsername("admin.global")).thenReturn(Optional.of(adminGlobal));
+        when(docenteRepository.findById(999)).thenReturn(Optional.empty());
+        validRequest.setDirectorId(999);
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+                catedraService.crearCatedra(validRequest, "admin.global"));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        String reason = exception.getReason();
+        assertNotNull(reason);
+        assertTrue(reason.contains("Docente no encontrado"));
+    }
+}
+
