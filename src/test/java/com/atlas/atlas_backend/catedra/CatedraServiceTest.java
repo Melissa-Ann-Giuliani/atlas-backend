@@ -509,4 +509,44 @@ public class CatedraServiceTest {
                 .contains("No tiene permisos para modificar cátedras en materias de otra unidad"));
         verify(catedraRepository, never()).save(anyCatedra());
     }
+
+    @Test
+    @DisplayName("Seguridad: Admin de Unidad sin unidad asociada falla cerrado (403 Forbidden) en listado y obtención")
+    void resolverUnidadId_AdminUnidadSinUnidad_LanzaForbidden() {
+        when(usuarioRepository.findByUsername("admin.unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.empty());
+
+        AccessDeniedException exList = assertThrows(AccessDeniedException.class,
+                () -> catedraService.listarCatedras(null, "admin.unidad"));
+        assertTrue(exList.getMessage().contains("La unidad del administrador no fue encontrada"));
+
+        when(catedraRepository.findById(10)).thenReturn(Optional.of(catedraActiva));
+        AccessDeniedException exGet = assertThrows(AccessDeniedException.class,
+                () -> catedraService.obtenerCatedraPorId(10, "admin.unidad"));
+        assertTrue(exGet.getMessage().contains("La unidad del administrador no fue encontrada"));
+    }
+
+    @Test
+    @DisplayName("Seguridad: Rol ADMINISTRADOR_DE_UNIDAD aplica restricción de unidad en modificarCatedra")
+    void modificarCatedra_RolAdministradorDeUnidad_OtraUnidad_LanzaForbidden() {
+        Rol rolVariante = new Rol();
+        rolVariante.setNombre("ADMINISTRADOR_DE_UNIDAD");
+        adminUnidadUser.setRol(rolVariante);
+
+        Catedra catedraOtraUnidad = new Catedra();
+        catedraOtraUnidad.setId(30);
+        catedraOtraUnidad.setNombre("Cátedra Anatomía");
+        catedraOtraUnidad.setTipologia(1);
+        catedraOtraUnidad.setEstado("Activa");
+        catedraOtraUnidad.setDirector(docenteActivo);
+        catedraOtraUnidad.setMateria(materia2); // unidad 9
+
+        when(catedraRepository.findById(30)).thenReturn(Optional.of(catedraOtraUnidad));
+        when(usuarioRepository.findByUsername("admin.unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidadRecord)); // unidad 5
+
+        assertThrows(AccessDeniedException.class,
+                () -> catedraService.modificarCatedra(30, validUpdateRequest, "admin.unidad"));
+        verify(catedraRepository, never()).save(anyCatedra());
+    }
 }

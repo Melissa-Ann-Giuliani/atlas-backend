@@ -1,4 +1,4 @@
-﻿package com.atlas.atlas_backend.catedra.dto;
+package com.atlas.atlas_backend.catedra.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
