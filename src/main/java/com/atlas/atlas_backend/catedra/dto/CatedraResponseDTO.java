@@ -1,4 +1,4 @@
-package com.atlas.atlas_backend.catedra.dto;
+﻿package com.atlas.atlas_backend.catedra.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,5 +18,8 @@ public class CatedraResponseDTO {
     private String directorNombre;
     private Integer materiaId;
     private String materiaNombre;
+    private Integer unidadId;
+    private String unidadNombre;
+    private Integer tipoUnidadId;
+    private String tipoUnidadNombre;
 }
-
