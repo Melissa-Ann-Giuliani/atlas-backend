@@ -18,5 +18,8 @@ public class CatedraResponseDTO {
     private String directorNombre;
     private Integer materiaId;
     private String materiaNombre;
+    private Integer unidadId;
+    private String unidadNombre;
+    private Integer tipoUnidadId;
+    private String tipoUnidadNombre;
 }
-
