@@ -8,4 +8,6 @@ import java.util.List;
 @Repository
 public interface DesignacionRepository extends JpaRepository<Designacion, Integer> {
     List<Designacion> findByUsuarioId(Integer usuarioId);
+
+    boolean existsByUsuarioIdAndDesignacionNumeroResolucion(Integer usuarioId, Integer designacionNumeroResolucion);
 }

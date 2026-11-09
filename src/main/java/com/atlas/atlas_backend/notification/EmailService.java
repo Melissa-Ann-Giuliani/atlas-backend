@@ -6,6 +6,8 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+
 @Service
 public class EmailService {
 
@@ -65,4 +67,30 @@ public class EmailService {
                 "\n\nPor favor, ingresa al sistema y cambia tu contraseña (tienes 24 horas antes de que expire).\n\nSaludos cordiales,\nAtlas");
         mailSender.send(message);
     }
+
+    @Async
+    public void sendDesignacionNotification(String to, Integer resolucion, LocalDate fechaInicio, LocalDate fechaFin) {
+        if (to == null || to.isBlank()) {
+            return;
+        }
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(to);
+            message.setSubject("Atlas - Notificación de Designación Aprobada");
+            String vigenciaFin = (fechaFin != null) ? fechaFin.toString() : "Sin fecha de finalización definida";
+            message.setText("Hola,\n\nSe ha registrado y aprobado tu designación docente en el sistema Atlas.\n\n" +
+                    "Número de Resolución: " + resolucion + "\n" +
+                    "Fecha de Inicio: " + fechaInicio + "\n" +
+                    "Fecha de Finalización: " + vigenciaFin + "\n\n" +
+                    "Tu estado en el sistema ahora se encuentra Activo.\n\nSaludos cordiales,\nAtlas");
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Error al enviar notificación de designación a " + to + ": " + e.getMessage());
+        }
+    }
 }
+
+    
+    
+        
+    

@@ -26,7 +26,7 @@ sequenceDiagram
     else Rol autorizado (ADMIN_GLOBAL / ADMIN_UNIDAD)
         SEC->>DC: crearDesignacion(request, authentication)
         DC->>DS: registrarDesignacion(request, username)
-        
+
         DS->>DR: findById(docenteId)
         alt Docente no encontrado
             DR-->>DS: Optional.empty()
@@ -55,12 +55,12 @@ sequenceDiagram
             DC-->>Admin: 404 Not Found
         end
         CR-->>DS: Cargo existente
-        
+
         alt ADMIN_UNIDAD y Cargo de otra unidad
             DS-->>DC: AccessDeniedException(403, "No tiene permisos para cargos de otra unidad")
             DC-->>Admin: 403 Forbidden (Decisión R1)
         end
-        
+
         alt Cargo no está en estado "Libre"
             DS-->>DC: ResponseStatusException(400, "El cargo ya se encuentra asignado o en licencia")
             DC-->>Admin: 400 Bad Request
@@ -70,7 +70,7 @@ sequenceDiagram
         Note over DS, DesR: Transacción atómica (@Transactional)
         DS->>DesR: save(nuevaDesignacion con estado "Activo")
         DesR-->>DS: Designacion guardada
-        
+
         DS->>CR: cargo.setDesignacion(designacion), cargo.setEstado("Asignado")
         CR-->>DS: Cargo persistido
 
