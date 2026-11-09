@@ -22,7 +22,10 @@ import java.util.Objects;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -361,5 +364,96 @@ public class CatedraControllerTest {
                                 .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
                                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(invalid))))
                                 .andExpect(status().isBadRequest());
+        }
+
+        // ===================== RF-23: Baja de cátedra =====================
+
+        private CatedraResponseDTO bajaResponse() {
+                return CatedraResponseDTO.builder()
+                                .id(10)
+                                .nombre("Cátedra A")
+                                .tipologia(1)
+                                .estado("De baja")
+                                .directorId(10)
+                                .directorNombre("Carlos Pérez")
+                                .materiaId(1)
+                                .materiaNombre("Programación I")
+                                .build();
+        }
+
+        @Test
+        @DisplayName("PATCH /api/catedras/{id}/baja - 200 OK con rol ADMIN_GLOBAL")
+        @WithMockUser(username = "admin.global", roles = { "ADMIN_GLOBAL" })
+        void darDeBajaCatedra_AdminGlobal_Retorna200() throws Exception {
+                when(catedraService.darDeBajaCatedra(10, "admin.global")).thenReturn(bajaResponse());
+
+                mockMvc.perform(patch("/api/catedras/10/baja"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.id").value(10))
+                                .andExpect(jsonPath("$.estado").value("De baja"))
+                                .andExpect(jsonPath("$.nombre").value("Cátedra A"))
+                                .andExpect(jsonPath("$.tipologia").value(1))
+                                .andExpect(jsonPath("$.directorId").value(10))
+                                .andExpect(jsonPath("$.materiaId").value(1));
+        }
+
+        @Test
+        @DisplayName("PATCH /api/catedras/{id}/baja - 200 OK con rol ADMIN_UNIDAD")
+        @WithMockUser(username = "admin.unidad", roles = { "ADMIN_UNIDAD" })
+        void darDeBajaCatedra_AdminUnidad_Retorna200() throws Exception {
+                when(catedraService.darDeBajaCatedra(10, "admin.unidad")).thenReturn(bajaResponse());
+
+                mockMvc.perform(patch("/api/catedras/10/baja"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.estado").value("De baja"));
+        }
+
+        @Test
+        @DisplayName("PATCH /api/catedras/{id}/baja - 403 Forbidden cuando Admin de Unidad opera sobre otra unidad")
+        @WithMockUser(username = "admin.unidad", roles = { "ADMIN_UNIDAD" })
+        void darDeBajaCatedra_AdminUnidadOtraUnidad_Retorna403() throws Exception {
+                when(catedraService.darDeBajaCatedra(30, "admin.unidad"))
+                                .thenThrow(new AccessDeniedException(
+                                                "No tiene permisos para dar de baja cátedras en materias de otra unidad"));
+
+                mockMvc.perform(patch("/api/catedras/30/baja"))
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.message").value(
+                                                "No tiene permisos para dar de baja cátedras en materias de otra unidad"));
+        }
+
+        @Test
+        @DisplayName("PATCH /api/catedras/{id}/baja - 404 Not Found cuando la cátedra no existe")
+        @WithMockUser(username = "admin.global", roles = { "ADMIN_GLOBAL" })
+        void darDeBajaCatedra_NoExiste_Retorna404() throws Exception {
+                when(catedraService.darDeBajaCatedra(999, "admin.global"))
+                                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Cátedra no encontrada"));
+
+                mockMvc.perform(patch("/api/catedras/999/baja"))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("Cátedra no encontrada"));
+        }
+
+        @Test
+        @DisplayName("PATCH /api/catedras/{id}/baja - 400 Bad Request cuando la cátedra ya está dada de baja")
+        @WithMockUser(username = "admin.global", roles = { "ADMIN_GLOBAL" })
+        void darDeBajaCatedra_YaDeBaja_Retorna400() throws Exception {
+                when(catedraService.darDeBajaCatedra(11, "admin.global"))
+                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                                "La cátedra ya se encuentra dada de baja"));
+
+                mockMvc.perform(patch("/api/catedras/11/baja"))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.message").value("La cátedra ya se encuentra dada de baja"));
+        }
+
+        @Test
+        @DisplayName("PATCH /api/catedras/{id}/baja - 403 Forbidden cuando el usuario no tiene rol autorizado")
+        @WithMockUser(username = "docente.user", roles = { "DOCENTE" })
+        void darDeBajaCatedra_RolNoAutorizado_Retorna403() throws Exception {
+                mockMvc.perform(patch("/api/catedras/10/baja"))
+                                .andExpect(status().isForbidden());
+
+                verify(catedraService, never()).darDeBajaCatedra(any(), any());
         }
 }
