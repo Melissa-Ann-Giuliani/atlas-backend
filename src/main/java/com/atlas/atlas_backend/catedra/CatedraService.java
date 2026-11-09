@@ -24,6 +24,8 @@ import java.util.Objects;
 @Service
 public class CatedraService {
 
+    private static final String ESTADO_DE_BAJA = "De baja";
+
     private final CatedraRepository catedraRepository;
     private final MateriaRepository materiaRepository;
     private final DocenteRepository docenteRepository;
@@ -231,6 +233,38 @@ public class CatedraService {
         catedra.setNombre(nombreCatedra);
         catedra.setTipologia(request.getTipologia());
         catedra.setDirector(docente);
+
+        Catedra saved = catedraRepository.save(catedra);
+        return mapToDTO(saved);
+    }
+
+    @Transactional
+    public CatedraResponseDTO darDeBajaCatedra(Integer id, String username) {
+        Objects.requireNonNull(id, "Catedra ID must not be null");
+
+        // 1. Validar existencia de la cátedra
+        Catedra catedra = catedraRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cátedra no encontrada"));
+
+        // 2. Validar permisos si el usuario es Administrador de Unidad
+        Integer adminUnidadId = resolverUnidadId(username);
+        if (adminUnidadId != null) {
+            Materia materia = catedra.getMateria();
+            Integer materiaUnidadId = (materia != null && materia.getUnidad() != null)
+                    ? materia.getUnidad().getUnidadId()
+                    : null;
+            if (materiaUnidadId == null || !adminUnidadId.equals(materiaUnidadId)) {
+                throw new AccessDeniedException("No tiene permisos para dar de baja cátedras en materias de otra unidad");
+            }
+        }
+
+        // 3. Validar que la cátedra no se encuentre ya dada de baja
+        if (ESTADO_DE_BAJA.equalsIgnoreCase(catedra.getEstado())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La cátedra ya se encuentra dada de baja");
+        }
+
+        // 4. Baja lógica: se preservan director (histórico), materia, nombre y tipología
+        catedra.setEstado(ESTADO_DE_BAJA);
 
         Catedra saved = catedraRepository.save(catedra);
         return mapToDTO(saved);
