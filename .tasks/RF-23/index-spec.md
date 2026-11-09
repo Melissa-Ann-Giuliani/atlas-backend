@@ -5,8 +5,8 @@
 | File | Purpose |
 | ---- | ------- |
 | `raw-requirement.md` | Requerimiento original para la baja de cátedra (RF-23) |
-| `open-questions.md` | Registro de decisiones cerradas (B1: Opción A, B2: Opción A, R1: Opción A, R2: Opción A, R3: Opción A, M1: Opción A) |
-| `spec-01-baja-catedra.md` | Especificación formal en Gherkin para el endpoint `PATCH /api/catedras/{id}/baja`, validaciones de integridad y alcance |
+| `open-questions.md` | Registro de decisiones cerradas (B1: Opción A, B2: No aplica, R1: Opción A, R2: Opción A, R3: Opción A, M1: Opción A) |
+| `spec-01-baja-catedra.md` | Especificación formal en Gherkin para el endpoint `PATCH /api/catedras/{id}/baja`, validaciones de existencia, estado y alcance |
 | `solution-diagrams.md` | Diagramas de secuencia, flujo de decisiones y clases de la solución |
 
 ## Field mapping (contract ↔ Core)
@@ -15,7 +15,7 @@
 
 | Contract Field | Java Field / Type | Domain Field | Validaciones |
 | -------------- | ----------------- | ------------ | ------------ |
-| `id` (PathVariable) | `Integer id` | `Catedra.id` | Debe existir en BD (`404 Not Found`), no encontrarse ya `"De baja"` (`400 Bad Request`), pertenecer a la unidad del `ADMIN_UNIDAD` (`403 Forbidden`) y no tener comisiones activas (`409 Conflict`). |
+| `id` (PathVariable) | `Integer id` | `Catedra.id` | Debe existir en BD (`404 Not Found`), no encontrarse ya `"De baja"` (`400 Bad Request`) y pertenecer a la unidad del `ADMIN_UNIDAD` (`403 Forbidden`). |
 
 > **Request Body:** Vacío (sin payload).
 
@@ -36,7 +36,7 @@
 
 | Order | Spec file | Summary | Depends on |
 | ----- | --------- | ------- | ---------- |
-| 1 | `spec-01-baja-catedra.md` | Endpoint de ciclo de vida `PATCH /api/catedras/{id}/baja`, validación de existencia previa, control de unidad académica para `ADMIN_UNIDAD`, rechazo si ya está `"De baja"`, validación de ausencia de comisiones activas y preservación de director histórico con retorno `200 OK` (`CatedraResponseDTO`). | RF-21 (`Catedra`, `CatedraService`, `CatedraController`) |
+| 1 | `spec-01-baja-catedra.md` | Endpoint de ciclo de vida `PATCH /api/catedras/{id}/baja`, validación de existencia previa, control de unidad académica para `ADMIN_UNIDAD`, rechazo si ya está `"De baja"` y preservación de director histórico con retorno `200 OK` (`CatedraResponseDTO`). | RF-21 (`Catedra`, `CatedraService`, `CatedraController`) |
 
 ## Suggested increments / Backbone
 
@@ -46,7 +46,6 @@
        - Buscar cátedra por `id` (`404 Not Found` si no existe).
        - Si el usuario es `ADMIN_UNIDAD`, validar pertenencia de la materia a su unidad (`403 Forbidden` si difiere).
        - Verificar que el estado no sea `"De baja"` (`400 Bad Request` si ya está de baja).
-       - Verificar que no tenga comisiones activas asociadas (`409 Conflict` si existen comisiones activas).
        - Actualizar `catedra.setEstado("De baja")` manteniendo intactos el director y demás atributos.
        - Persistir y mapear a `CatedraResponseDTO`.
    - En `CatedraController`:
@@ -58,7 +57,6 @@
      - Error 403 para `ADMIN_UNIDAD` sobre materia de otra unidad.
      - Error 404 para ID inexistente.
      - Error 400 cuando la cátedra ya está `"De baja"`.
-     - Error 409 cuando existen comisiones activas.
      - Verificación de que el director histórico no es removido (`director != null`).
    - Tests de integración en `CatedraControllerTest` validando códigos HTTP y seguridad.
 

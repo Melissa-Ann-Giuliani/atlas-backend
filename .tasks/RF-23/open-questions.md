@@ -34,13 +34,13 @@ The agent will automatically fill in the final Summary table and update the corr
 
 **Options:**
 
-- [x] **A)** Bloqueo estricto si existen comisiones activas: La cátedra solo puede darse de baja si no posee comisiones en estado activo (`"Activa"` / cursada en curso). Si tiene comisiones activas, se rechaza con HTTP `409 Conflict` (o `400 Bad Request` `"No se puede dar de baja la cátedra porque tiene comisiones activas asociadas"`).
+- [ ] **A)** Bloqueo estricto si existen comisiones activas: La cátedra solo puede darse de baja si no posee comisiones en estado activo (`"Activa"` / cursada en curso). Si tiene comisiones activas, se rechaza con HTTP `409 Conflict` (o `400 Bad Request` `"No se puede dar de baja la cátedra porque tiene comisiones activas asociadas"`).
 - [ ] **B)** Baja permitida sin bloqueo por comisiones: Se cambia el estado de la cátedra a `"De baja"` preservando los registros existentes para histórico, sin impedir la baja por relaciones existentes.
 - [ ] **C)** Cascada lógica / Desactivación: Al dar de baja la cátedra, sus comisiones asociadas activas también pasan automáticamente a estado de baja.
 
-- [ ] **Other:** ______
+- [x] **Other:** No aplica — no existen entidades dependientes de la cátedra (no hay comisiones en el dominio); la baja no se bloquea por dependencias.
 
-**Notes:**
+**Notes:** El concepto de "comisiones" no figura en el requerimiento crudo (RF-23), en ningún otro RF, en el esquema de base de datos (`init-atlas-db.sql`) ni en el código; ninguna tabla referencia a `catedras`. Se elimina la validación `409 Conflict` y el Escenario 6. La única condición del requerimiento es que la cátedra exista previamente.
 
 ---
 
@@ -117,7 +117,7 @@ The agent will automatically fill in the final Summary table and update the corr
 | ID | Spec | Impact | Short description | Decision |
 |---|---|---|---|---|
 | B1 | spec-01 | Blocker | Método y URI del endpoint HTTP | Option A — `PATCH /api/catedras/{id}/baja`, sin body, retorna `200 OK` con `CatedraResponseDTO` |
-| B2 | spec-01 | Blocker | Restricciones de integridad ante elementos asociados | Option A — Bloqueo con `409 Conflict` si posee comisiones activas |
+| B2 | spec-01 | Blocker | Restricciones de integridad ante elementos asociados | Other — No aplica: no existen entidades dependientes de la cátedra; sin validación de dependencias (sin `409`) |
 | R1 | spec-01 | Risk | Autorización por unidad académica para ADMIN_UNIDAD | Option A — Validación estricta por unidad (`403 Forbidden` si es de otra unidad) |
 | R2 | spec-01 | Risk | Validación de cátedra ya dada de baja | Option A — Rechazo con `400 Bad Request` si ya está `"De baja"` |
 | R3 | spec-01 | Risk | Tratamiento del director de cátedra al dar de baja | Option A — Preservar vinculación histórica del director/jefe de cátedra |

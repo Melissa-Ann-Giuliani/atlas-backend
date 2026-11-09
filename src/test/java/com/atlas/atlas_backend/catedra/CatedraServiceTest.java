@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -547,6 +548,110 @@ public class CatedraServiceTest {
 
         assertThrows(AccessDeniedException.class,
                 () -> catedraService.modificarCatedra(30, validUpdateRequest, "admin.unidad"));
+        verify(catedraRepository, never()).save(anyCatedra());
+    }
+
+    // ===================== RF-23: Baja de cátedra =====================
+
+    @Test
+    @DisplayName("RF-23 Scenario 1: Admin Global da de baja una cátedra activa preservando director y datos")
+    void darDeBajaCatedra_AdminGlobal_Exito() {
+        when(catedraRepository.findById(10)).thenReturn(Optional.of(catedraActiva));
+        when(usuarioRepository.findByUsername("admin.global")).thenReturn(Optional.of(adminGlobal));
+        when(catedraRepository.save(anyCatedra())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CatedraResponseDTO response = catedraService.darDeBajaCatedra(10, "admin.global");
+
+        assertNotNull(response);
+        assertEquals(10, response.getId());
+        assertEquals("De baja", response.getEstado());
+        assertEquals("Cátedra A", response.getNombre());
+        assertEquals(1, response.getTipologia());
+        assertEquals(1, response.getMateriaId());
+        assertEquals(10, response.getDirectorId());
+        assertEquals("Carlos Pérez", response.getDirectorNombre());
+        assertEquals("De baja", catedraActiva.getEstado());
+        assertNotNull(catedraActiva.getDirector());
+        verify(catedraRepository).save(Objects.requireNonNull(catedraActiva));
+    }
+
+    @Test
+    @DisplayName("RF-23 Scenario 2: Admin Unidad da de baja una cátedra de su propia unidad académica")
+    void darDeBajaCatedra_AdminUnidad_MismaUnidad_Exito() {
+        when(catedraRepository.findById(10)).thenReturn(Optional.of(catedraActiva));
+        when(usuarioRepository.findByUsername("admin.unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidadRecord));
+        when(catedraRepository.save(anyCatedra())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        CatedraResponseDTO response = catedraService.darDeBajaCatedra(10, "admin.unidad");
+
+        assertNotNull(response);
+        assertEquals("De baja", response.getEstado());
+        assertEquals(10, response.getDirectorId());
+        verify(catedraRepository).save(Objects.requireNonNull(catedraActiva));
+    }
+
+    @Test
+    @DisplayName("RF-23 Scenario 3: Rechazo cuando Admin Unidad da de baja cátedra de otra unidad (403 Forbidden)")
+    void darDeBajaCatedra_AdminUnidad_OtraUnidad_LanzaForbidden() {
+        Catedra catedraOtraUnidad = new Catedra();
+        catedraOtraUnidad.setId(30);
+        catedraOtraUnidad.setNombre("Cátedra Anatomía");
+        catedraOtraUnidad.setTipologia(1);
+        catedraOtraUnidad.setEstado("Activa");
+        catedraOtraUnidad.setDirector(docenteActivo);
+        catedraOtraUnidad.setMateria(materia2); // unidad 9, adminUnidadRecord pertenece a unidad 5
+
+        when(catedraRepository.findById(30)).thenReturn(Optional.of(catedraOtraUnidad));
+        when(usuarioRepository.findByUsername("admin.unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidadRecord));
+
+        AccessDeniedException exception = assertThrows(AccessDeniedException.class,
+                () -> catedraService.darDeBajaCatedra(30, "admin.unidad"));
+
+        assertEquals("No tiene permisos para dar de baja cátedras en materias de otra unidad", exception.getMessage());
+        assertEquals("Activa", catedraOtraUnidad.getEstado());
+        verify(catedraRepository, never()).save(anyCatedra());
+    }
+
+    @Test
+    @DisplayName("RF-23 Seguridad: Admin Unidad sin unidad asociada falla cerrado (403 Forbidden) en la baja")
+    void darDeBajaCatedra_AdminUnidadSinUnidad_LanzaForbidden() {
+        when(catedraRepository.findById(10)).thenReturn(Optional.of(catedraActiva));
+        when(usuarioRepository.findByUsername("admin.unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.empty());
+
+        assertThrows(AccessDeniedException.class,
+                () -> catedraService.darDeBajaCatedra(10, "admin.unidad"));
+
+        assertEquals("Activa", catedraActiva.getEstado());
+        verify(catedraRepository, never()).save(anyCatedra());
+    }
+
+    @Test
+    @DisplayName("RF-23 Scenario 4: Rechazo cuando la cátedra a dar de baja no existe (404 Not Found)")
+    void darDeBajaCatedra_CatedraNoExiste_LanzaNotFound() {
+        when(catedraRepository.findById(999)).thenReturn(Optional.empty());
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> catedraService.darDeBajaCatedra(999, "admin.global"));
+
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
+        assertEquals("Cátedra no encontrada", exception.getReason());
+        verify(catedraRepository, never()).save(anyCatedra());
+    }
+
+    @Test
+    @DisplayName("RF-23 Scenario 5: Rechazo cuando la cátedra ya se encuentra dada de baja (400 Bad Request)")
+    void darDeBajaCatedra_CatedraYaDeBaja_LanzaBadRequest() {
+        when(catedraRepository.findById(11)).thenReturn(Optional.of(catedraDeBaja));
+        when(usuarioRepository.findByUsername("admin.global")).thenReturn(Optional.of(adminGlobal));
+
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
+                () -> catedraService.darDeBajaCatedra(11, "admin.global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+        assertEquals("La cátedra ya se encuentra dada de baja", exception.getReason());
         verify(catedraRepository, never()).save(anyCatedra());
     }
 }

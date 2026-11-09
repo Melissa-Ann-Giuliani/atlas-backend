@@ -17,7 +17,6 @@ sequenceDiagram
     participant CatedraRepo as CatedraRepository
     participant UsuarioRepo as UsuarioRepository
     participant AdminUnidadRepo as AdminUnidadRepository
-    participant ComisionRepo as ComisionRepository
     participant DB as PostgreSQL Database
 
     Admin->>Controller: PATCH /api/catedras/{id}/baja
@@ -50,16 +49,6 @@ sequenceDiagram
     opt Cátedra ya está en estado "De baja"
         Service-->>Controller: 400 Bad Request ("La cátedra ya se encuentra dada de baja")
         Controller-->>Admin: 400 Bad Request
-    end
-
-    Service->>ComisionRepo: existsByCatedra_IdAndEstadoIgnoreCase(id, "ACTIVA")
-    activate ComisionRepo
-    ComisionRepo-->>Service: boolean (hasActiveComisiones)
-    deactivate ComisionRepo
-
-    opt hasActiveComisiones == true
-        Service-->>Controller: 409 Conflict ("No se puede dar de baja la cátedra porque tiene comisiones activas asociadas")
-        Controller-->>Admin: 409 Conflict
     end
 
     Service->>Service: catedra.setEstado("De baja")
@@ -98,10 +87,7 @@ flowchart TD
     CheckUnit -- Sí --> CheckState
 
     CheckState -- Sí --> Err400["400 Bad Request<br>('La cátedra ya se encuentra dada de baja')"]
-    CheckState -- No --> CheckComisiones{"¿Tiene comisiones activas asociadas?"}
-
-    CheckComisiones -- Sí --> Err409["409 Conflict<br>('No se puede dar de baja la cátedra porque tiene comisiones activas asociadas')"]
-    CheckComisiones -- No --> ApplyBaja["Set estado = 'De baja'<br>(Mantener director y datos intactos)"]
+    CheckState -- No --> ApplyBaja["Set estado = 'De baja'<br>(Mantener director y datos intactos)"]
 
     ApplyBaja --> SaveDB["Persistir en BD (save)"]
     SaveDB --> Response200(["200 OK: CatedraResponseDTO"])
@@ -139,10 +125,6 @@ classDiagram
         +getEstado(): String
     }
 
-    class ComisionRepository {
-        +existsByCatedra_IdAndEstadoIgnoreCase(catedraId: Integer, estado: String): boolean
-    }
-
     class CatedraResponseDTO {
         +id: Integer
         +nombre: String
@@ -156,7 +138,6 @@ classDiagram
 
     CatedraController --> CatedraService
     CatedraService --> CatedraRepository
-    CatedraService --> ComisionRepository
     CatedraService --> CatedraResponseDTO
     CatedraRepository --> Catedra
 ```
