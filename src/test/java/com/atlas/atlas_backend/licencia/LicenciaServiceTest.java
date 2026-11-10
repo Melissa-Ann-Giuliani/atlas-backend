@@ -104,7 +104,7 @@ public class LicenciaServiceTest {
 
         designacion = new Designacion();
         designacion.setDesignacionId(100);
-        designacion.setDesignacionNumeroResolucion(4500);
+        designacion.setDesignacionNumeroResolucion("4500");
         designacion.setDesignacionFechaInicio(LocalDate.of(2026, 1, 1));
         designacion.setDesignacionFechaFin(LocalDate.of(2026, 12, 31));
         designacion.setDesignacionEstadoActual("Licencia");

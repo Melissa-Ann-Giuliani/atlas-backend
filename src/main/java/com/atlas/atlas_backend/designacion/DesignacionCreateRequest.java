@@ -1,5 +1,6 @@
 package com.atlas.atlas_backend.designacion;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -17,8 +18,8 @@ public class DesignacionCreateRequest {
     @NotNull(message = "El ID del cargo es obligatorio")
     private Integer cargoId;
 
-    @NotNull(message = "El número de resolución es obligatorio")
-    private Integer nroResolucion;
+    @NotBlank(message = "El número de resolución es obligatorio")
+    private String nroResolucion;
 
     @NotNull(message = "La fecha de inicio es obligatoria")
     private LocalDate fechaInicio;

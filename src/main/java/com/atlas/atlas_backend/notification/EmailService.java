@@ -69,7 +69,7 @@ public class EmailService {
     }
 
     @Async
-    public void sendDesignacionNotification(String to, Integer resolucion, LocalDate fechaInicio, LocalDate fechaFin) {
+    public void sendDesignacionNotification(String to, String resolucion, LocalDate fechaInicio, LocalDate fechaFin) {
         if (to == null || to.isBlank()) {
             return;
         }

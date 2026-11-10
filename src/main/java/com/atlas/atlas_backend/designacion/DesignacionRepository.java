@@ -9,5 +9,5 @@ import java.util.List;
 public interface DesignacionRepository extends JpaRepository<Designacion, Integer> {
     List<Designacion> findByUsuarioId(Integer usuarioId);
 
-    boolean existsByUsuarioIdAndDesignacionNumeroResolucion(Integer usuarioId, Integer designacionNumeroResolucion);
+    boolean existsByUsuarioIdAndDesignacionNumeroResolucion(Integer usuarioId, String designacionNumeroResolucion);
 }

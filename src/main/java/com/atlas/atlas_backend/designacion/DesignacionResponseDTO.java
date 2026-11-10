@@ -8,7 +8,7 @@ import java.time.LocalDate;
 public class DesignacionResponseDTO {
 
     private Integer id;
-    private Integer nroResolucion;
+    private String nroResolucion;
     private LocalDate fechaInicio;
     private LocalDate fechaFin;
     private String estado;

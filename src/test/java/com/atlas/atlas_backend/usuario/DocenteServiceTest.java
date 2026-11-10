@@ -107,7 +107,7 @@ public class DocenteServiceTest {
 
         Exception ex = assertThrows(Exception.class, () -> docenteService.registrarDocente(request, new StringBuilder()));
         assertEquals("Legajo ya existe", ex.getMessage());
-        verify(docenteRepository, never()).save(any());
+        verify(docenteRepository, never()).save(anyDocente());
     }
 
     @Test

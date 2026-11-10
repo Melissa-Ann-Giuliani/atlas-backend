@@ -36,7 +36,7 @@ public class DocenteDetailsDTO {
     @Data
     public static class DesignacionData {
         private Integer legajo;
-        private Integer nroResolucion;
+        private String nroResolucion;
         private LocalDate fechaInicio;
         private LocalDate fechaFin;
         private Integer cargoId;

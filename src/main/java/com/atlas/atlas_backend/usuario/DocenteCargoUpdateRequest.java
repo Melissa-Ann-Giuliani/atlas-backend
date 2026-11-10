@@ -1,5 +1,6 @@
 package com.atlas.atlas_backend.usuario;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -9,8 +10,8 @@ import java.time.LocalDate;
 public class DocenteCargoUpdateRequest {
 
     // Designation attributes
-    @NotNull(message = "El número de resolución es obligatorio")
-    private Integer nroResolucion;
+    @NotBlank(message = "El número de resolución es obligatorio")
+    private String nroResolucion;
 
     @NotNull(message = "La fecha de inicio de designación es obligatoria")
     private LocalDate fechaInicio;

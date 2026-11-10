@@ -126,7 +126,7 @@ public class DesignacionServiceTest {
         validRequest = new DesignacionCreateRequest();
         validRequest.setDocenteId(10);
         validRequest.setCargoId(25);
-        validRequest.setNroResolucion(1024);
+        validRequest.setNroResolucion("1024");
         validRequest.setFechaInicio(LocalDate.of(2026, 3, 1));
         validRequest.setFechaFin(LocalDate.of(2027, 2, 28));
     }
@@ -135,7 +135,7 @@ public class DesignacionServiceTest {
     void testT1_RegistrarDesignacion_AdminGlobal_Success() {
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
-        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, 1024)).thenReturn(false);
+        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "1024")).thenReturn(false);
         when(cargoRepository.findById(25)).thenReturn(Optional.of(testCargo));
         when(designacionRepository.save(anyDesignacion())).thenAnswer(inv -> {
             Designacion d = inv.getArgument(0);
@@ -147,7 +147,7 @@ public class DesignacionServiceTest {
 
         assertNotNull(response);
         assertEquals(100, response.getId());
-        assertEquals(1024, response.getNroResolucion());
+        assertEquals("1024", response.getNroResolucion());
         assertEquals(LocalDate.of(2026, 3, 1), response.getFechaInicio());
         assertEquals(LocalDate.of(2027, 2, 28), response.getFechaFin());
         assertEquals("Activo", response.getEstado());
@@ -181,7 +181,7 @@ public class DesignacionServiceTest {
         // Verify email notification called
         verify(emailService, times(1)).sendDesignacionNotification(
                 "juan.perez@atlas.edu",
-                1024,
+                "1024",
                 LocalDate.of(2026, 3, 1),
                 LocalDate.of(2027, 2, 28));
     }
@@ -192,7 +192,7 @@ public class DesignacionServiceTest {
 
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
-        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, 1024)).thenReturn(false);
+        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "1024")).thenReturn(false);
         when(cargoRepository.findById(25)).thenReturn(Optional.of(testCargo));
         when(designacionRepository.save(anyDesignacion())).thenAnswer(inv -> {
             Designacion d = inv.getArgument(0);
@@ -214,7 +214,7 @@ public class DesignacionServiceTest {
     void testT3_RegistrarDesignacion_AdminUnidad_OwnUnit_Success() {
         when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
         when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
-        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, 1024)).thenReturn(false);
+        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "1024")).thenReturn(false);
         when(cargoRepository.findById(25)).thenReturn(Optional.of(testCargo));
         when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
         when(designacionRepository.save(anyDesignacion())).thenAnswer(inv -> {
@@ -240,7 +240,7 @@ public class DesignacionServiceTest {
 
         when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
         when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
-        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, 1024)).thenReturn(false);
+        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "1024")).thenReturn(false);
         when(cargoRepository.findById(25)).thenReturn(Optional.of(testCargo));
         when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
 
@@ -269,7 +269,7 @@ public class DesignacionServiceTest {
     void testT6_RegistrarDesignacion_CargoNotFound_Throws404() {
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
-        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, 1024)).thenReturn(false);
+        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "1024")).thenReturn(false);
         when(cargoRepository.findById(25)).thenReturn(Optional.empty());
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
@@ -286,7 +286,7 @@ public class DesignacionServiceTest {
 
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
-        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, 1024)).thenReturn(false);
+        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "1024")).thenReturn(false);
         when(cargoRepository.findById(25)).thenReturn(Optional.of(testCargo));
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
@@ -301,7 +301,7 @@ public class DesignacionServiceTest {
     void testT8_RegistrarDesignacion_DuplicateResolucionForSameDocente_Throws400() {
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
-        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, 1024)).thenReturn(true);
+        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "1024")).thenReturn(true);
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> designacionService.registrarDesignacion(validRequest, "admin_global"));
@@ -318,7 +318,7 @@ public class DesignacionServiceTest {
 
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
-        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, 1024)).thenReturn(false);
+        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "1024")).thenReturn(false);
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> designacionService.registrarDesignacion(validRequest, "admin_global"));
@@ -332,7 +332,7 @@ public class DesignacionServiceTest {
     void testT11_RegistrarDesignacion_EmailFailure_IsFailSafeAndSucceeds() {
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
-        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, 1024)).thenReturn(false);
+        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "1024")).thenReturn(false);
         when(cargoRepository.findById(25)).thenReturn(Optional.of(testCargo));
         when(designacionRepository.save(anyDesignacion())).thenAnswer(inv -> {
             Designacion d = inv.getArgument(0);
@@ -355,7 +355,7 @@ public class DesignacionServiceTest {
     void testObtenerPorId_Success() {
         Designacion designacion = new Designacion();
         designacion.setDesignacionId(100);
-        designacion.setDesignacionNumeroResolucion(1024);
+        designacion.setDesignacionNumeroResolucion("1024");
         designacion.setDesignacionFechaInicio(LocalDate.of(2026, 3, 1));
         designacion.setDesignacionFechaFin(LocalDate.of(2027, 2, 28));
         designacion.setDesignacionEstadoActual("Activo");
@@ -369,7 +369,7 @@ public class DesignacionServiceTest {
 
         assertNotNull(dto);
         assertEquals(100, dto.getId());
-        assertEquals(1024, dto.getNroResolucion());
+        assertEquals("1024", dto.getNroResolucion());
         assertNotNull(dto.getDocente());
         assertEquals("Juan", dto.getDocente().getNombre());
         assertNotNull(dto.getCargo());

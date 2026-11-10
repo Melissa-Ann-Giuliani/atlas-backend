@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS public.telefonos_docentes
 CREATE TABLE IF NOT EXISTS public.designaciones
 (
     designacion_id serial NOT NULL,
-    designacion_numero_resolucion integer NOT NULL,
+    designacion_numero_resolucion character varying(20) NOT NULL,
     designacion_fecha_inicio date NOT NULL,
     designacion_fecha_fin date,
     designacion_estado_actual character varying(40) NOT NULL DEFAULT 'Activo',
@@ -631,11 +631,11 @@ INSERT INTO public.telefonos_docentes (docente_usuario_id, docente_telefono) VAL
 
 -- Designaciones (Activo except for Carlos Rodriguez)
 INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id) VALUES
-(1001, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'jperez')),
-(1002, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'agarcia')),
-(1003, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'lmartinez')),
-(1004, '2026-04-01', '2027-03-31', 'Inactivo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'crodriguez')),
-(1005, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'sfernandez'));
+('1001', '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'jperez')),
+('1002', '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'agarcia')),
+('1003', '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'lmartinez')),
+('1004', '2026-04-01', '2027-03-31', 'Inactivo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'crodriguez')),
+('1005', '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'sfernandez'));
 
 -- Materias
 INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, materia_plan_estudio, unidad_id) VALUES
@@ -742,7 +742,7 @@ FROM public.usuarios WHERE usuario_username LIKE 'doc_%';
 
 -- 3. Insert Designaciones (all Activo)
 INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id)
-SELECT 2000 + usuario_id, '2026-04-01', '2027-03-31', 'Activo', usuario_id
+SELECT (2000 + usuario_id)::varchar, '2026-04-01', '2027-03-31', 'Activo', usuario_id
 FROM public.usuarios WHERE usuario_username LIKE 'doc_%';
 
 -- 4. Insert Cargos, linking each new docente designacion to one specific unit
@@ -794,8 +794,8 @@ INSERT INTO public.docentes (usuario_id, docente_legajo, docente_dni, docente_cu
 
 -- 3. Insert Designaciones
 INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id) VALUES
-(3001, '2026-04-01', '2027-03-31', 'Licencia', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1')),
-(3002, '2026-04-01', '2027-03-31', 'Licencia', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2'));
+('3001', '2026-04-01', '2027-03-31', 'Licencia', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1')),
+('3002', '2026-04-01', '2027-03-31', 'Licencia', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2'));
 
 -- 4. Insert Cargos
 INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
@@ -854,9 +854,9 @@ INSERT INTO public.docentes (usuario_id, docente_legajo, docente_dni, docente_cu
 
 -- 3. Insert Designaciones
 INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id) VALUES
-(4001, '2026-04-01', '2027-03-31', 'Licencia', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_orig_sub')),
-(4002, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub1')),
-(4003, '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub2'));
+('4001', '2026-04-01', '2027-03-31', 'Licencia', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_orig_sub')),
+('4002', '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub1')),
+('4003', '2026-04-01', '2027-03-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub2'));
 
 -- 4. Insert Licencia for the original docente
 INSERT INTO public.licencias (licencia_nro_resolucion, licencia_fecha_inicio, licencia_fecha_fin, licencia_fecha_fin_estim, motivo_id, licencia_cantidad_dias, designacion_id) VALUES

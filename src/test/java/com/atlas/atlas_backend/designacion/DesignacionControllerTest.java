@@ -59,7 +59,7 @@ public class DesignacionControllerTest {
         validRequest = new DesignacionCreateRequest();
         validRequest.setDocenteId(10);
         validRequest.setCargoId(25);
-        validRequest.setNroResolucion(1024);
+        validRequest.setNroResolucion("1024");
         validRequest.setFechaInicio(LocalDate.of(2026, 3, 1));
         validRequest.setFechaFin(LocalDate.of(2027, 2, 28));
 
@@ -79,7 +79,7 @@ public class DesignacionControllerTest {
 
         expectedDto = new DesignacionResponseDTO();
         expectedDto.setId(100);
-        expectedDto.setNroResolucion(1024);
+        expectedDto.setNroResolucion("1024");
         expectedDto.setFechaInicio(LocalDate.of(2026, 3, 1));
         expectedDto.setFechaFin(LocalDate.of(2027, 2, 28));
         expectedDto.setEstado("Activo");
@@ -98,7 +98,7 @@ public class DesignacionControllerTest {
                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(validRequest))))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(100))
-                .andExpect(jsonPath("$.nroResolucion").value(1024))
+                .andExpect(jsonPath("$.nroResolucion").value("1024"))
                 .andExpect(jsonPath("$.estado").value("Activo"))
                 .andExpect(jsonPath("$.docente.id").value(10))
                 .andExpect(jsonPath("$.docente.dni").value(30123456))
@@ -234,7 +234,7 @@ public class DesignacionControllerTest {
                 .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(100))
-                .andExpect(jsonPath("$.nroResolucion").value(1024));
+                .andExpect(jsonPath("$.nroResolucion").value("1024"));
     }
 }
 
