@@ -161,6 +161,7 @@ public class DesignacionService {
         if (docente != null) {
             DesignacionResponseDTO.DocenteResumenDTO docenteDto = new DesignacionResponseDTO.DocenteResumenDTO();
             docenteDto.setId(docente.getId());
+            docenteDto.setLegajo(docente.getLegajo());
             docenteDto.setNombre(docente.getNombre());
             docenteDto.setApellido(docente.getApellido());
             docenteDto.setDni(docente.getDni());

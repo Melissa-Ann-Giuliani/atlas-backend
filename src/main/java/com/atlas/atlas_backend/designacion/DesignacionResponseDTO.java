@@ -18,6 +18,7 @@ public class DesignacionResponseDTO {
     @Data
     public static class DocenteResumenDTO {
         private Integer id;
+        private Integer legajo;
         private String nombre;
         private String apellido;
         private Long dni;

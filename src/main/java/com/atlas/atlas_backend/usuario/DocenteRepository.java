@@ -10,13 +10,17 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
 
     boolean existsByCuil(Long cuil);
 
+    boolean existsByLegajo(Integer legajo);
+
+    boolean existsByLegajoAndIdNot(Integer legajo, Integer id);
+
     boolean existsByEmailInstitucional(String emailInstitucional);
 
     boolean existsByEmailInstitucionalAndIdNot(String emailInstitucional, Integer id);
 
     @org.springframework.data.jpa.repository.Query(
         value = """
-            SELECT d.id AS usuarioId, d.nombre AS nombre, d.apellido AS apellido,
+            SELECT d.id AS usuarioId, d.legajo AS legajo, d.nombre AS nombre, d.apellido AS apellido,
                    o.origenNombre AS origen, u.unidadNombre AS unidad, u.tipoUnidad.nombre AS tipoUnidadNombre, cat.categoriaNombre AS categoria,
                    ded.dedicacionNombre AS dedicacion, car.caracterNombre AS caracter, d.estado AS estado
             FROM Cargo c
@@ -33,7 +37,8 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
               AND (CAST(:searchTerm AS string) IS NULL OR LOWER(d.nombre) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
                    OR LOWER(d.apellido) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
                    OR LOWER(u.unidadNombre) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%'))
-                   OR CAST(d.dni AS string) LIKE CONCAT('%', CAST(:searchTerm AS string), '%'))
+                   OR CAST(d.dni AS string) LIKE CONCAT('%', CAST(:searchTerm AS string), '%')
+                   OR CAST(d.legajo AS string) LIKE CONCAT('%', CAST(:searchTerm AS string), '%'))
               AND (:origen IS NULL OR o.origenNombre = :origen)
               AND (:dedicacion IS NULL OR ded.dedicacionNombre = :dedicacion)
               AND (:categoria IS NULL OR cat.categoriaNombre = :categoria)
@@ -56,7 +61,8 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
               AND (CAST(:searchTerm AS string) IS NULL OR LOWER(d.nombre) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
                    OR LOWER(d.apellido) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
                    OR LOWER(u.unidadNombre) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%'))
-                   OR CAST(d.dni AS string) LIKE CONCAT('%', CAST(:searchTerm AS string), '%'))
+                   OR CAST(d.dni AS string) LIKE CONCAT('%', CAST(:searchTerm AS string), '%')
+                   OR CAST(d.legajo AS string) LIKE CONCAT('%', CAST(:searchTerm AS string), '%'))
               AND (:origen IS NULL OR o.origenNombre = :origen)
               AND (:dedicacion IS NULL OR ded.dedicacionNombre = :dedicacion)
               AND (:categoria IS NULL OR cat.categoriaNombre = :categoria)

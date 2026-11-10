@@ -27,6 +27,8 @@ public class DocenteRequest {
     @NotNull(message = "El CUIL es obligatorio")
     private Long cuil;
 
+    private Integer legajo;
+
 
     @NotBlank(message = "El correo electrónico institucional es obligatorio")
     @Email(message = "Formato de correo inválido")

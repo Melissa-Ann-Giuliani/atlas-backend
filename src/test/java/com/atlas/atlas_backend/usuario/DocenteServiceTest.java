@@ -93,6 +93,21 @@ public class DocenteServiceTest {
         request.setFechaIngreso(LocalDate.of(2020, 1, 1));
         request.setTipoDni("DNI");
         request.setAntigPrevia(5);
+        request.setLegajo(12345);
+    }
+
+    @Test
+    public void testRegistrarDocente_DuplicateLegajoThrowsException() {
+        when(usuarioRepository.findByUsername(anyString())).thenReturn(Optional.empty());
+        when(usuarioRepository.existsByCorreo(anyString())).thenReturn(false);
+        when(docenteRepository.existsByEmailInstitucional(anyString())).thenReturn(false);
+        when(docenteRepository.existsByDni(anyLong())).thenReturn(false);
+        when(docenteRepository.existsByCuil(anyLong())).thenReturn(false);
+        when(docenteRepository.existsByLegajo(12345)).thenReturn(true);
+
+        Exception ex = assertThrows(Exception.class, () -> docenteService.registrarDocente(request, new StringBuilder()));
+        assertEquals("Legajo ya existe", ex.getMessage());
+        verify(docenteRepository, never()).save(any());
     }
 
     @Test
@@ -374,6 +389,7 @@ public class DocenteServiceTest {
         docente.setCuil(20123456780L);
         docente.setDomicilio("Av. Siempreviva 742");
         docente.setAntigPrevia(4);
+        docente.setLegajo(98765);
         docente.setFechaIngreso(LocalDate.of(2019, 3, 1));
         docente.setEmailInstitucional("jdoe@facultad.edu");
         docente.setNombre("John");
@@ -397,6 +413,8 @@ public class DocenteServiceTest {
         assertEquals(20123456780L, pd.getCuil());
         assertEquals("Av. Siempreviva 742", pd.getDomicilio());
         assertEquals(4, pd.getAntigPrevia());
+        assertEquals(98765, pd.getLegajo());
+        assertEquals(98765, dto.getLegajo());
         assertEquals(LocalDate.of(2019, 3, 1), pd.getFechaIngreso());
         assertEquals("jdoe@facultad.edu", pd.getEmailInstitucional());
         assertEquals("John", pd.getNombre());

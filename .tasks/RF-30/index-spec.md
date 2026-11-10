@@ -20,3 +20,4 @@
 1. **Walking Skeleton:** Create a minimal API endpoint to register a teacher with basic fields.
 2. **MVP Narrative:** Include validations (DNI, email uniqueness) and handle "regular" category / seniority logic.
 3. **Enhancements:** Trigger confirmation email with temporary password.
+4. **Amendment (legajo):** Add optional, unique `legajo` (`docentes.docente_legajo`) to the registration payload and expose it in `DocenteListDTO` / `DocenteDetailsDTO`.
