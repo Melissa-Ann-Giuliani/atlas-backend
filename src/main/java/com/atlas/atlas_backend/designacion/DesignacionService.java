@@ -2,7 +2,6 @@ package com.atlas.atlas_backend.designacion;
 
 import com.atlas.atlas_backend.cargo.Cargo;
 import com.atlas.atlas_backend.cargo.CargoRepository;
-import com.atlas.atlas_backend.notification.EmailService;
 import com.atlas.atlas_backend.usuario.AdminUnidad;
 import com.atlas.atlas_backend.usuario.AdminUnidadRepository;
 import com.atlas.atlas_backend.usuario.Docente;
@@ -38,9 +37,6 @@ public class DesignacionService {
     @Autowired
     private AdminUnidadRepository adminUnidadRepository;
 
-    @Autowired
-    private EmailService emailService;
-
     @Transactional
     public DesignacionResponseDTO registrarDesignacion(DesignacionCreateRequest request, String username) {
         Usuario usuario = usuarioRepository.findByUsername(username)
@@ -75,7 +71,8 @@ public class DesignacionService {
                     Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(usuario.getId().intValue());
                     if (adminUnidadOpt.isPresent() && adminUnidadOpt.get().getUnidad() != null) {
                         Integer userUnidadId = adminUnidadOpt.get().getUnidad().getUnidadId();
-                        if (cargo.getUnidad() == null || !Objects.equals(userUnidadId, cargo.getUnidad().getUnidadId())) {
+                        if (cargo.getUnidad() == null
+                                || !Objects.equals(userUnidadId, cargo.getUnidad().getUnidadId())) {
                             throw new AccessDeniedException(
                                     "No tiene permisos para registrar designaciones en cargos de otra unidad");
                         }
@@ -112,20 +109,73 @@ public class DesignacionService {
             docenteRepository.save(docente);
         }
 
-        String emailDestino = docente.getEmailInstitucional() != null
-                ? docente.getEmailInstitucional()
-                : docente.getCorreo();
-        try {
-            emailService.sendDesignacionNotification(
-                    emailDestino,
-                    savedDesignacion.getDesignacionNumeroResolucion(),
-                    savedDesignacion.getDesignacionFechaInicio(),
-                    savedDesignacion.getDesignacionFechaFin());
-        } catch (Exception e) {
-            System.err.println("Advertencia: falló el envío de correo de notificación de designación: " + e.getMessage());
-        }
+        // El envío de notificación por correo electrónico queda diferido a RF-11
+        // (Decisión R1)
 
         return buildResponseDTO(savedDesignacion, docente, cargo);
+    }
+
+    @Transactional
+    public DesignacionResponseDTO vincularCargo(Integer designacionId, Integer cargoId, String username) {
+        if (designacionId == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Designación no encontrada");
+        }
+        if (cargoId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El ID del cargo es obligatorio");
+        }
+
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        Designacion designacion = designacionRepository.findById(Objects.requireNonNull(designacionId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Designación no encontrada"));
+
+        List<Cargo> cargosExistentes = cargoRepository.findByDesignacionDesignacionIdIn(List.of(designacionId));
+        if (cargosExistentes != null && !cargosExistentes.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La designación ya posee un cargo vinculado");
+        }
+
+        Cargo cargo = cargoRepository.findById(Objects.requireNonNull(cargoId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo no encontrado"));
+
+        String rolNombre = usuario.getRol() != null ? usuario.getRol().getNombre() : "";
+        if (rolNombre.equalsIgnoreCase("Admin de unidad") ||
+                rolNombre.equalsIgnoreCase("Administrador de Unidad") ||
+                rolNombre.equalsIgnoreCase("ADMIN_UNIDAD") ||
+                rolNombre.equalsIgnoreCase("ADMIN_DE_UNIDAD") ||
+                rolNombre.equalsIgnoreCase("ADMINISTRADOR_DE_UNIDAD")) {
+            if (usuario.getId() != null) {
+                Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(usuario.getId().intValue());
+                if (adminUnidadOpt.isPresent() && adminUnidadOpt.get().getUnidad() != null) {
+                    Integer userUnidadId = adminUnidadOpt.get().getUnidad().getUnidadId();
+                    if (cargo.getUnidad() == null || !Objects.equals(userUnidadId, cargo.getUnidad().getUnidadId())) {
+                        throw new AccessDeniedException(
+                                "No tiene permisos para vincular cargos de otra unidad");
+                    }
+                } else {
+                    throw new AccessDeniedException("La Unidad del Administrador no fue encontrada");
+                }
+            } else {
+                throw new AccessDeniedException("ID de usuario nulo");
+            }
+        }
+
+        if (cargo.getEstado() == null || !cargo.getEstado().equalsIgnoreCase("Libre")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El cargo ya se encuentra asignado o en licencia");
+        }
+
+        cargo.setDesignacion(designacion);
+        cargo.setEstado("Asignado");
+        cargoRepository.save(cargo);
+
+        Docente docente = null;
+        if (designacion.getUsuarioId() != null) {
+            docente = docenteRepository.findById(Objects.requireNonNull(designacion.getUsuarioId())).orElse(null);
+        }
+
+        return buildResponseDTO(designacion, docente, cargo);
     }
 
     @Transactional(readOnly = true)
@@ -134,13 +184,13 @@ public class DesignacionService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "ID de designación nulo");
         }
 
-        Designacion designacion = designacionRepository.findById(id)
+        Designacion designacion = designacionRepository.findById(Objects.requireNonNull(id))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Designación no encontrada"));
 
         Docente docente = null;
         Integer docenteUsuarioId = designacion.getUsuarioId();
         if (docenteUsuarioId != null) {
-            docente = docenteRepository.findById(docenteUsuarioId).orElse(null);
+            docente = docenteRepository.findById(Objects.requireNonNull(docenteUsuarioId)).orElse(null);
         }
 
         Cargo cargo = null;
@@ -189,4 +239,3 @@ public class DesignacionService {
         return dto;
     }
 }
-

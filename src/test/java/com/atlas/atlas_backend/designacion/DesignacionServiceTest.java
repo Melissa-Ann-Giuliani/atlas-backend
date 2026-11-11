@@ -63,6 +63,12 @@ public class DesignacionServiceTest {
         return c != null ? c : new Cargo();
     }
 
+    @NonNull
+    private static Docente anyDocente() {
+        Docente d = any(Docente.class);
+        return d != null ? d : new Docente();
+    }
+
     private Usuario adminGlobalUser;
     private Usuario adminUnidadUser;
     private AdminUnidad adminUnidad;
@@ -178,12 +184,8 @@ public class DesignacionServiceTest {
         assertEquals("Exclusiva", response.getCargo().getDedicacion());
         assertEquals("Facultad de Ingeniería", response.getCargo().getUnidad());
 
-        // Verify email notification called
-        verify(emailService, times(1)).sendDesignacionNotification(
-                "juan.perez@atlas.edu",
-                "1024",
-                LocalDate.of(2026, 3, 1),
-                LocalDate.of(2027, 2, 28));
+        // Verify email notification is deferred to RF-11 (Decisión R1)
+        verify(emailService, never()).sendDesignacionNotification(any(), any(), any(), any());
     }
 
     @Test
@@ -307,7 +309,8 @@ public class DesignacionServiceTest {
                 () -> designacionService.registrarDesignacion(validRequest, "admin_global"));
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-        assertEquals("El docente ya posee una designación registrada con el número de resolución indicado", ex.getReason());
+        assertEquals("El docente ya posee una designación registrada con el número de resolución indicado",
+                ex.getReason());
         verify(designacionRepository, never()).save(anyDesignacion());
     }
 
@@ -329,7 +332,7 @@ public class DesignacionServiceTest {
     }
 
     @Test
-    void testT11_RegistrarDesignacion_EmailFailure_IsFailSafeAndSucceeds() {
+    void testT11_RegistrarDesignacion_DoesNotSendEmail_DeferredToRF11() {
         when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
         when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
         when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "1024")).thenReturn(false);
@@ -339,8 +342,6 @@ public class DesignacionServiceTest {
             d.setDesignacionId(105);
             return d;
         });
-        doThrow(new RuntimeException("SMTP Server Down"))
-                .when(emailService).sendDesignacionNotification(any(), any(), any(), any());
 
         DesignacionResponseDTO response = designacionService.registrarDesignacion(validRequest, "admin_global");
 
@@ -349,6 +350,157 @@ public class DesignacionServiceTest {
         assertEquals("Activo", response.getEstado());
         assertEquals("Activo", testDocente.getEstado());
         assertEquals("Asignado", testCargo.getEstado());
+        verify(emailService, never()).sendDesignacionNotification(any(), any(), any(), any());
+    }
+
+    @Test
+    void testVincularCargo_T1_AdminGlobal_Success() {
+        Designacion designacion = new Designacion();
+        designacion.setDesignacionId(100);
+        designacion.setUsuarioId(10);
+        designacion.setDesignacionNumeroResolucion("1024");
+        designacion.setDesignacionFechaInicio(LocalDate.of(2026, 3, 1));
+        designacion.setDesignacionFechaFin(LocalDate.of(2027, 2, 28));
+        designacion.setDesignacionEstadoActual("Activo");
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(designacionRepository.findById(100)).thenReturn(Optional.of(designacion));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(List.of(100))).thenReturn(List.of());
+        when(cargoRepository.findById(25)).thenReturn(Optional.of(testCargo));
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
+
+        DesignacionResponseDTO response = designacionService.vincularCargo(100, 25, "admin_global");
+
+        assertNotNull(response);
+        assertEquals(100, response.getId());
+        assertEquals("1024", response.getNroResolucion());
+        assertEquals("Asignado", testCargo.getEstado());
+        assertEquals(designacion, testCargo.getDesignacion());
+        verify(cargoRepository, times(1)).save(Objects.requireNonNull(testCargo));
+        verify(emailService, never()).sendDesignacionNotification(any(), any(), any(), any());
+
+        assertNotNull(response.getDocente());
+        assertEquals(10, response.getDocente().getId());
+        assertNotNull(response.getCargo());
+        assertEquals(25, response.getCargo().getId());
+        assertEquals(5001L, response.getCargo().getCodigo());
+        assertEquals("Profesor Titular", response.getCargo().getCategoria());
+    }
+
+    @Test
+    void testVincularCargo_T2_AdminUnidad_OwnUnit_Success() {
+        Designacion designacion = new Designacion();
+        designacion.setDesignacionId(100);
+        designacion.setUsuarioId(10);
+        designacion.setDesignacionNumeroResolucion("1024");
+
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(designacionRepository.findById(100)).thenReturn(Optional.of(designacion));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(List.of(100))).thenReturn(List.of());
+        when(cargoRepository.findById(25)).thenReturn(Optional.of(testCargo));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
+
+        DesignacionResponseDTO response = designacionService.vincularCargo(100, 25, "admin_unidad");
+
+        assertNotNull(response);
+        assertEquals("Asignado", testCargo.getEstado());
+        assertEquals(designacion, testCargo.getDesignacion());
+        verify(cargoRepository, times(1)).save(Objects.requireNonNull(testCargo));
+    }
+
+    @Test
+    void testVincularCargo_T3_AdminUnidad_OtherUnit_ThrowsAccessDenied() {
+        Unidad otraUnidad = new Unidad();
+        otraUnidad.setUnidadId(2);
+        otraUnidad.setUnidadNombre("Facultad de Ciencias Exactas");
+        testCargo.setUnidad(otraUnidad);
+
+        Designacion designacion = new Designacion();
+        designacion.setDesignacionId(100);
+
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(designacionRepository.findById(100)).thenReturn(Optional.of(designacion));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(List.of(100))).thenReturn(List.of());
+        when(cargoRepository.findById(25)).thenReturn(Optional.of(testCargo));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
+
+        AccessDeniedException ex = assertThrows(AccessDeniedException.class,
+                () -> designacionService.vincularCargo(100, 25, "admin_unidad"));
+
+        assertEquals("No tiene permisos para vincular cargos de otra unidad", ex.getMessage());
+        verify(cargoRepository, never()).save(anyCargo());
+    }
+
+    @Test
+    void testVincularCargo_T4_CargoNotLibre_Throws400() {
+        testCargo.setEstado("Asignado");
+        Designacion designacion = new Designacion();
+        designacion.setDesignacionId(100);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(designacionRepository.findById(100)).thenReturn(Optional.of(designacion));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(List.of(100))).thenReturn(List.of());
+        when(cargoRepository.findById(25)).thenReturn(Optional.of(testCargo));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> designacionService.vincularCargo(100, 25, "admin_global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertEquals("El cargo ya se encuentra asignado o en licencia", ex.getReason());
+        verify(cargoRepository, never()).save(anyCargo());
+    }
+
+    @Test
+    void testVincularCargo_T5_CargoNotFound_Throws404() {
+        Designacion designacion = new Designacion();
+        designacion.setDesignacionId(100);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(designacionRepository.findById(100)).thenReturn(Optional.of(designacion));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(List.of(100))).thenReturn(List.of());
+        when(cargoRepository.findById(999)).thenReturn(Optional.empty());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> designacionService.vincularCargo(100, 999, "admin_global"));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertEquals("Cargo no encontrado", ex.getReason());
+        verify(cargoRepository, never()).save(anyCargo());
+    }
+
+    @Test
+    void testVincularCargo_T6_DesignacionNotFound_Throws404() {
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(designacionRepository.findById(999)).thenReturn(Optional.empty());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> designacionService.vincularCargo(999, 25, "admin_global"));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+        assertEquals("Designación no encontrada", ex.getReason());
+        verify(cargoRepository, never()).save(anyCargo());
+    }
+
+    @Test
+    void testVincularCargo_T7_DesignacionAlreadyHasCargo_Throws400() {
+        Designacion designacion = new Designacion();
+        designacion.setDesignacionId(100);
+
+        Cargo alreadyLinkedCargo = new Cargo();
+        alreadyLinkedCargo.setId(50);
+        alreadyLinkedCargo.setDesignacion(designacion);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(designacionRepository.findById(100)).thenReturn(Optional.of(designacion));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(List.of(100))).thenReturn(List.of(alreadyLinkedCargo));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> designacionService.vincularCargo(100, 25, "admin_global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertEquals("La designación ya posee un cargo vinculado", ex.getReason());
+        verify(cargoRepository, never()).save(anyCargo());
     }
 
     @Test
@@ -398,7 +550,7 @@ public class DesignacionServiceTest {
 
         // Docente remains Inactivo until subsequent confirmation steps
         assertEquals("Inactivo", testDocente.getEstado());
-        verify(docenteRepository, never()).save(any());
+        verify(docenteRepository, never()).save(anyDocente());
         verify(cargoRepository, never()).save(anyCargo());
     }
 }
