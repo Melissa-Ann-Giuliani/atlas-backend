@@ -29,7 +29,7 @@ public class LicenciaDetailDTO {
 
     // Designacion Info
     private Integer designacionId;
-    private Integer designacionNroResolucion;
+    private String designacionNroResolucion;
     private LocalDate designacionFechaInicio;
     private LocalDate designacionFechaFin;
     private String designacionEstado;

@@ -966,7 +966,7 @@ public class CargoServiceTest {
     void darDeBajaCargo_Scenario2_Success_FinalizedDesignation_ReturnsUpdatedCargo() throws Exception {
         Designacion des = new Designacion();
         des.setDesignacionId(1);
-        des.setDesignacionNumeroResolucion(1234);
+        des.setDesignacionNumeroResolucion("1234");
         des.setDesignacionEstadoActual("Finalizada");
         des.setDesignacionFechaInicio(LocalDate.now().minusMonths(6));
         des.setDesignacionFechaFin(LocalDate.now().minusDays(1));
@@ -1002,7 +1002,7 @@ public class CargoServiceTest {
     void darDeBajaCargo_Scenario3_Error_ActiveDesignation_ThrowsBadRequest() {
         Designacion des = new Designacion();
         des.setDesignacionId(1);
-        des.setDesignacionNumeroResolucion(1234);
+        des.setDesignacionNumeroResolucion("1234");
         des.setDesignacionEstadoActual("Activa");
         des.setDesignacionFechaInicio(LocalDate.now().minusMonths(1));
         des.setDesignacionFechaFin(LocalDate.now().plusMonths(5));

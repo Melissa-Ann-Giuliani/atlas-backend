@@ -124,6 +124,9 @@ public class UsuarioService {
             if (doc.getCuil() != null) {
                 map.put("cuil", String.valueOf(doc.getCuil()));
             }
+            if (doc.getLegajo() != null) {
+                map.put("legajo", doc.getLegajo());
+            }
         } else if (u.getId() != null) {
             Integer userId = Objects.requireNonNull(u.getId());
             adminGlobalRepository.findById(userId).ifPresent(ag -> {

@@ -15,8 +15,16 @@ public class Designacion {
     @Column(name = "designacion_id")
     private Integer designacionId;
 
-    @Column(name = "designacion_numero_resolucion", nullable = false)
-    private Integer designacionNumeroResolucion;
+    @Column(name = "designacion_numero_resolucion", nullable = false, length = 20)
+    private String designacionNumeroResolucion;
+
+    public String getDesignacionNumeroResolucion() {
+        return designacionNumeroResolucion;
+    }
+
+    public void setDesignacionNumeroResolucion(String designacionNumeroResolucion) {
+        this.designacionNumeroResolucion = designacionNumeroResolucion;
+    }
 
     @Column(name = "designacion_fecha_inicio", nullable = false)
     private LocalDate designacionFechaInicio;

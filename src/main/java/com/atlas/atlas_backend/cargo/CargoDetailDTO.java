@@ -17,7 +17,7 @@ public class CargoDetailDTO {
     // Administrative Data
     private String asignadoANombre;
     private Long asignadoADni;
-    private Integer nroResolucionDesignacion;
+    private String nroResolucionDesignacion;
     private LocalDate fechaCreacion;
     private String dedicacion;
     private String caracter;
@@ -30,7 +30,7 @@ public class CargoDetailDTO {
     private String tipoUnidadNombre;
 
     // Linked Designation
-    private Integer designacionNroResolucion;
+    private String designacionNroResolucion;
     private LocalDate designacionFechaInicio;
     private LocalDate designacionFechaFin;
 
