@@ -15,7 +15,6 @@ public class DesignacionCreateRequest {
     @NotNull(message = "El ID del docente es obligatorio")
     private Integer docenteId;
 
-    @NotNull(message = "El ID del cargo es obligatorio")
     private Integer cargoId;
 
     @NotBlank(message = "El número de resolución es obligatorio")

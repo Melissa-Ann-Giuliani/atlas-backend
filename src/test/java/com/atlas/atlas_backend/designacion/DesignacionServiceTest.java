@@ -375,4 +375,30 @@ public class DesignacionServiceTest {
         assertNotNull(dto.getCargo());
         assertEquals(5001L, dto.getCargo().getCodigo());
     }
+
+    @Test
+    void testRegistrarDesignacion_WithoutCargo_DoesNotActivateDocenteOrLinkCargo() {
+        validRequest.setCargoId(null);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
+        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "1024")).thenReturn(false);
+        when(designacionRepository.save(anyDesignacion())).thenAnswer(inv -> {
+            Designacion d = inv.getArgument(0);
+            d.setDesignacionId(110);
+            return d;
+        });
+
+        DesignacionResponseDTO response = designacionService.registrarDesignacion(validRequest, "admin_global");
+
+        assertNotNull(response);
+        assertEquals(110, response.getId());
+        assertEquals("1024", response.getNroResolucion());
+        assertNull(response.getCargo());
+
+        // Docente remains Inactivo until subsequent confirmation steps
+        assertEquals("Inactivo", testDocente.getEstado());
+        verify(docenteRepository, never()).save(any());
+        verify(cargoRepository, never()).save(anyCargo());
+    }
 }

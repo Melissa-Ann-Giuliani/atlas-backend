@@ -60,34 +60,37 @@ public class DesignacionService {
                     "La fecha de finalización no puede ser anterior a la fecha de inicio");
         }
 
-        Cargo cargo = cargoRepository.findById(Objects.requireNonNull(request.getCargoId()))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo no encontrado"));
+        Cargo cargo = null;
+        if (request.getCargoId() != null) {
+            cargo = cargoRepository.findById(Objects.requireNonNull(request.getCargoId()))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo no encontrado"));
 
-        String rolNombre = usuario.getRol() != null ? usuario.getRol().getNombre() : "";
-        if (rolNombre.equalsIgnoreCase("Admin de unidad") ||
-                rolNombre.equalsIgnoreCase("Administrador de Unidad") ||
-                rolNombre.equalsIgnoreCase("ADMIN_UNIDAD") ||
-                rolNombre.equalsIgnoreCase("ADMIN_DE_UNIDAD") ||
-                rolNombre.equalsIgnoreCase("ADMINISTRADOR_DE_UNIDAD")) {
-            if (usuario.getId() != null) {
-                Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(usuario.getId().intValue());
-                if (adminUnidadOpt.isPresent() && adminUnidadOpt.get().getUnidad() != null) {
-                    Integer userUnidadId = adminUnidadOpt.get().getUnidad().getUnidadId();
-                    if (cargo.getUnidad() == null || !Objects.equals(userUnidadId, cargo.getUnidad().getUnidadId())) {
-                        throw new AccessDeniedException(
-                                "No tiene permisos para registrar designaciones en cargos de otra unidad");
+            String rolNombre = usuario.getRol() != null ? usuario.getRol().getNombre() : "";
+            if (rolNombre.equalsIgnoreCase("Admin de unidad") ||
+                    rolNombre.equalsIgnoreCase("Administrador de Unidad") ||
+                    rolNombre.equalsIgnoreCase("ADMIN_UNIDAD") ||
+                    rolNombre.equalsIgnoreCase("ADMIN_DE_UNIDAD") ||
+                    rolNombre.equalsIgnoreCase("ADMINISTRADOR_DE_UNIDAD")) {
+                if (usuario.getId() != null) {
+                    Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(usuario.getId().intValue());
+                    if (adminUnidadOpt.isPresent() && adminUnidadOpt.get().getUnidad() != null) {
+                        Integer userUnidadId = adminUnidadOpt.get().getUnidad().getUnidadId();
+                        if (cargo.getUnidad() == null || !Objects.equals(userUnidadId, cargo.getUnidad().getUnidadId())) {
+                            throw new AccessDeniedException(
+                                    "No tiene permisos para registrar designaciones en cargos de otra unidad");
+                        }
+                    } else {
+                        throw new AccessDeniedException("La Unidad del Administrador no fue encontrada");
                     }
                 } else {
-                    throw new AccessDeniedException("La Unidad del Administrador no fue encontrada");
+                    throw new AccessDeniedException("ID de usuario nulo");
                 }
-            } else {
-                throw new AccessDeniedException("ID de usuario nulo");
             }
-        }
 
-        if (cargo.getEstado() == null || !cargo.getEstado().equalsIgnoreCase("Libre")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "El cargo ya se encuentra asignado o en licencia");
+            if (cargo.getEstado() == null || !cargo.getEstado().equalsIgnoreCase("Libre")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "El cargo ya se encuentra asignado o en licencia");
+            }
         }
 
         Designacion designacion = new Designacion();
@@ -99,13 +102,15 @@ public class DesignacionService {
 
         Designacion savedDesignacion = designacionRepository.save(designacion);
 
-        cargo.setDesignacion(savedDesignacion);
-        cargo.setEstado("Asignado");
-        cargoRepository.save(cargo);
+        if (cargo != null) {
+            cargo.setDesignacion(savedDesignacion);
+            cargo.setEstado("Asignado");
+            cargoRepository.save(cargo);
 
-        docente.setEstado("Activo");
-        docente.setActivo(true);
-        docenteRepository.save(docente);
+            docente.setEstado("Activo");
+            docente.setActivo(true);
+            docenteRepository.save(docente);
+        }
 
         String emailDestino = docente.getEmailInstitucional() != null
                 ? docente.getEmailInstitucional()

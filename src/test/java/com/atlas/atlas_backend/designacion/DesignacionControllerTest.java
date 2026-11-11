@@ -216,13 +216,20 @@ public class DesignacionControllerTest {
 
     @Test
     @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
-    void testBeanValidation_MissingCargoId_Returns400() throws Exception {
+    void testWithoutCargoId_Success_Returns201() throws Exception {
         validRequest.setCargoId(null);
+        expectedDto.setCargo(null);
+
+        when(designacionService.registrarDesignacion(any(DesignacionCreateRequest.class), eq("admin_global")))
+                .thenReturn(expectedDto);
 
         mockMvc.perform(post("/api/designaciones")
                 .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(validRequest))))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(100))
+                .andExpect(jsonPath("$.nroResolucion").value("1024"))
+                .andExpect(jsonPath("$.cargo").doesNotExist());
     }
 
     @Test
