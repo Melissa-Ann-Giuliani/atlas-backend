@@ -49,6 +49,7 @@ public class DocenteControllerTest {
         void getActiveTeachers_Returns200AndPageOfTeachers() throws Exception {
                 DocenteListDTO dto = new DocenteListDTO() {
                         public Integer getUsuarioId() { return 1; }
+                        public Integer getLegajo() { return 12345; }
                         public String getNombre() { return "Juan"; }
                         public String getApellido() { return "Perez"; }
                         public String getOrigen() { return null; }

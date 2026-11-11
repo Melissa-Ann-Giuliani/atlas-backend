@@ -57,6 +57,10 @@ public class DocenteService {
             throw new Exception("CUIL ya existe");
         }
 
+        if (request.getLegajo() != null && docenteRepository.existsByLegajo(request.getLegajo())) {
+            throw new Exception("Legajo ya existe");
+        }
+
         Rol docenteRol = rolRepository.findByNombre("Docente")
                 .or(() -> rolRepository.findByNombre("DOCENTE"))
                 .orElseThrow(() -> new Exception("Rol Docente no encontrado"));
@@ -78,6 +82,7 @@ public class DocenteService {
         docente.setTipoDni(request.getTipoDni() != null && !request.getTipoDni().isBlank() ? request.getTipoDni() : "DNI");
         docente.setDni(request.getDni());
         docente.setCuil(request.getCuil());
+        docente.setLegajo(request.getLegajo());
         docente.setEmailInstitucional(request.getEmailInstitucional());
         docente.setFechaIngreso(request.getFechaIngreso());
         docente.setDomicilio(request.getDomicilio());
@@ -185,6 +190,7 @@ public class DocenteService {
 
         DocenteDetailsDTO.PersonalData pd = new DocenteDetailsDTO.PersonalData();
         pd.setUsuarioId(docente.getId());
+        pd.setLegajo(docente.getLegajo());
         pd.setUsername(docente.getUsername());
         pd.setCorreo(docente.getCorreo());
         pd.setTipoDni(docente.getTipoDni());
@@ -199,6 +205,7 @@ public class DocenteService {
         pd.setApellido(docente.getApellido());
         pd.setEstado(docente.getEstado());
         dto.setDatosPersonales(pd);
+        dto.setLegajo(docente.getLegajo());
 
         java.util.List<com.atlas.atlas_backend.designacion.Designacion> designaciones = designacionRepository
                 .findByUsuarioId(id);
@@ -227,8 +234,7 @@ public class DocenteService {
 
             for (com.atlas.atlas_backend.cargo.Cargo cargo : cargos) {
                 DocenteDetailsDTO.DesignacionData dd = new DocenteDetailsDTO.DesignacionData();
-                dd.setLegajo(null); // Docente doesn't have legajo explicitly mapped in requirements, assuming null
-                                    // or from designacion
+                dd.setLegajo(docente.getLegajo());
                 dd.setNroResolucion(
                         cargo.getDesignacion() != null ? cargo.getDesignacion().getDesignacionNumeroResolucion()
                                 : null);
@@ -359,6 +365,12 @@ public class DocenteService {
             }
         }
 
+        // Uniqueness validation: legajo
+        if (request.getLegajo() != null && !Objects.equals(request.getLegajo(), docente.getLegajo())
+                && docenteRepository.existsByLegajoAndIdNot(request.getLegajo(), id)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El legajo ya se encuentra registrado por otro docente");
+        }
+
         // Audit deltas in cambios table
         cambioService.registrarCambio("docentes", "nombre", docente.getNombre(), request.getNombre(), usuarioResponsable);
         cambioService.registrarCambio("docentes", "apellido", docente.getApellido(), request.getApellido(), usuarioResponsable);
@@ -371,6 +383,9 @@ public class DocenteService {
         }
         if (request.getEstado() != null) {
             cambioService.registrarCambio("docentes", "estado", docente.getEstado(), request.getEstado(), usuarioResponsable);
+        }
+        if (request.getLegajo() != null) {
+            cambioService.registrarCambio("docentes", "legajo", docente.getLegajo(), request.getLegajo(), usuarioResponsable);
         }
         if (request.getTelefonos() != null) {
             String telsAnt = docente.getTelefonos() != null ? String.join(", ", docente.getTelefonos()) : null;
@@ -393,6 +408,9 @@ public class DocenteService {
         }
         if (request.getEstado() != null && !request.getEstado().isBlank()) {
             docente.setEstado(request.getEstado());
+        }
+        if (request.getLegajo() != null) {
+            docente.setLegajo(request.getLegajo());
         }
         if (request.getTelefonos() != null) {
             docente.setTelefonos(request.getTelefonos());

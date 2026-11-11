@@ -23,6 +23,8 @@ public class DocenteProfileUpdateRequest {
 
     private Long cuil;
 
+    private Integer legajo;
+
     @NotBlank(message = "El correo electrónico institucional es obligatorio")
     @Email(message = "Formato de correo inválido")
     private String emailInstitucional;

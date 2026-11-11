@@ -6,6 +6,7 @@ import java.util.List;
 
 @Data
 public class DocenteDetailsDTO {
+    private Integer legajo;
     private PersonalData datosPersonales;
     private List<DesignacionData> designacionesYCargos;
     private List<ActividadData> actividadesActuales;
@@ -14,6 +15,7 @@ public class DocenteDetailsDTO {
     @Data
     public static class PersonalData {
         private Integer usuarioId;
+        private Integer legajo;
         private String username;
         private String correo;
         private String tipoDni;
@@ -34,7 +36,7 @@ public class DocenteDetailsDTO {
     @Data
     public static class DesignacionData {
         private Integer legajo;
-        private Integer nroResolucion;
+        private String nroResolucion;
         private LocalDate fechaInicio;
         private LocalDate fechaFin;
         private Integer cargoId;

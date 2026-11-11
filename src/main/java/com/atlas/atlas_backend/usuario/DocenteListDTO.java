@@ -2,6 +2,7 @@ package com.atlas.atlas_backend.usuario;
 
 public interface DocenteListDTO {
     Integer getUsuarioId();
+    Integer getLegajo();
     String getNombre();
     String getApellido();
     String getOrigen();

@@ -12,6 +12,9 @@ import java.time.LocalDate;
 @Setter
 public class Docente extends Usuario {
 
+    @Column(name = "docente_legajo", unique = true)
+    private Integer legajo;
+
     @Column(name = "docente_tipo_dni", length = 20)
     private String tipoDni;
 

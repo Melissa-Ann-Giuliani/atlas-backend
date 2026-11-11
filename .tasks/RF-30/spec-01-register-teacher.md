@@ -18,7 +18,8 @@ The system must allow Global or Unit Administrators to register new teachers, ca
 
 - The registration will be exposed via a REST endpoint accepting teacher details.
 - Validations will ensure the teacher isn't already registered (DNI, CUIL, and institutional email must be individually unique across all users).
-- The fields gender, telephones, domicile, and date of birth are optional; all other fields are mandatory.
+- **Legajo (N° de legajo):** optional integer field (`legajo` in `DocenteRequest`, persisted in `docentes.docente_legajo`). When provided, it must be unique among teachers. It is NOT derived from `usuario_id` or DNI; if it is not provided, it stays `null` and consumers must show it as "not specified".
+- The fields gender, telephones, domicile, date of birth, and legajo are optional; all other fields are mandatory.
 - The seniority (antiguedad previa) is directly provided by the user. If left blank, it defaults to 0.
 - An asynchronous event or service should handle sending the confirmation email with the generated temporary password (a 12-character random UUID string, consistent with other roles).
 
@@ -55,6 +56,22 @@ The system must allow Global or Unit Administrators to register new teachers, ca
 * **Then** the system rejects the registration
 * **And** returns a validation error detailing the missing mandatory fields.
 
+**Scenario 6: Teacher registration with legajo**
+* **Given** no other teacher has legajo `12345`
+* **When** the administrator submits a valid registration including legajo `12345`
+* **Then** the teacher is saved with legajo `12345`
+* **And** the legajo is returned in `GET /api/docentes` (`DocenteListDTO.legajo`) and `GET /api/docentes/{id}` (`DocenteDetailsDTO.legajo` / `datosPersonales.legajo`).
+
+**Scenario 7: Duplicate legajo (Unhappy flow)**
+* **Given** a teacher is already registered with legajo `12345`
+* **When** the administrator attempts to register another teacher with legajo `12345`
+* **Then** the system rejects the registration with the error "Legajo ya existe".
+
+**Scenario 8: Teacher registration without legajo**
+* **Given** the administrator leaves legajo blank
+* **When** they submit an otherwise valid registration
+* **Then** the teacher is saved with `legajo = null` (no fallback to user ID or DNI).
+
 ---
 
 ### # Test Plan
@@ -72,6 +89,9 @@ The system must allow Global or Unit Administrators to register new teachers, ca
 | 2 | Success | Register a valid teacher with 5 years seniority, verify DB record. |
 | 3 | Error | Attempt to register with an existing DNI, verify 400 Bad Request/Conflict error. |
 | 4 | Error | Attempt to register with missing mandatory fields, verify validation error. |
+| 5 | Success | Register a valid teacher with legajo, verify it is persisted and exposed in list/detail DTOs. |
+| 6 | Error | Attempt to register with an existing legajo, verify "Legajo ya existe" error. |
+| 7 | Success | Register a valid teacher without legajo, verify `legajo` is `null`. |
 
 ---
 
