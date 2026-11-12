@@ -20,7 +20,7 @@ public class DesignacionController {
     private DesignacionService designacionService;
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD')")
     public ResponseEntity<?> crearDesignacion(
             @Valid @RequestBody DesignacionCreateRequest request,
             Authentication authentication) {
@@ -38,8 +38,28 @@ public class DesignacionController {
         }
     }
 
+    @PatchMapping("/{id}/cargo")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD')")
+    public ResponseEntity<?> vincularCargo(
+            @PathVariable @NonNull Integer id,
+            @Valid @RequestBody DesignacionVincularCargoRequest request,
+            Authentication authentication) {
+        try {
+            DesignacionResponseDTO dto = designacionService.vincularCargo(id, request.getCargoId(), authentication.getName());
+            return ResponseEntity.ok(dto);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
+        } catch (ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD')")
     public ResponseEntity<?> obtenerDesignacionPorId(@PathVariable @NonNull Integer id) {
         try {
             DesignacionResponseDTO dto = designacionService.obtenerPorId(id);
