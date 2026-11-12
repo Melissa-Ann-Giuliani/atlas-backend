@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -242,6 +243,124 @@ public class DesignacionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(100))
                 .andExpect(jsonPath("$.nroResolucion").value("1024"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+    void testVincularCargo_Success_AdminGlobal_Returns200() throws Exception {
+        DesignacionVincularCargoRequest req = new DesignacionVincularCargoRequest(25);
+        when(designacionService.vincularCargo(100, 25, "admin_global")).thenReturn(expectedDto);
+
+        mockMvc.perform(patch("/api/designaciones/100/cargo")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(100))
+                .andExpect(jsonPath("$.cargo.id").value(25))
+                .andExpect(jsonPath("$.cargo.codigo").value(5001));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_unidad", roles = { "ADMIN_UNIDAD" })
+    void testVincularCargo_Success_AdminUnidad_Returns200() throws Exception {
+        DesignacionVincularCargoRequest req = new DesignacionVincularCargoRequest(25);
+        when(designacionService.vincularCargo(100, 25, "admin_unidad")).thenReturn(expectedDto);
+
+        mockMvc.perform(patch("/api/designaciones/100/cargo")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(100));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_unidad", roles = { "ADMIN_UNIDAD" })
+    void testVincularCargo_Forbidden_AdminUnidad_OtherUnit_Returns403() throws Exception {
+        DesignacionVincularCargoRequest req = new DesignacionVincularCargoRequest(30);
+        when(designacionService.vincularCargo(100, 30, "admin_unidad"))
+                .thenThrow(new AccessDeniedException("No tiene permisos para vincular cargos de otra unidad"));
+
+        mockMvc.perform(patch("/api/designaciones/100/cargo")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("No tiene permisos para vincular cargos de otra unidad"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+    void testVincularCargo_CargoNotLibre_Returns400() throws Exception {
+        DesignacionVincularCargoRequest req = new DesignacionVincularCargoRequest(25);
+        when(designacionService.vincularCargo(100, 25, "admin_global"))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "El cargo ya se encuentra asignado o en licencia"));
+
+        mockMvc.perform(patch("/api/designaciones/100/cargo")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("El cargo ya se encuentra asignado o en licencia"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+    void testVincularCargo_CargoNotFound_Returns404() throws Exception {
+        DesignacionVincularCargoRequest req = new DesignacionVincularCargoRequest(999);
+        when(designacionService.vincularCargo(100, 999, "admin_global"))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo no encontrado"));
+
+        mockMvc.perform(patch("/api/designaciones/100/cargo")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Cargo no encontrado"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+    void testVincularCargo_DesignacionNotFound_Returns404() throws Exception {
+        DesignacionVincularCargoRequest req = new DesignacionVincularCargoRequest(25);
+        when(designacionService.vincularCargo(999, 25, "admin_global"))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Designación no encontrada"));
+
+        mockMvc.perform(patch("/api/designaciones/999/cargo")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Designación no encontrada"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+    void testVincularCargo_DesignacionAlreadyHasCargo_Returns400() throws Exception {
+        DesignacionVincularCargoRequest req = new DesignacionVincularCargoRequest(26);
+        when(designacionService.vincularCargo(100, 26, "admin_global"))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "La designación ya posee un cargo vinculado"));
+
+        mockMvc.perform(patch("/api/designaciones/100/cargo")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("La designación ya posee un cargo vinculado"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+    void testVincularCargo_NullCargoId_Returns400() throws Exception {
+        mockMvc.perform(patch("/api/designaciones/100/cargo")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content("{}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "auditor", roles = { "AUDITOR" })
+    void testVincularCargo_AuditorRole_Forbidden_Returns403() throws Exception {
+        DesignacionVincularCargoRequest req = new DesignacionVincularCargoRequest(25);
+
+        mockMvc.perform(patch("/api/designaciones/100/cargo")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                .andExpect(status().isForbidden());
     }
 }
 
