@@ -43,6 +43,9 @@ public class CargoControllerTest {
         private CargoService cargoService;
 
         @MockBean
+        private com.atlas.atlas_backend.funcion.FuncionService funcionService;
+
+        @MockBean
         private com.atlas.atlas_backend.auth.AuthService authService;
 
         @MockBean
@@ -422,7 +425,8 @@ public class CargoControllerTest {
                 SubdividirCargoRequest req = buildValidSubdividirRequest();
 
                 when(cargoService.subdividirCargo(any(SubdividirCargoRequest.class), eq("admin_global")))
-                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "La suma de horas supera al original"));
+                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                                "La suma de horas supera al original"));
 
                 mockMvc.perform(post("/api/cargos/subdividir")
                                 .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
@@ -437,7 +441,8 @@ public class CargoControllerTest {
                 SubdividirCargoRequest req = buildValidSubdividirRequest();
 
                 when(cargoService.subdividirCargo(any(SubdividirCargoRequest.class), eq("admin_global")))
-                                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT, "El código 8002 ya existe"));
+                                .thenThrow(new ResponseStatusException(HttpStatus.CONFLICT,
+                                                "El código 8002 ya existe"));
 
                 mockMvc.perform(post("/api/cargos/subdividir")
                                 .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
@@ -519,18 +524,21 @@ public class CargoControllerTest {
         @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
         void testDarDeBajaCargo_ActiveDesignacion_Returns400() throws Exception {
                 when(cargoService.darDeBajaCargo(eq(103), eq("admin_global")))
-                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede dar de baja el cargo porque posee una designación vigente"));
+                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                                "No se puede dar de baja el cargo porque posee una designación vigente"));
 
                 mockMvc.perform(patch("/api/cargos/103/baja"))
                                 .andExpect(status().isBadRequest())
-                                .andExpect(jsonPath("$.message").value("No se puede dar de baja el cargo porque posee una designación vigente"));
+                                .andExpect(jsonPath("$.message").value(
+                                                "No se puede dar de baja el cargo porque posee una designación vigente"));
         }
 
         @Test
         @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
         void testDarDeBajaCargo_AlreadyDecommissioned_Returns400() throws Exception {
                 when(cargoService.darDeBajaCargo(eq(104), eq("admin_global")))
-                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "El cargo ya se encuentra dado de baja"));
+                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                                "El cargo ya se encuentra dado de baja"));
 
                 mockMvc.perform(patch("/api/cargos/104/baja"))
                                 .andExpect(status().isBadRequest())
@@ -541,11 +549,131 @@ public class CargoControllerTest {
         @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
         void testDarDeBajaCargo_ActiveSubcargos_Returns400() throws Exception {
                 when(cargoService.darDeBajaCargo(eq(105), eq("admin_global")))
-                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede dar de baja el cargo porque posee subcargos activos derivados de una división"));
+                                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                                                "No se puede dar de baja el cargo porque posee subcargos activos derivados de una división"));
 
                 mockMvc.perform(patch("/api/cargos/105/baja"))
                                 .andExpect(status().isBadRequest())
-                                .andExpect(jsonPath("$.message").value("No se puede dar de baja el cargo porque posee subcargos activos derivados de una división"));
+                                .andExpect(jsonPath("$.message").value(
+                                                "No se puede dar de baja el cargo porque posee subcargos activos derivados de una división"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testAsignarFuncionesACargo_Success_Returns200() throws Exception {
+                com.atlas.atlas_backend.funcion.FuncionItemRequest item1 = new com.atlas.atlas_backend.funcion.FuncionItemRequest();
+                item1.setNombre("Docencia Frente a Curso");
+                item1.setTipo("Planta");
+                item1.setHoras(10);
+                item1.setMateriaId(3);
+
+                com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest req = new com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest();
+                req.setFunciones(java.util.List.of(item1));
+
+                com.atlas.atlas_backend.funcion.DesignacionCompletaResponseDTO.MateriaResumenDTO matDto = new com.atlas.atlas_backend.funcion.DesignacionCompletaResponseDTO.MateriaResumenDTO();
+                matDto.setId(3);
+                matDto.setNombre("Algoritmos y Estructuras de Datos");
+
+                com.atlas.atlas_backend.funcion.DesignacionCompletaResponseDTO.FuncionDTO funcDto = new com.atlas.atlas_backend.funcion.DesignacionCompletaResponseDTO.FuncionDTO();
+                funcDto.setId(101);
+                funcDto.setNombre("Docencia Frente a Curso");
+                funcDto.setTipo("Planta");
+                funcDto.setHoras(10);
+                funcDto.setMateria(matDto);
+
+                com.atlas.atlas_backend.funcion.DesignacionCompletaResponseDTO resp = new com.atlas.atlas_backend.funcion.DesignacionCompletaResponseDTO();
+                resp.setCargoId(14);
+                resp.setHorasDedicacion(20);
+                resp.setHorasOcupadas(10);
+                resp.setFunciones(java.util.List.of(funcDto));
+                resp.setDesignacionId(55);
+                resp.setDocumentoId(402);
+                resp.setDocenteEstado("Activo");
+                resp.setNotificacionEnviada(true);
+
+                when(funcionService.asignarFuncionesACargo(
+                                eq(14),
+                                any(com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest.class),
+                                eq("admin_global")))
+                                .thenReturn(resp);
+
+                mockMvc.perform(post("/api/cargos/14/funciones")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.cargoId").value(14))
+                                .andExpect(jsonPath("$.horasDedicacion").value(20))
+                                .andExpect(jsonPath("$.horasOcupadas").value(10))
+                                .andExpect(jsonPath("$.designacionId").value(55))
+                                .andExpect(jsonPath("$.documentoId").value(402))
+                                .andExpect(jsonPath("$.docenteEstado").value("Activo"))
+                                .andExpect(jsonPath("$.notificacionEnviada").value(true))
+                                .andExpect(jsonPath("$.funciones[0].tipo").value("Planta"))
+                                .andExpect(jsonPath("$.funciones[0].materia.id").value(3));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testAsignarFuncionesACargo_EmptyList_Returns400() throws Exception {
+                com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest req = new com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest();
+                req.setFunciones(java.util.List.of());
+
+                mockMvc.perform(post("/api/cargos/14/funciones")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                                .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+        void testAsignarFuncionesACargo_CargoNotFound_Returns404() throws Exception {
+                com.atlas.atlas_backend.funcion.FuncionItemRequest item1 = new com.atlas.atlas_backend.funcion.FuncionItemRequest();
+                item1.setNombre("Docencia");
+                item1.setTipo("Planta");
+                item1.setHoras(10);
+                item1.setMateriaId(3);
+
+                com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest req = new com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest();
+                req.setFunciones(java.util.List.of(item1));
+
+                when(funcionService.asignarFuncionesACargo(
+                                eq(999999),
+                                any(com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest.class),
+                                eq("admin_global")))
+                                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                                "El cargo especificado no existe"));
+
+                mockMvc.perform(post("/api/cargos/999999/funciones")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                                .andExpect(status().isNotFound())
+                                .andExpect(jsonPath("$.message").value("El cargo especificado no existe"));
+        }
+
+        @Test
+        @WithMockUser(username = "admin_unidad", roles = { "ADMIN_UNIDAD" })
+        void testAsignarFuncionesACargo_OtherUnidad_Returns403() throws Exception {
+                com.atlas.atlas_backend.funcion.FuncionItemRequest item1 = new com.atlas.atlas_backend.funcion.FuncionItemRequest();
+                item1.setNombre("Docencia");
+                item1.setTipo("Planta");
+                item1.setHoras(10);
+                item1.setMateriaId(3);
+
+                com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest req = new com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest();
+                req.setFunciones(java.util.List.of(item1));
+
+                when(funcionService.asignarFuncionesACargo(
+                                eq(14),
+                                any(com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest.class),
+                                eq("admin_unidad")))
+                                .thenThrow(new AccessDeniedException(
+                                                "No tiene permisos para modificar cargos de otra unidad"));
+
+                mockMvc.perform(post("/api/cargos/14/funciones")
+                                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                                .andExpect(status().isForbidden())
+                                .andExpect(jsonPath("$.message")
+                                                .value("No tiene permisos para modificar cargos de otra unidad"));
         }
 }
-

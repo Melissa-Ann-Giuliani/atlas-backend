@@ -125,6 +125,7 @@ CREATE TABLE IF NOT EXISTS public.funciones
 (
     funcion_id serial NOT NULL,
     funcion_nombre character varying(100) NOT NULL,
+    funcion_tipo character varying(50) NOT NULL DEFAULT 'Planta',
     funcion_horas integer NOT NULL,
     cargo_id integer NOT NULL,
     materia_id integer NOT NULL,
@@ -690,20 +691,20 @@ INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creac
 );
 
 -- Funciones (Linking Cargos with Materias)
-INSERT INTO public.funciones (funcion_nombre, funcion_horas, cargo_id, materia_id) VALUES
-('Dictado de Clases', 10, 
+INSERT INTO public.funciones (funcion_nombre, funcion_tipo, funcion_horas, cargo_id, materia_id) VALUES
+('Dictado de Clases', 'Planta', 10, 
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 5001 LIMIT 1),
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matemática I' LIMIT 1)
 ),
-('Dictado de Clases', 8, 
+('Dictado de Clases', 'Planta', 8, 
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 5002 LIMIT 1),
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Fisica I' LIMIT 1)
 ),
-('Apoyo Practico', 4, 
+('Apoyo Practico', 'Planta', 4, 
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 5003 LIMIT 1),
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Historia del Arte' LIMIT 1)
 ),
-('Ensayo', 10, 
+('Ensayo', 'Extensión', 10, 
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 5004 LIMIT 1),
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Coro Universitario' LIMIT 1)
 );
@@ -812,12 +813,12 @@ INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materi
 ('Historia Argentina I', 60, '1°', 'Anual', 2023, (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Historia' LIMIT 1));
 
 -- 7. Insert Funciones for docentes on Licencia
-INSERT INTO public.funciones (funcion_nombre, funcion_horas, cargo_id, materia_id) VALUES
-('Dictado de Clases Teóricas', 10,
+INSERT INTO public.funciones (funcion_nombre, funcion_tipo, funcion_horas, cargo_id, materia_id) VALUES
+('Dictado de Clases Teóricas', 'Planta', 10,
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 7001 LIMIT 1),
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matemática I' LIMIT 1)
 ),
-('Investigación Documental', 10,
+('Investigación Documental', 'Investigación', 10,
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 7002 LIMIT 1),
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Historia Argentina I' LIMIT 1)
 );
@@ -872,16 +873,16 @@ INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creac
 (8003, 10, '2021-02-02', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_sub2') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1), 'Asignado', (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 8001 LIMIT 1));
 
 -- 7. Insert Funciones for original and sub cargos
-INSERT INTO public.funciones (funcion_nombre, funcion_horas, cargo_id, materia_id) VALUES
-('Dictado de Clases Teóricas', 20,
+INSERT INTO public.funciones (funcion_nombre, funcion_tipo, funcion_horas, cargo_id, materia_id) VALUES
+('Dictado de Clases Teóricas', 'Planta', 20,
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 8001 LIMIT 1),
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matemática I' LIMIT 1)
 ),
-('Dictado de Clases Prácticas', 10,
+('Dictado de Clases Prácticas', 'Planta', 10,
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 8002 LIMIT 1),
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matemática I' LIMIT 1)
 ),
-('Dictado de Clases Prácticas', 10,
+('Dictado de Clases Prácticas', 'Planta', 10,
  (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 8003 LIMIT 1),
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matemática I' LIMIT 1)
 );
