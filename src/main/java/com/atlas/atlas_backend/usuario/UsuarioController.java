@@ -101,6 +101,8 @@ public class UsuarioController {
                 if (doc.getDni() != null) {
                     dto.setDni(String.valueOf(doc.getDni()));
                 }
+                dto.setEstado(doc.getEstado());
+                dto.setLegajo(doc.getLegajo());
             });
 
             return dto;

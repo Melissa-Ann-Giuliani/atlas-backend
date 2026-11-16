@@ -34,6 +34,9 @@ public class DocenteService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private com.atlas.atlas_backend.archivo.ArchivoRepository archivoRepository;
+
     @Transactional
     public Docente registrarDocente(DocenteRequest request, StringBuilder warningMessage) throws Exception {
         if (usuarioRepository.findByUsername(request.getUsername()).isPresent()) {
@@ -79,7 +82,8 @@ public class DocenteService {
         docente.setRol(docenteRol);
 
         // Docente specific fields
-        docente.setTipoDni(request.getTipoDni() != null && !request.getTipoDni().isBlank() ? request.getTipoDni() : "DNI");
+        docente.setTipoDni(
+                request.getTipoDni() != null && !request.getTipoDni().isBlank() ? request.getTipoDni() : "DNI");
         docente.setDni(request.getDni());
         docente.setCuil(request.getCuil());
         docente.setLegajo(request.getLegajo());
@@ -289,6 +293,15 @@ public class DocenteService {
         dto.setActividadesActuales(actividadDataList);
         dto.setLicenciasActuales(licenciaDataList);
 
+        List<String> docs = new java.util.ArrayList<>();
+        for (Integer desigId : designacionIds) {
+            if (desigId != null) {
+                archivoRepository.findByTipoTramiteAndTramiteId("DESIGNACION", desigId)
+                        .forEach(a -> docs.add("/api/archivos/tramite/DESIGNACION/" + desigId));
+            }
+        }
+        dto.setDocumentacionAdjunta(docs);
+
         return dto;
     }
 
@@ -319,7 +332,8 @@ public class DocenteService {
     public void validarAccesoDocente(Usuario usuario, Integer docenteId) {
         Integer unidadId = getAdminUnidadId(usuario);
         if (unidadId != null) {
-            List<com.atlas.atlas_backend.designacion.Designacion> designaciones = designacionRepository.findByUsuarioId(docenteId);
+            List<com.atlas.atlas_backend.designacion.Designacion> designaciones = designacionRepository
+                    .findByUsuarioId(docenteId);
             List<Integer> designacionIds = designaciones.stream()
                     .filter(d -> d != null && d.getDesignacionId() != null)
                     .map(d -> d.getDesignacionId())
@@ -327,7 +341,8 @@ public class DocenteService {
 
             boolean perteneceAUnidad = false;
             if (!designacionIds.isEmpty()) {
-                List<com.atlas.atlas_backend.cargo.Cargo> cargos = cargoRepository.findByDesignacionDesignacionIdIn(designacionIds);
+                List<com.atlas.atlas_backend.cargo.Cargo> cargos = cargoRepository
+                        .findByDesignacionDesignacionIdIn(designacionIds);
                 perteneceAUnidad = cargos.stream()
                         .anyMatch(c -> c.getUnidad() != null && Objects.equals(c.getUnidad().getUnidadId(), unidadId));
             }
@@ -339,9 +354,11 @@ public class DocenteService {
     }
 
     @Transactional
-    public DocenteDetailsDTO modificarPerfilDocente(@NonNull Integer id, DocenteProfileUpdateRequest request, String authUsername) throws Exception {
+    public DocenteDetailsDTO modificarPerfilDocente(@NonNull Integer id, DocenteProfileUpdateRequest request,
+            String authUsername) throws Exception {
         Usuario usuarioResponsable = usuarioRepository.findByUsername(authUsername)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario autenticado no encontrado"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario autenticado no encontrado"));
 
         Docente docente = docenteRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Docente no encontrado"));
@@ -361,31 +378,42 @@ public class DocenteService {
         if (nuevoEmail != null && !nuevoEmail.equalsIgnoreCase(docente.getEmailInstitucional())) {
             if (docenteRepository.existsByEmailInstitucionalAndIdNot(nuevoEmail, id) ||
                     usuarioRepository.existsByCorreoAndIdNot(nuevoEmail, id)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El correo institucional ya se encuentra registrado por otro usuario");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "El correo institucional ya se encuentra registrado por otro usuario");
             }
         }
 
         // Uniqueness validation: legajo
         if (request.getLegajo() != null && !Objects.equals(request.getLegajo(), docente.getLegajo())
                 && docenteRepository.existsByLegajoAndIdNot(request.getLegajo(), id)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El legajo ya se encuentra registrado por otro docente");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El legajo ya se encuentra registrado por otro docente");
         }
 
         // Audit deltas in cambios table
-        cambioService.registrarCambio("docentes", "nombre", docente.getNombre(), request.getNombre(), usuarioResponsable);
-        cambioService.registrarCambio("docentes", "apellido", docente.getApellido(), request.getApellido(), usuarioResponsable);
-        cambioService.registrarCambio("docentes", "emailInstitucional", docente.getEmailInstitucional(), nuevoEmail, usuarioResponsable);
-        cambioService.registrarCambio("docentes", "fechaIngreso", docente.getFechaIngreso(), request.getFechaIngreso(), usuarioResponsable);
-        cambioService.registrarCambio("docentes", "domicilio", docente.getDomicilio(), request.getDomicilio(), usuarioResponsable);
-        cambioService.registrarCambio("docentes", "antigPrevia", docente.getAntigPrevia(), request.getAntigPrevia(), usuarioResponsable);
+        cambioService.registrarCambio("docentes", "nombre", docente.getNombre(), request.getNombre(),
+                usuarioResponsable);
+        cambioService.registrarCambio("docentes", "apellido", docente.getApellido(), request.getApellido(),
+                usuarioResponsable);
+        cambioService.registrarCambio("docentes", "emailInstitucional", docente.getEmailInstitucional(), nuevoEmail,
+                usuarioResponsable);
+        cambioService.registrarCambio("docentes", "fechaIngreso", docente.getFechaIngreso(), request.getFechaIngreso(),
+                usuarioResponsable);
+        cambioService.registrarCambio("docentes", "domicilio", docente.getDomicilio(), request.getDomicilio(),
+                usuarioResponsable);
+        cambioService.registrarCambio("docentes", "antigPrevia", docente.getAntigPrevia(), request.getAntigPrevia(),
+                usuarioResponsable);
         if (request.getTipoDni() != null) {
-            cambioService.registrarCambio("docentes", "tipoDni", docente.getTipoDni(), request.getTipoDni(), usuarioResponsable);
+            cambioService.registrarCambio("docentes", "tipoDni", docente.getTipoDni(), request.getTipoDni(),
+                    usuarioResponsable);
         }
         if (request.getEstado() != null) {
-            cambioService.registrarCambio("docentes", "estado", docente.getEstado(), request.getEstado(), usuarioResponsable);
+            cambioService.registrarCambio("docentes", "estado", docente.getEstado(), request.getEstado(),
+                    usuarioResponsable);
         }
         if (request.getLegajo() != null) {
-            cambioService.registrarCambio("docentes", "legajo", docente.getLegajo(), request.getLegajo(), usuarioResponsable);
+            cambioService.registrarCambio("docentes", "legajo", docente.getLegajo(), request.getLegajo(),
+                    usuarioResponsable);
         }
         if (request.getTelefonos() != null) {
             String telsAnt = docente.getTelefonos() != null ? String.join(", ", docente.getTelefonos()) : null;
@@ -422,9 +450,11 @@ public class DocenteService {
     }
 
     @Transactional
-    public DocenteDetailsDTO modificarCargoDocente(@NonNull Integer docenteId, @NonNull Integer cargoId, DocenteCargoUpdateRequest request, String authUsername) throws Exception {
+    public DocenteDetailsDTO modificarCargoDocente(@NonNull Integer docenteId, @NonNull Integer cargoId,
+            DocenteCargoUpdateRequest request, String authUsername) throws Exception {
         Usuario usuarioResponsable = usuarioRepository.findByUsername(authUsername)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario autenticado no encontrado"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario autenticado no encontrado"));
 
         if (!docenteRepository.existsById(docenteId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Docente no encontrado");
@@ -436,35 +466,43 @@ public class DocenteService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo no encontrado"));
 
         if (cargo.getDesignacion() == null || !Objects.equals(cargo.getDesignacion().getUsuarioId(), docenteId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El cargo no está asignado al docente especificado");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El cargo no está asignado al docente especificado");
         }
 
         Integer unidadId = getAdminUnidadId(usuarioResponsable);
-        if (unidadId != null && (cargo.getUnidad() == null || !Objects.equals(cargo.getUnidad().getUnidadId(), unidadId))) {
+        if (unidadId != null
+                && (cargo.getUnidad() == null || !Objects.equals(cargo.getUnidad().getUnidadId(), unidadId))) {
             throw new AccessDeniedException("No tiene permisos para modificar cargos de otra unidad");
         }
 
         if (request.getCategoriaId() == null || request.getDedicacionId() == null ||
                 request.getCaracterId() == null || request.getOrigenId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Los datos de categoría, dedicación, carácter y origen son obligatorios");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Los datos de categoría, dedicación, carácter y origen son obligatorios");
         }
 
-        com.atlas.atlas_backend.categoria.Categoria categoria = categoriaRepository.findById(Objects.requireNonNull(request.getCategoriaId()))
+        com.atlas.atlas_backend.categoria.Categoria categoria = categoriaRepository
+                .findById(Objects.requireNonNull(request.getCategoriaId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Categoría no encontrada"));
 
-        com.atlas.atlas_backend.dedicacion.Dedicacion dedicacion = dedicacionRepository.findById(Objects.requireNonNull(request.getDedicacionId()))
+        com.atlas.atlas_backend.dedicacion.Dedicacion dedicacion = dedicacionRepository
+                .findById(Objects.requireNonNull(request.getDedicacionId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Dedicación no encontrada"));
 
-        com.atlas.atlas_backend.caracter.Caracter caracter = caracterRepository.findById(Objects.requireNonNull(request.getCaracterId()))
+        com.atlas.atlas_backend.caracter.Caracter caracter = caracterRepository
+                .findById(Objects.requireNonNull(request.getCaracterId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Carácter no encontrado"));
 
-        com.atlas.atlas_backend.origen.Origen origen = origenRepository.findById(Objects.requireNonNull(request.getOrigenId()))
+        com.atlas.atlas_backend.origen.Origen origen = origenRepository
+                .findById(Objects.requireNonNull(request.getOrigenId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Origen no encontrado"));
 
         if (cargo.getHorasOcupadas() != null && cargo.getHorasOcupadas() > 0) {
             if (dedicacion.getDedicacionHoras() != null && dedicacion.getDedicacionHoras() < cargo.getHorasOcupadas()) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "Las horas de la dedicación (" + dedicacion.getDedicacionHoras() + ") no pueden ser inferiores a las horas ocupadas (" + cargo.getHorasOcupadas() + ")");
+                        "Las horas de la dedicación (" + dedicacion.getDedicacionHoras()
+                                + ") no pueden ser inferiores a las horas ocupadas (" + cargo.getHorasOcupadas() + ")");
             }
         }
 
@@ -490,10 +528,12 @@ public class DocenteService {
 
         // Audit deltas for Cargo
         String antCat = cargo.getCategoria() != null ? cargo.getCategoria().getCategoriaNombre() : null;
-        cambioService.registrarCambio("cargos", "categoria", antCat, categoria.getCategoriaNombre(), usuarioResponsable);
+        cambioService.registrarCambio("cargos", "categoria", antCat, categoria.getCategoriaNombre(),
+                usuarioResponsable);
 
         String antDed = cargo.getDedicacion() != null ? cargo.getDedicacion().getDedicacionNombre() : null;
-        cambioService.registrarCambio("cargos", "dedicacion", antDed, dedicacion.getDedicacionNombre(), usuarioResponsable);
+        cambioService.registrarCambio("cargos", "dedicacion", antDed, dedicacion.getDedicacionNombre(),
+                usuarioResponsable);
 
         String antCar = cargo.getCaracter() != null ? cargo.getCaracter().getCaracterNombre() : null;
         cambioService.registrarCambio("cargos", "caracter", antCar, caracter.getCaracterNombre(), usuarioResponsable);
@@ -511,9 +551,11 @@ public class DocenteService {
     }
 
     @Transactional
-    public DocenteDetailsDTO modificarFuncionDocente(@NonNull Integer docenteId, @NonNull Integer funcionId, DocenteFuncionUpdateRequest request, String authUsername) throws Exception {
+    public DocenteDetailsDTO modificarFuncionDocente(@NonNull Integer docenteId, @NonNull Integer funcionId,
+            DocenteFuncionUpdateRequest request, String authUsername) throws Exception {
         Usuario usuarioResponsable = usuarioRepository.findByUsername(authUsername)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario autenticado no encontrado"));
+                .orElseThrow(
+                        () -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario autenticado no encontrado"));
 
         if (!docenteRepository.existsById(docenteId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Docente no encontrado");
@@ -525,12 +567,15 @@ public class DocenteService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Función no encontrada"));
 
         com.atlas.atlas_backend.cargo.Cargo cargo = funcion.getCargo();
-        if (cargo == null || cargo.getDesignacion() == null || !Objects.equals(cargo.getDesignacion().getUsuarioId(), docenteId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La función no pertenece a un cargo del docente indicado");
+        if (cargo == null || cargo.getDesignacion() == null
+                || !Objects.equals(cargo.getDesignacion().getUsuarioId(), docenteId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La función no pertenece a un cargo del docente indicado");
         }
 
         Integer unidadId = getAdminUnidadId(usuarioResponsable);
-        if (unidadId != null && (cargo.getUnidad() == null || !Objects.equals(cargo.getUnidad().getUnidadId(), unidadId))) {
+        if (unidadId != null
+                && (cargo.getUnidad() == null || !Objects.equals(cargo.getUnidad().getUnidadId(), unidadId))) {
             throw new AccessDeniedException("No tiene permisos para modificar funciones de un cargo de otra unidad");
         }
 
@@ -538,12 +583,14 @@ public class DocenteService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La materia es obligatoria");
         }
 
-        com.atlas.atlas_backend.materia.Materia materia = materiaRepository.findById(Objects.requireNonNull(request.getMateriaId()))
+        com.atlas.atlas_backend.materia.Materia materia = materiaRepository
+                .findById(Objects.requireNonNull(request.getMateriaId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Materia no encontrada"));
 
         // Validate dedication hours limit
         int totalHorasOtrasFunciones = 0;
-        List<com.atlas.atlas_backend.funcion.Funcion> funcionesDelCargo = funcionRepository.findByCargoIdIn(List.of(cargo.getId()));
+        List<com.atlas.atlas_backend.funcion.Funcion> funcionesDelCargo = funcionRepository
+                .findByCargoIdIn(List.of(cargo.getId()));
         for (com.atlas.atlas_backend.funcion.Funcion f : funcionesDelCargo) {
             if (!Objects.equals(f.getId(), funcionId)) {
                 totalHorasOtrasFunciones += (f.getHoras() != null ? f.getHoras() : 0);
@@ -561,8 +608,10 @@ public class DocenteService {
         }
 
         // Audit deltas in cambios table
-        cambioService.registrarCambio("funciones", "funcion_nombre", funcion.getNombre(), request.getNombre(), usuarioResponsable);
-        cambioService.registrarCambio("funciones", "funcion_horas", funcion.getHoras(), request.getHoras(), usuarioResponsable);
+        cambioService.registrarCambio("funciones", "funcion_nombre", funcion.getNombre(), request.getNombre(),
+                usuarioResponsable);
+        cambioService.registrarCambio("funciones", "funcion_horas", funcion.getHoras(), request.getHoras(),
+                usuarioResponsable);
         String antMat = funcion.getMateria() != null ? funcion.getMateria().getNombre() : null;
         cambioService.registrarCambio("funciones", "materia", antMat, materia.getNombre(), usuarioResponsable);
 
@@ -578,4 +627,3 @@ public class DocenteService {
         return getTeacherProfile(docenteId);
     }
 }
-

@@ -1,5 +1,7 @@
 package com.atlas.atlas_backend.notification;
 
+import com.atlas.atlas_backend.cargo.Cargo;
+import com.atlas.atlas_backend.funcion.Funcion;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -7,6 +9,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 public class EmailService {
@@ -86,6 +89,54 @@ public class EmailService {
             mailSender.send(message);
         } catch (Exception e) {
             System.err.println("Error al enviar notificación de designación a " + to + ": " + e.getMessage());
+        }
+    }
+
+    @Async
+    public void sendDesignacionCompletaNotification(String to, String resolucion, LocalDate fechaInicio,
+            LocalDate fechaFin, Cargo cargo, List<Funcion> funciones) {
+        if (to == null || to.isBlank()) {
+            return;
+        }
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(to);
+            message.setSubject("Atlas - Confirmación de Designación y Funciones Asignadas");
+            String vigenciaFin = (fechaFin != null) ? fechaFin.toString() : "Sin fecha de finalización definida";
+            StringBuilder body = new StringBuilder();
+            body.append("Hola,\n\nSe ha completado y aprobado tu designación docente en el sistema Atlas.\n\n")
+                    .append("Número de Resolución: ").append(resolucion).append("\n")
+                    .append("Fecha de Inicio: ").append(fechaInicio).append("\n")
+                    .append("Fecha de Finalización: ").append(vigenciaFin).append("\n");
+
+            if (cargo != null) {
+                body.append("Cargo Código: ").append(cargo.getCodigo()).append("\n");
+                if (cargo.getUnidad() != null) {
+                    body.append("Unidad Académica: ").append(cargo.getUnidad().getUnidadNombre()).append("\n");
+                }
+                if (cargo.getDedicacion() != null) {
+                    body.append("Dedicación: ").append(cargo.getDedicacion().getDedicacionNombre())
+                            .append(" (").append(cargo.getDedicacion().getDedicacionHoras()).append(" hs)\n");
+                }
+                body.append("Horas Ocupadas: ").append(cargo.getHorasOcupadas()).append(" hs\n");
+            }
+
+            if (funciones != null && !funciones.isEmpty()) {
+                body.append("\nFunciones asignadas:\n");
+                for (Funcion funcion : funciones) {
+                    String materiaNombre = funcion.getMateria() != null ? funcion.getMateria().getNombre() : "-";
+                    body.append("- ").append(funcion.getNombre())
+                            .append(" [").append(funcion.getTipo()).append("]")
+                            .append(" - Materia: ").append(materiaNombre)
+                            .append(" (").append(funcion.getHoras()).append(" hs)\n");
+                }
+            }
+
+            body.append("\nTu estado en el sistema ahora se encuentra Activo.\n\nSaludos cordiales,\nAtlas");
+            message.setText(body.toString());
+            mailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Error al enviar notificación de designación completa a " + to + ": " + e.getMessage());
         }
     }
 }
