@@ -1,5 +1,6 @@
 package com.atlas.atlas_backend.cargo;
 
+import com.atlas.atlas_backend.archivo.ArchivoRepository;
 import com.atlas.atlas_backend.caracter.Caracter;
 import com.atlas.atlas_backend.caracter.CaracterRepository;
 import com.atlas.atlas_backend.categoria.Categoria;
@@ -63,6 +64,9 @@ public class CargoServiceTest {
 
     @Mock
     private FuncionRepository funcionRepository;
+
+    @Mock
+    private ArchivoRepository archivoRepository;
 
     @org.springframework.lang.NonNull
     private static Cargo anyCargo() {

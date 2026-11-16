@@ -68,6 +68,18 @@ public class FuncionServiceTest {
     @Mock
     private EmailService emailService;
 
+    @org.springframework.lang.NonNull
+    private static Cargo anyCargo() {
+        Cargo c = any(Cargo.class);
+        return c != null ? c : new Cargo();
+    }
+
+    @org.springframework.lang.NonNull
+    private static Docente anyDocente() {
+        Docente d = any(Docente.class);
+        return d != null ? d : new Docente();
+    }
+
     @InjectMocks
     private FuncionService funcionService;
 
@@ -224,8 +236,7 @@ public class FuncionServiceTest {
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
         assertEquals("La suma de horas (14) supera la dedicación máxima del cargo (10)", ex.getReason());
         verify(funcionRepository, never()).saveAll(java.util.Objects.requireNonNull(anyList()));
-        Cargo anyCargo = any(Cargo.class);
-        verify(cargoRepository, never()).save(anyCargo != null ? anyCargo : new Cargo());
+        verify(cargoRepository, never()).save(anyCargo());
     }
 
     @Test
@@ -283,8 +294,7 @@ public class FuncionServiceTest {
             return list;
         });
         when(docenteRepository.findById(30)).thenReturn(Optional.of(docente));
-        Docente anyDocente = any(Docente.class);
-        when(docenteRepository.save(anyDocente != null ? anyDocente : new Docente())).thenAnswer(inv -> inv.getArgument(0));
+        when(docenteRepository.save(anyDocente())).thenAnswer(inv -> inv.getArgument(0));
         when(designacionPdfService.generarPdfDesignacion(any(), any(), any(), anyList()))
                 .thenReturn(new byte[] { 1, 2, 3 });
 
@@ -334,8 +344,7 @@ public class FuncionServiceTest {
             return list;
         });
         when(docenteRepository.findById(30)).thenReturn(Optional.of(docente));
-        Docente anyDocente = any(Docente.class);
-        when(docenteRepository.save(anyDocente != null ? anyDocente : new Docente())).thenAnswer(inv -> inv.getArgument(0));
+        when(docenteRepository.save(anyDocente())).thenAnswer(inv -> inv.getArgument(0));
         when(designacionPdfService.generarPdfDesignacion(any(), any(), any(), anyList()))
                 .thenReturn(new byte[] { 10, 20, 30 });
 
