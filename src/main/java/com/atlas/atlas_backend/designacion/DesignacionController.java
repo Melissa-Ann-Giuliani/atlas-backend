@@ -12,12 +12,55 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/designaciones")
 public class DesignacionController {
 
     @Autowired
     private DesignacionService designacionService;
+
+    @GetMapping("/vencimientos")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD')")
+    public ResponseEntity<?> obtenerVencimientos(
+            @RequestParam(required = false, defaultValue = "false") Boolean incluirVencidas,
+            @RequestParam(required = false) Integer unidadId,
+            Authentication authentication) {
+        try {
+            List<DesignacionVencimientoDTO> dtos = designacionService.obtenerVencimientos(
+                    unidadId, incluirVencidas, authentication.getName());
+            return ResponseEntity.ok(dtos);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
+        } catch (ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/vencimientos/resumen")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD')")
+    public ResponseEntity<?> obtenerResumenVencimientos(
+            @RequestParam(required = false) Integer unidadId,
+            Authentication authentication) {
+        try {
+            DesignacionVencimientosResumenDTO dto = designacionService.obtenerResumenVencimientos(
+                    unidadId, authentication.getName());
+            return ResponseEntity.ok(dto);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
+        } catch (ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+        }
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD')")

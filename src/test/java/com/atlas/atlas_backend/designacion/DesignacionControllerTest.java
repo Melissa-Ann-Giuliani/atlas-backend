@@ -362,5 +362,93 @@ public class DesignacionControllerTest {
                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
                 .andExpect(status().isForbidden());
     }
+
+    // =========================================================================
+    // RF-36: Endpoints /vencimientos y /vencimientos/resumen
+    // =========================================================================
+
+    @Test
+    @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+    void testRF36_GetVencimientos_AdminGlobal_Returns200() throws Exception {
+        DesignacionVencimientoDTO item = DesignacionVencimientoDTO.builder()
+                .designacionId(142)
+                .numeroResolucion("RES-2024-510")
+                .fechaInicio(LocalDate.of(2024, 3, 1))
+                .fechaFin(LocalDate.of(2026, 11, 30))
+                .diasRestantes(14L)
+                .estadoActual("Activa")
+                .docente(DesignacionVencimientoDTO.DocenteResumenDTO.builder()
+                        .docenteId(45)
+                        .nombre("Juan")
+                        .apellido("Pérez")
+                        .documento("28123456")
+                        .legajo("9821")
+                        .build())
+                .unidad(DesignacionVencimientoDTO.UnidadResumenDTO.builder()
+                        .unidadId(2)
+                        .nombre("Facultad de Ingeniería")
+                        .build())
+                .cargos(java.util.List.of(
+                        DesignacionVencimientoDTO.CargoResumenDTO.builder()
+                                .cargoId(88)
+                                .codigo(100234L)
+                                .categoria("Profesor Adjunto")
+                                .dedicacion("Simple (10 hs)")
+                                .caracter("Interino")
+                                .build()))
+                .build();
+
+        when(designacionService.obtenerVencimientos(null, false, "admin_global"))
+                .thenReturn(java.util.List.of(item));
+
+        mockMvc.perform(get("/api/designaciones/vencimientos")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].designacionId").value(142))
+                .andExpect(jsonPath("$[0].numeroResolucion").value("RES-2024-510"))
+                .andExpect(jsonPath("$[0].diasRestantes").value(14))
+                .andExpect(jsonPath("$[0].estadoActual").value("Activa"))
+                .andExpect(jsonPath("$[0].docente.docenteId").value(45))
+                .andExpect(jsonPath("$[0].docente.documento").value("28123456"))
+                .andExpect(jsonPath("$[0].unidad.unidadId").value(2))
+                .andExpect(jsonPath("$[0].cargos[0].cargoId").value(88))
+                .andExpect(jsonPath("$[0].cargos[0].codigo").value(100234));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_unidad", roles = { "ADMIN_UNIDAD" })
+    void testRF36_GetVencimientos_AdminUnidad_OtherUnit_Returns403() throws Exception {
+        when(designacionService.obtenerVencimientos(3, false, "admin_unidad"))
+                .thenThrow(new AccessDeniedException("No tiene permisos para consultar designaciones de otra unidad"));
+
+        mockMvc.perform(get("/api/designaciones/vencimientos?unidadId=3")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("No tiene permisos para consultar designaciones de otra unidad"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+    void testRF36_GetResumenVencimientos_AdminGlobal_Returns200() throws Exception {
+        DesignacionVencimientosResumenDTO resumen = DesignacionVencimientosResumenDTO.builder()
+                .totalPorVencer(7L)
+                .umbralDias(30)
+                .unidadId(null)
+                .unidadNombre(null)
+                .tieneVencimientosCriticos(true)
+                .totalCriticos(2L)
+                .build();
+
+        when(designacionService.obtenerResumenVencimientos(null, "admin_global"))
+                .thenReturn(resumen);
+
+        mockMvc.perform(get("/api/designaciones/vencimientos/resumen")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalPorVencer").value(7))
+                .andExpect(jsonPath("$.umbralDias").value(30))
+                .andExpect(jsonPath("$.tieneVencimientosCriticos").value(true))
+                .andExpect(jsonPath("$.totalCriticos").value(2));
+    }
 }
 
