@@ -18,6 +18,9 @@ public class Funcion {
     @Column(name = "funcion_nombre", nullable = false, length = 100)
     private String nombre;
 
+    @Column(name = "funcion_tipo", nullable = false, length = 50)
+    private String tipo;
+
     @Column(name = "funcion_horas", nullable = false)
     private Integer horas;
 

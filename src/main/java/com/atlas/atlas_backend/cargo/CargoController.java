@@ -1,6 +1,9 @@
 package com.atlas.atlas_backend.cargo;
 
 import com.atlas.atlas_backend.error.ErrorResponse;
+import com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest;
+import com.atlas.atlas_backend.funcion.DesignacionCompletaResponseDTO;
+import com.atlas.atlas_backend.funcion.FuncionService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -21,6 +24,9 @@ public class CargoController {
 
     @Autowired
     private CargoService cargoService;
+
+    @Autowired
+    private FuncionService funcionService;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
@@ -120,6 +126,27 @@ public class CargoController {
             Authentication authentication) {
         try {
             CargoDetailDTO dto = cargoService.darDeBajaCargo(id, authentication.getName());
+            return ResponseEntity.ok(dto);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
+        } catch (ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{cargoId}/funciones")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
+    public ResponseEntity<?> asignarFuncionesACargo(
+            @PathVariable @NonNull Integer cargoId,
+            @Valid @RequestBody AsignarFuncionesCargoRequest request,
+            Authentication authentication) {
+        try {
+            DesignacionCompletaResponseDTO dto = funcionService.asignarFuncionesACargo(
+                    cargoId, request, authentication.getName());
             return ResponseEntity.ok(dto);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
