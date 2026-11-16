@@ -887,4 +887,72 @@ INSERT INTO public.funciones (funcion_nombre, funcion_tipo, funcion_horas, cargo
  (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Matemática I' LIMIT 1)
 );
 
+-- =====================================================================
+-- SEED DATA FOR VENCIMIENTOS TESTING
+-- =====================================================================
+WITH new_users AS (
+    INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_correo, usuario_apellido, usuario_nombre, usuario_activo, rol_id)
+    VALUES
+        ('test.venc.vencida', crypt('123456', gen_salt('bf')), 'test.vencida@atlas.edu', 'Vencida', 'Docente', true, 4),
+        ('test.venc.critica', crypt('123456', gen_salt('bf')), 'test.critica@atlas.edu', 'Critica', 'Docente', true, 4),
+        ('test.venc.proxima', crypt('123456', gen_salt('bf')), 'test.proxima@atlas.edu', 'Proxima', 'Docente', true, 4),
+        ('test.venc.lejana',  crypt('123456', gen_salt('bf')), 'test.lejana@atlas.edu',  'Lejana',  'Docente', true, 4)
+    RETURNING usuario_id, usuario_username
+),
+new_docentes AS (
+    INSERT INTO public.docentes (usuario_id, docente_legajo, docente_tipo_dni, docente_dni, docente_cuil, docente_email_institucional, docente_fecha_ingreso, docente_estado)
+    SELECT
+        usuario_id,
+        CASE usuario_username
+            WHEN 'test.venc.vencida' THEN 90001
+            WHEN 'test.venc.critica' THEN 90002
+            WHEN 'test.venc.proxima' THEN 90003
+            WHEN 'test.venc.lejana'  THEN 90004
+        END,
+        'DNI',
+        CASE usuario_username
+            WHEN 'test.venc.vencida' THEN 90000001
+            WHEN 'test.venc.critica' THEN 90000002
+            WHEN 'test.venc.proxima' THEN 90000003
+            WHEN 'test.venc.lejana'  THEN 90000004
+        END,
+        CASE usuario_username
+            WHEN 'test.venc.vencida' THEN 20900000011
+            WHEN 'test.venc.critica' THEN 20900000021
+            WHEN 'test.venc.proxima' THEN 20900000031
+            WHEN 'test.venc.lejana'  THEN 20900000041
+        END,
+        usuario_username || '@institucional.edu',
+        CURRENT_DATE - INTERVAL '1 year',
+        'Activo'
+    FROM new_users
+    RETURNING usuario_id, docente_legajo
+),
+new_designaciones AS (
+    INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id)
+    SELECT
+        'RES-TEST-' || docente_legajo,
+        CURRENT_DATE - INTERVAL '6 months',
+        CASE docente_legajo
+            WHEN 90001 THEN (CURRENT_DATE - INTERVAL '3 days')::date
+            WHEN 90002 THEN (CURRENT_DATE + INTERVAL '2 days')::date
+            WHEN 90003 THEN (CURRENT_DATE + INTERVAL '15 days')::date
+            WHEN 90004 THEN (CURRENT_DATE + INTERVAL '45 days')::date
+        END,
+        'Activo',
+        usuario_id
+    FROM new_docentes
+    RETURNING designacion_id, usuario_id, designacion_fecha_fin
+)
+INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id, cargo_estado)
+SELECT
+    9100 + ROW_NUMBER() OVER (ORDER BY designacion_id),
+    10,
+    CURRENT_DATE - INTERVAL '6 months',
+    1, 1, 1, 1,
+    designacion_id,
+    1,
+    'Ocupado'
+FROM new_designaciones;
+
 COMMIT;
