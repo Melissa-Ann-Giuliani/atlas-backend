@@ -614,7 +614,7 @@ INSERT INTO public.dedicaciones (dedicacion_nombre, dedicacion_horas) VALUES
 INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_correo, usuario_apellido, usuario_nombre, usuario_activo, rol_id) VALUES
 ('agarcia', crypt('pass123', gen_salt('bf', 10)), 'agarcia@atlas.edu', 'Garcia', 'Ana', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente')),
 ('lmartinez', crypt('pass123', gen_salt('bf', 10)), 'lmartinez@atlas.edu', 'Martinez', 'Luis', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente')),
-('crodriguez', crypt('pass123', gen_salt('bf', 10)), 'crodriguez@atlas.edu', 'Rodriguez', 'Carlos', false, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente')),
+('crodriguez', crypt('pass123', gen_salt('bf', 10)), 'crodriguez@atlas.edu', 'Rodriguez', 'Carlos', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente')),
 ('sfernandez', crypt('pass123', gen_salt('bf', 10)), 'sfernandez@atlas.edu', 'Fernandez', 'Sofia', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente'));
 
 -- Docentes Details

@@ -67,6 +67,9 @@ public class CargoService {
     @Autowired
     private UnidadRepository unidadRepository;
 
+    @Autowired
+    private com.atlas.atlas_backend.archivo.ArchivoRepository archivoRepository;
+
     @Transactional(readOnly = true)
     public Page<CargoListDTO> getActiveCargos(String username, String searchTerm, String estado, Integer categoriaId,
             Integer dedicacionId, Integer caracterId, Pageable pageable) throws Exception {
@@ -225,7 +228,13 @@ public class CargoService {
         dto.setSubcargosActivos(subcargos);
         dto.setCargosSubdivididos(cargosSubdivididos);
 
-        dto.setDocumentacionAdjunta(new ArrayList<>());
+        List<String> docs = new ArrayList<>();
+        if (cargo.getDesignacion() != null && cargo.getDesignacion().getDesignacionId() != null) {
+            Integer desigId = cargo.getDesignacion().getDesignacionId();
+            archivoRepository.findByTipoTramiteAndTramiteId("DESIGNACION", desigId)
+                    .forEach(a -> docs.add("/api/archivos/tramite/DESIGNACION/" + desigId));
+        }
+        dto.setDocumentacionAdjunta(docs);
 
         return dto;
     }
@@ -317,7 +326,13 @@ public class CargoService {
         dto.setActividadesVinculadas(new ArrayList<>());
         dto.setSubcargosActivos(new ArrayList<>());
         dto.setCargosSubdivididos(new ArrayList<>());
-        dto.setDocumentacionAdjunta(new ArrayList<>());
+        List<String> docs = new ArrayList<>();
+        if (savedCargo.getDesignacion() != null && savedCargo.getDesignacion().getDesignacionId() != null) {
+            Integer desigId = savedCargo.getDesignacion().getDesignacionId();
+            archivoRepository.findByTipoTramiteAndTramiteId("DESIGNACION", desigId)
+                    .forEach(a -> docs.add("/api/archivos/tramite/DESIGNACION/" + desigId));
+        }
+        dto.setDocumentacionAdjunta(docs);
 
         if (savedCargo.getCargoPredecesor() != null) {
             Cargo predecesor = savedCargo.getCargoPredecesor();
@@ -426,7 +441,13 @@ public class CargoService {
         dto.setActividadesVinculadas(new ArrayList<>());
         dto.setSubcargosActivos(new ArrayList<>());
         dto.setCargosSubdivididos(new ArrayList<>());
-        dto.setDocumentacionAdjunta(new ArrayList<>());
+        List<String> docs = new ArrayList<>();
+        if (savedCargo.getDesignacion() != null && savedCargo.getDesignacion().getDesignacionId() != null) {
+            Integer desigId = savedCargo.getDesignacion().getDesignacionId();
+            archivoRepository.findByTipoTramiteAndTramiteId("DESIGNACION", desigId)
+                    .forEach(a -> docs.add("/api/archivos/tramite/DESIGNACION/" + desigId));
+        }
+        dto.setDocumentacionAdjunta(docs);
 
         if (savedCargo.getCargoPredecesor() != null) {
             Cargo predecesor = savedCargo.getCargoPredecesor();

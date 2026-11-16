@@ -11,6 +11,7 @@ public class DocenteDetailsDTO {
     private List<DesignacionData> designacionesYCargos;
     private List<ActividadData> actividadesActuales;
     private List<LicenciaData> licenciasActuales;
+    private List<String> documentacionAdjunta;
 
     @Data
     public static class PersonalData {

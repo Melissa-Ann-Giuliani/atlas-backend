@@ -21,4 +21,6 @@ public class UsuarioListDTO {
     private String cargo;
     private String unidad;
     private Boolean activo;
+    private String estado;
+    private Integer legajo;
 }
