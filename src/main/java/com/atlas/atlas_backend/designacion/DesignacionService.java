@@ -2,6 +2,8 @@ package com.atlas.atlas_backend.designacion;
 
 import com.atlas.atlas_backend.cargo.Cargo;
 import com.atlas.atlas_backend.cargo.CargoRepository;
+import com.atlas.atlas_backend.unidad.Unidad;
+import com.atlas.atlas_backend.unidad.UnidadRepository;
 import com.atlas.atlas_backend.usuario.AdminUnidad;
 import com.atlas.atlas_backend.usuario.AdminUnidadRepository;
 import com.atlas.atlas_backend.usuario.Docente;
@@ -15,12 +17,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 @Service
 public class DesignacionService {
+
+    public static final int UMBRAL_VENCIMIENTO_DIAS = 30;
+    public static final int UMBRAL_CRITICO_DIAS = 7;
 
     @Autowired
     private DesignacionRepository designacionRepository;
@@ -36,6 +47,9 @@ public class DesignacionService {
 
     @Autowired
     private AdminUnidadRepository adminUnidadRepository;
+
+    @Autowired(required = false)
+    private UnidadRepository unidadRepository;
 
     @Transactional
     public DesignacionResponseDTO registrarDesignacion(DesignacionCreateRequest request, String username) {
@@ -237,5 +251,254 @@ public class DesignacionService {
         }
 
         return dto;
+    }
+
+    @Transactional(readOnly = true)
+    public List<DesignacionVencimientoDTO> obtenerVencimientos(
+            Integer requestedUnidadId,
+            Boolean incluirVencidas,
+            String username) {
+        return obtenerVencimientos(requestedUnidadId, incluirVencidas, username, LocalDate.now());
+    }
+
+    @Transactional(readOnly = true)
+    public List<DesignacionVencimientoDTO> obtenerVencimientos(
+            Integer requestedUnidadId,
+            Boolean incluirVencidas,
+            String username,
+            LocalDate fechaReferencia) {
+        UnidadScope scope = resolverUnidadScope(username, requestedUnidadId);
+        Integer unidadEfectivaId = scope.unidadId;
+
+        LocalDate hoy = fechaReferencia != null ? fechaReferencia : LocalDate.now();
+        LocalDate fechaLimite = hoy.plusDays(UMBRAL_VENCIMIENTO_DIAS);
+        boolean incluirVencidasFlag = Boolean.TRUE.equals(incluirVencidas);
+
+        List<Designacion> designaciones = incluirVencidasFlag
+                ? designacionRepository.findVencimientosIncluyendoVencidas(unidadEfectivaId, fechaLimite)
+                : designacionRepository.findProximosVencimientos(unidadEfectivaId, hoy, fechaLimite);
+
+        if (designaciones == null || designaciones.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Integer> designacionIds = designaciones.stream()
+                .filter(d -> d != null && d.getDesignacionId() != null)
+                .map(d -> d.getDesignacionId())
+                .distinct()
+                .toList();
+
+        List<Cargo> allCargos = designacionIds.isEmpty()
+                ? Collections.emptyList()
+                : cargoRepository.findByDesignacionDesignacionIdIn(designacionIds);
+
+        Map<Integer, List<Cargo>> cargosPorDesignacion = new HashMap<>();
+        if (allCargos != null) {
+            for (Cargo c : allCargos) {
+                if (c != null && c.getDesignacion() != null && c.getDesignacion().getDesignacionId() != null) {
+                    cargosPorDesignacion
+                            .computeIfAbsent(c.getDesignacion().getDesignacionId(), k -> new ArrayList<>())
+                            .add(c);
+                }
+            }
+        }
+
+        List<Integer> docenteIds = designaciones.stream()
+                .filter(d -> d != null && d.getUsuarioId() != null)
+                .map(d -> d.getUsuarioId())
+                .distinct()
+                .toList();
+
+        Map<Integer, Docente> docentesPorId = new HashMap<>();
+        if (!docenteIds.isEmpty()) {
+            Iterable<Docente> docentes = docenteRepository.findAllById(Objects.requireNonNull(docenteIds));
+            if (docentes != null) {
+                for (Docente doc : docentes) {
+                    if (doc != null && doc.getId() != null) {
+                        docentesPorId.put(doc.getId(), doc);
+                    }
+                }
+            }
+            for (Integer docId : docenteIds) {
+                if (docId != null && !docentesPorId.containsKey(docId)) {
+                    docenteRepository.findById(docId).ifPresent(doc -> docentesPorId.put(docId, doc));
+                }
+            }
+        }
+
+        List<DesignacionVencimientoDTO> resultado = new ArrayList<>();
+        for (Designacion d : designaciones) {
+            if (d == null || d.getDesignacionFechaFin() == null) {
+                continue;
+            }
+            String estado = d.getDesignacionEstadoActual() != null ? d.getDesignacionEstadoActual().trim() : "";
+            if (!estado.equalsIgnoreCase("Activa") && !estado.equalsIgnoreCase("Activo")) {
+                continue;
+            }
+
+            long diasRestantes = ChronoUnit.DAYS.between(hoy, d.getDesignacionFechaFin());
+            if (!incluirVencidasFlag && diasRestantes < 0) {
+                continue;
+            }
+            if (diasRestantes > UMBRAL_VENCIMIENTO_DIAS) {
+                continue;
+            }
+
+            List<Cargo> cargosDesignacion = cargosPorDesignacion.getOrDefault(
+                    d.getDesignacionId(), Collections.emptyList());
+
+            if (unidadEfectivaId != null && !cargosDesignacion.isEmpty()) {
+                boolean perteneceAUnidad = cargosDesignacion.stream()
+                        .anyMatch(c -> c.getUnidad() != null
+                                && Objects.equals(c.getUnidad().getUnidadId(), unidadEfectivaId));
+                if (!perteneceAUnidad) {
+                    continue;
+                }
+            }
+
+            DesignacionVencimientoDTO.DocenteResumenDTO docenteDto = null;
+            Docente doc = d.getUsuarioId() != null ? docentesPorId.get(d.getUsuarioId()) : null;
+            if (doc != null) {
+                docenteDto = DesignacionVencimientoDTO.DocenteResumenDTO.builder()
+                        .docenteId(doc.getId())
+                        .nombre(doc.getNombre())
+                        .apellido(doc.getApellido())
+                        .documento(doc.getDni() != null ? String.valueOf(doc.getDni()) : null)
+                        .legajo(doc.getLegajo() != null ? String.valueOf(doc.getLegajo()) : null)
+                        .build();
+            }
+
+            DesignacionVencimientoDTO.UnidadResumenDTO unidadDto = null;
+            List<DesignacionVencimientoDTO.CargoResumenDTO> cargosDto = new ArrayList<>();
+            for (Cargo c : cargosDesignacion) {
+                if (unidadDto == null && c.getUnidad() != null) {
+                    unidadDto = DesignacionVencimientoDTO.UnidadResumenDTO.builder()
+                            .unidadId(c.getUnidad().getUnidadId())
+                            .nombre(c.getUnidad().getUnidadNombre())
+                            .build();
+                }
+                cargosDto.add(DesignacionVencimientoDTO.CargoResumenDTO.builder()
+                        .cargoId(c.getId())
+                        .codigo(c.getCodigo())
+                        .categoria(c.getCategoria() != null ? c.getCategoria().getCategoriaNombre() : null)
+                        .dedicacion(c.getDedicacion() != null ? c.getDedicacion().getDedicacionNombre() : null)
+                        .caracter(c.getCaracter() != null ? c.getCaracter().getCaracterNombre() : null)
+                        .build());
+            }
+
+            if (unidadDto == null && scope.unidadId != null) {
+                unidadDto = DesignacionVencimientoDTO.UnidadResumenDTO.builder()
+                        .unidadId(scope.unidadId)
+                        .nombre(scope.unidadNombre)
+                        .build();
+            }
+
+            DesignacionVencimientoDTO item = DesignacionVencimientoDTO.builder()
+                    .designacionId(d.getDesignacionId())
+                    .numeroResolucion(d.getDesignacionNumeroResolucion())
+                    .fechaInicio(d.getDesignacionFechaInicio())
+                    .fechaFin(d.getDesignacionFechaFin())
+                    .diasRestantes(diasRestantes)
+                    .estadoActual(d.getDesignacionEstadoActual())
+                    .docente(docenteDto)
+                    .unidad(unidadDto)
+                    .cargos(cargosDto)
+                    .build();
+            resultado.add(item);
+        }
+
+        resultado.sort((a, b) -> {
+            long diasA = a != null && a.getDiasRestantes() != null ? a.getDiasRestantes() : 0L;
+            long diasB = b != null && b.getDiasRestantes() != null ? b.getDiasRestantes() : 0L;
+            int cmp = Long.compare(diasA, diasB);
+            if (cmp != 0) {
+                return cmp;
+            }
+            int idA = a != null && a.getDesignacionId() != null ? a.getDesignacionId() : 0;
+            int idB = b != null && b.getDesignacionId() != null ? b.getDesignacionId() : 0;
+            return Integer.compare(idA, idB);
+        });
+        return resultado;
+    }
+
+    @Transactional(readOnly = true)
+    public DesignacionVencimientosResumenDTO obtenerResumenVencimientos(
+            Integer requestedUnidadId,
+            String username) {
+        return obtenerResumenVencimientos(requestedUnidadId, username, LocalDate.now());
+    }
+
+    @Transactional(readOnly = true)
+    public DesignacionVencimientosResumenDTO obtenerResumenVencimientos(
+            Integer requestedUnidadId,
+            String username,
+            LocalDate fechaReferencia) {
+        UnidadScope scope = resolverUnidadScope(username, requestedUnidadId);
+
+        LocalDate hoy = fechaReferencia != null ? fechaReferencia : LocalDate.now();
+        LocalDate fechaLimite30 = hoy.plusDays(UMBRAL_VENCIMIENTO_DIAS);
+        LocalDate fechaLimiteCritico = hoy.plusDays(UMBRAL_CRITICO_DIAS);
+
+        long totalPorVencer = designacionRepository.countVencimientos(scope.unidadId, hoy, fechaLimite30);
+        long totalCriticos = designacionRepository.countVencimientos(scope.unidadId, hoy, fechaLimiteCritico);
+
+        return DesignacionVencimientosResumenDTO.builder()
+                .totalPorVencer(totalPorVencer)
+                .umbralDias(UMBRAL_VENCIMIENTO_DIAS)
+                .unidadId(scope.unidadId)
+                .unidadNombre(scope.unidadNombre)
+                .tieneVencimientosCriticos(totalCriticos > 0)
+                .totalCriticos(totalCriticos)
+                .build();
+    }
+
+    private UnidadScope resolverUnidadScope(String username, Integer requestedUnidadId) {
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        String rolNombre = usuario.getRol() != null ? usuario.getRol().getNombre() : "";
+        boolean esAdminUnidad = rolNombre.equalsIgnoreCase("Admin de unidad") ||
+                rolNombre.equalsIgnoreCase("Administrador de Unidad") ||
+                rolNombre.equalsIgnoreCase("ADMIN_UNIDAD") ||
+                rolNombre.equalsIgnoreCase("ADMIN_DE_UNIDAD") ||
+                rolNombre.equalsIgnoreCase("ADMINISTRADOR_DE_UNIDAD");
+
+        if (esAdminUnidad) {
+            if (usuario.getId() == null) {
+                throw new AccessDeniedException("ID de usuario nulo");
+            }
+            Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(usuario.getId().intValue());
+            if (adminUnidadOpt.isEmpty() || adminUnidadOpt.get().getUnidad() == null) {
+                throw new AccessDeniedException("La Unidad del Administrador no fue encontrada");
+            }
+            Unidad userUnidad = adminUnidadOpt.get().getUnidad();
+            Integer userUnidadId = userUnidad.getUnidadId();
+            if (requestedUnidadId != null && !Objects.equals(requestedUnidadId, userUnidadId)) {
+                throw new AccessDeniedException("No tiene permisos para consultar designaciones de otra unidad");
+            }
+            return new UnidadScope(userUnidadId, userUnidad.getUnidadNombre());
+        }
+
+        if (requestedUnidadId != null) {
+            String nombreUnidad = null;
+            if (unidadRepository != null) {
+                nombreUnidad = unidadRepository.findById(Objects.requireNonNull(requestedUnidadId))
+                        .map(u -> u.getUnidadNombre())
+                        .orElse(null);
+            }
+            return new UnidadScope(requestedUnidadId, nombreUnidad);
+        }
+
+        return new UnidadScope(null, null);
+    }
+
+    private static class UnidadScope {
+        private final Integer unidadId;
+        private final String unidadNombre;
+
+        private UnidadScope(Integer unidadId, String unidadNombre) {
+            this.unidadId = unidadId;
+            this.unidadNombre = unidadNombre;
+        }
     }
 }

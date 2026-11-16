@@ -553,4 +553,275 @@ public class DesignacionServiceTest {
         verify(docenteRepository, never()).save(anyDocente());
         verify(cargoRepository, never()).save(anyCargo());
     }
+
+    // =========================================================================
+    // RF-36: Próximos Vencimientos y Resumen (spec-01 & spec-02)
+    // =========================================================================
+
+    @Test
+    void testRF36_Spec01_Scenario1_AdminGlobal_ProximosVencimientos30Dias_OrderedAsc() {
+        LocalDate fechaRef = LocalDate.of(2026, 11, 16);
+
+        Designacion d1 = new Designacion();
+        d1.setDesignacionId(1);
+        d1.setDesignacionNumeroResolucion("RES-GLOBAL-01");
+        d1.setDesignacionFechaInicio(LocalDate.of(2026, 3, 1));
+        d1.setDesignacionFechaFin(LocalDate.of(2026, 11, 26)); // +10 días
+        d1.setDesignacionEstadoActual("Activa");
+        d1.setUsuarioId(10);
+
+        Designacion d2 = new Designacion();
+        d2.setDesignacionId(2);
+        d2.setDesignacionNumeroResolucion("RES-GLOBAL-02");
+        d2.setDesignacionFechaInicio(LocalDate.of(2026, 3, 1));
+        d2.setDesignacionFechaFin(LocalDate.of(2026, 12, 1)); // +15 días
+        d2.setDesignacionEstadoActual("Activa");
+        d2.setUsuarioId(10);
+
+        Designacion d3 = new Designacion();
+        d3.setDesignacionId(3);
+        d3.setDesignacionNumeroResolucion("RES-GLOBAL-03");
+        d3.setDesignacionFechaInicio(LocalDate.of(2026, 3, 1));
+        d3.setDesignacionFechaFin(LocalDate.of(2026, 12, 25)); // +39 días (fuera de umbral 30 días)
+        d3.setDesignacionEstadoActual("Activa");
+        d3.setUsuarioId(10);
+
+        Cargo c1 = new Cargo();
+        c1.setId(88);
+        c1.setCodigo(100234L);
+        c1.setDesignacion(d1);
+        c1.setUnidad(testUnidad);
+        c1.setCategoria(testCargo.getCategoria());
+        c1.setDedicacion(testCargo.getDedicacion());
+
+        Unidad unidad2 = new Unidad();
+        unidad2.setUnidadId(2);
+        unidad2.setUnidadNombre("Facultad de Ciencias Exactas");
+
+        Cargo c2 = new Cargo();
+        c2.setId(89);
+        c2.setCodigo(100235L);
+        c2.setDesignacion(d2);
+        c2.setUnidad(unidad2);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(designacionRepository.findProximosVencimientos(null, fechaRef, fechaRef.plusDays(30)))
+                .thenReturn(List.of(d2, d1, d3));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(List.of(2, 1, 3)))
+                .thenReturn(List.of(c1, c2));
+        when(docenteRepository.findAllById(Objects.requireNonNull(List.of(10)))).thenReturn(List.of(testDocente));
+
+        List<DesignacionVencimientoDTO> result = designacionService.obtenerVencimientos(
+                null, false, "admin_global", fechaRef);
+
+        assertEquals(2, result.size());
+        assertEquals("RES-GLOBAL-01", result.get(0).getNumeroResolucion());
+        assertEquals(10L, result.get(0).getDiasRestantes());
+        assertEquals("RES-GLOBAL-02", result.get(1).getNumeroResolucion());
+        assertEquals(15L, result.get(1).getDiasRestantes());
+        assertNotNull(result.get(0).getDocente());
+        assertEquals("Juan", result.get(0).getDocente().getNombre());
+        assertEquals("30123456", result.get(0).getDocente().getDocumento());
+        assertNotNull(result.get(0).getUnidad());
+        assertEquals("Facultad de Ingeniería", result.get(0).getUnidad().getNombre());
+        assertEquals(1, result.get(0).getCargos().size());
+        assertEquals(100234L, result.get(0).getCargos().get(0).getCodigo());
+    }
+
+    @Test
+    void testRF36_Spec01_Scenario2_AdminUnidad_SoloSuPropiaUnidad() {
+        LocalDate fechaRef = LocalDate.of(2026, 11, 16);
+
+        Unidad unidadIng = new Unidad();
+        unidadIng.setUnidadId(2);
+        unidadIng.setUnidadNombre("Facultad de Ingeniería");
+        adminUnidad.setUnidad(unidadIng);
+
+        Designacion dIng = new Designacion();
+        dIng.setDesignacionId(10);
+        dIng.setDesignacionNumeroResolucion("RES-ING-01");
+        dIng.setDesignacionFechaInicio(LocalDate.of(2026, 3, 1));
+        dIng.setDesignacionFechaFin(LocalDate.of(2026, 11, 30));
+        dIng.setDesignacionEstadoActual("Activa");
+        dIng.setUsuarioId(10);
+
+        Cargo cargoIng = new Cargo();
+        cargoIng.setId(50);
+        cargoIng.setCodigo(2001L);
+        cargoIng.setDesignacion(dIng);
+        cargoIng.setUnidad(unidadIng);
+
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
+        when(designacionRepository.findProximosVencimientos(2, fechaRef, fechaRef.plusDays(30)))
+                .thenReturn(List.of(dIng));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(List.of(10)))
+                .thenReturn(List.of(cargoIng));
+        when(docenteRepository.findAllById(Objects.requireNonNull(List.of(10)))).thenReturn(List.of(testDocente));
+
+        List<DesignacionVencimientoDTO> result = designacionService.obtenerVencimientos(
+                null, false, "admin_unidad", fechaRef);
+
+        assertEquals(1, result.size());
+        assertEquals("RES-ING-01", result.get(0).getNumeroResolucion());
+        assertEquals(14L, result.get(0).getDiasRestantes());
+        assertEquals(2, result.get(0).getUnidad().getUnidadId());
+    }
+
+    @Test
+    void testRF36_Spec01_Scenario3_ExcluyeSinFechaFinOEstadoNoActivo() {
+        LocalDate fechaRef = LocalDate.of(2026, 11, 16);
+
+        Designacion dPerm = new Designacion();
+        dPerm.setDesignacionId(1);
+        dPerm.setDesignacionNumeroResolucion("RES-PERM-01");
+        dPerm.setDesignacionFechaFin(null);
+        dPerm.setDesignacionEstadoActual("Activa");
+
+        Designacion dBaja = new Designacion();
+        dBaja.setDesignacionId(2);
+        dBaja.setDesignacionNumeroResolucion("RES-BAJA-01");
+        dBaja.setDesignacionFechaFin(LocalDate.of(2026, 11, 20));
+        dBaja.setDesignacionEstadoActual("Baja");
+
+        Designacion dRev = new Designacion();
+        dRev.setDesignacionId(3);
+        dRev.setDesignacionNumeroResolucion("RES-REV-01");
+        dRev.setDesignacionFechaFin(LocalDate.of(2026, 11, 22));
+        dRev.setDesignacionEstadoActual("Revocada");
+
+        Designacion dOk = new Designacion();
+        dOk.setDesignacionId(4);
+        dOk.setDesignacionNumeroResolucion("RES-OK-01");
+        dOk.setDesignacionFechaFin(LocalDate.of(2026, 11, 25));
+        dOk.setDesignacionEstadoActual("Activa");
+        dOk.setUsuarioId(10);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(designacionRepository.findProximosVencimientos(null, fechaRef, fechaRef.plusDays(30)))
+                .thenReturn(List.of(dPerm, dBaja, dRev, dOk));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(any())).thenReturn(List.of());
+        when(docenteRepository.findAllById(Objects.requireNonNull(List.of(10)))).thenReturn(List.of(testDocente));
+
+        List<DesignacionVencimientoDTO> result = designacionService.obtenerVencimientos(
+                null, false, "admin_global", fechaRef);
+
+        assertEquals(1, result.size());
+        assertEquals("RES-OK-01", result.get(0).getNumeroResolucion());
+    }
+
+    @Test
+    void testRF36_Spec01_Scenario4_IncluirVencidasTrue_RetornaDiasRestantesNegativos() {
+        LocalDate fechaRef = LocalDate.of(2026, 11, 16);
+
+        Designacion dVenc = new Designacion();
+        dVenc.setDesignacionId(1);
+        dVenc.setDesignacionNumeroResolucion("RES-VENC-01");
+        dVenc.setDesignacionFechaFin(LocalDate.of(2026, 11, 10)); // -6 días
+        dVenc.setDesignacionEstadoActual("Activa");
+        dVenc.setUsuarioId(10);
+
+        Designacion dProx = new Designacion();
+        dProx.setDesignacionId(2);
+        dProx.setDesignacionNumeroResolucion("RES-PROX-01");
+        dProx.setDesignacionFechaFin(LocalDate.of(2026, 11, 20)); // +4 días
+        dProx.setDesignacionEstadoActual("Activa");
+        dProx.setUsuarioId(10);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(designacionRepository.findVencimientosIncluyendoVencidas(null, fechaRef.plusDays(30)))
+                .thenReturn(List.of(dVenc, dProx));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(List.of(1, 2))).thenReturn(List.of());
+        when(docenteRepository.findAllById(Objects.requireNonNull(List.of(10)))).thenReturn(List.of(testDocente));
+
+        List<DesignacionVencimientoDTO> result = designacionService.obtenerVencimientos(
+                null, true, "admin_global", fechaRef);
+
+        assertEquals(2, result.size());
+        assertEquals("RES-VENC-01", result.get(0).getNumeroResolucion());
+        assertEquals(-6L, result.get(0).getDiasRestantes());
+        assertEquals("RES-PROX-01", result.get(1).getNumeroResolucion());
+        assertEquals(4L, result.get(1).getDiasRestantes());
+    }
+
+    @Test
+    void testRF36_Spec01_Scenario5_AdminUnidad_OtraUnidad_ThrowsAccessDenied() {
+        Unidad unidad2 = new Unidad();
+        unidad2.setUnidadId(2);
+        unidad2.setUnidadNombre("Facultad de Ingeniería");
+        adminUnidad.setUnidad(unidad2);
+
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
+
+        AccessDeniedException ex = assertThrows(AccessDeniedException.class,
+                () -> designacionService.obtenerVencimientos(3, false, "admin_unidad"));
+
+        assertEquals("No tiene permisos para consultar designaciones de otra unidad", ex.getMessage());
+    }
+
+    @Test
+    void testRF36_Spec02_Scenario1_AdminGlobal_ResumenVencimientos() {
+        LocalDate fechaRef = LocalDate.of(2026, 11, 16);
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(designacionRepository.countVencimientos(null, fechaRef, fechaRef.plusDays(30))).thenReturn(7L);
+        when(designacionRepository.countVencimientos(null, fechaRef, fechaRef.plusDays(7))).thenReturn(2L);
+
+        DesignacionVencimientosResumenDTO resumen = designacionService.obtenerResumenVencimientos(
+                null, "admin_global", fechaRef);
+
+        assertEquals(7L, resumen.getTotalPorVencer());
+        assertEquals(30, resumen.getUmbralDias());
+        assertNull(resumen.getUnidadId());
+        assertNull(resumen.getUnidadNombre());
+        assertTrue(resumen.getTieneVencimientosCriticos());
+        assertEquals(2L, resumen.getTotalCriticos());
+    }
+
+    @Test
+    void testRF36_Spec02_Scenario2_AdminUnidad_ResumenUnidad() {
+        LocalDate fechaRef = LocalDate.of(2026, 11, 16);
+
+        Unidad unidadExactas = new Unidad();
+        unidadExactas.setUnidadId(4);
+        unidadExactas.setUnidadNombre("Facultad de Ciencias Exactas");
+        adminUnidad.setUnidad(unidadExactas);
+
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
+        when(designacionRepository.countVencimientos(4, fechaRef, fechaRef.plusDays(30))).thenReturn(3L);
+        when(designacionRepository.countVencimientos(4, fechaRef, fechaRef.plusDays(7))).thenReturn(1L);
+
+        DesignacionVencimientosResumenDTO resumen = designacionService.obtenerResumenVencimientos(
+                null, "admin_unidad", fechaRef);
+
+        assertEquals(3L, resumen.getTotalPorVencer());
+        assertEquals(4, resumen.getUnidadId());
+        assertEquals("Facultad de Ciencias Exactas", resumen.getUnidadNombre());
+        assertTrue(resumen.getTieneVencimientosCriticos());
+        assertEquals(1L, resumen.getTotalCriticos());
+    }
+
+    @Test
+    void testRF36_Spec02_Scenario3_SinVencimientos_RetornaCeroYCriticosFalse() {
+        LocalDate fechaRef = LocalDate.of(2026, 11, 16);
+
+        Unidad unidad5 = new Unidad();
+        unidad5.setUnidadId(5);
+        unidad5.setUnidadNombre("Facultad de Derecho");
+        adminUnidad.setUnidad(unidad5);
+
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
+        when(designacionRepository.countVencimientos(5, fechaRef, fechaRef.plusDays(30))).thenReturn(0L);
+        when(designacionRepository.countVencimientos(5, fechaRef, fechaRef.plusDays(7))).thenReturn(0L);
+
+        DesignacionVencimientosResumenDTO resumen = designacionService.obtenerResumenVencimientos(
+                null, "admin_unidad", fechaRef);
+
+        assertEquals(0L, resumen.getTotalPorVencer());
+        assertFalse(resumen.getTieneVencimientosCriticos());
+        assertEquals(0L, resumen.getTotalCriticos());
+    }
 }

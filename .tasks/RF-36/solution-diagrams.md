@@ -49,7 +49,7 @@ sequenceDiagram
     Admin->>UI: Ingresa al sistema (Login exitoso)
     UI->>Controller: GET /api/designaciones/vencimientos/resumen
     Controller->>Auth: Extraer usuario y roles
-    
+
     alt Es Administrador de Unidad
         Auth-->>Controller: Rol ADMIN_UNIDAD, unidadId = X
         Controller->>Service: contarProximosVencimientos(unidadId=X)
@@ -82,10 +82,10 @@ sequenceDiagram
     Admin->>UI: Navega a "Gestión > Vencimientos"
     UI->>Controller: GET /api/designaciones/vencimientos?incluirVencidas=false
     Controller->>Service: obtenerProximosVencimientos(usuario, incluirVencidas=false)
-    
+
     Service->>Repo: findDesignacionesVencimiento(unidadId, hoy, hoy+30días, estado='Activa', incluirVencidas)
     Repo-->>Service: List<Designacion> + Cargos asociados
-    
+
     loop Por cada designación activa
         Service->>Service: Calcular diasRestantes = ChronoUnit.DAYS.between(now, fechaFin)
     end
