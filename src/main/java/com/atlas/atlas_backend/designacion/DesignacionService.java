@@ -258,7 +258,16 @@ public class DesignacionService {
             Integer requestedUnidadId,
             Boolean incluirVencidas,
             String username) {
-        return obtenerVencimientos(requestedUnidadId, incluirVencidas, username, LocalDate.now());
+        return obtenerVencimientos(requestedUnidadId, incluirVencidas, null, username, LocalDate.now());
+    }
+
+    @Transactional(readOnly = true)
+    public List<DesignacionVencimientoDTO> obtenerVencimientos(
+            Integer requestedUnidadId,
+            Boolean incluirVencidas,
+            Integer dias,
+            String username) {
+        return obtenerVencimientos(requestedUnidadId, incluirVencidas, dias, username, LocalDate.now());
     }
 
     @Transactional(readOnly = true)
@@ -267,11 +276,27 @@ public class DesignacionService {
             Boolean incluirVencidas,
             String username,
             LocalDate fechaReferencia) {
+        return obtenerVencimientos(requestedUnidadId, incluirVencidas, null, username, fechaReferencia);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DesignacionVencimientoDTO> obtenerVencimientos(
+            Integer requestedUnidadId,
+            Boolean incluirVencidas,
+            Integer dias,
+            String username,
+            LocalDate fechaReferencia) {
         UnidadScope scope = resolverUnidadScope(username, requestedUnidadId);
         Integer unidadEfectivaId = scope.unidadId;
 
         LocalDate hoy = fechaReferencia != null ? fechaReferencia : LocalDate.now();
-        LocalDate fechaLimite = hoy.plusDays(UMBRAL_VENCIMIENTO_DIAS);
+        LocalDate fechaLimite = null;
+        if (dias == null) {
+            fechaLimite = hoy.plusDays(UMBRAL_VENCIMIENTO_DIAS);
+        } else if (dias > 0) {
+            fechaLimite = hoy.plusDays(dias);
+        } // Si dias <= 0 o negativo/cero, fechaLimite queda en null (sin límite superior)
+
         boolean incluirVencidasFlag = Boolean.TRUE.equals(incluirVencidas);
 
         List<Designacion> designaciones = incluirVencidasFlag

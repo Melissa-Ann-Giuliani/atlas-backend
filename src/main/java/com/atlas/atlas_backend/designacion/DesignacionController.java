@@ -26,10 +26,11 @@ public class DesignacionController {
     public ResponseEntity<?> obtenerVencimientos(
             @RequestParam(required = false, defaultValue = "false") Boolean incluirVencidas,
             @RequestParam(required = false) Integer unidadId,
+            @RequestParam(required = false) Integer dias,
             Authentication authentication) {
         try {
             List<DesignacionVencimientoDTO> dtos = designacionService.obtenerVencimientos(
-                    unidadId, incluirVencidas, authentication.getName());
+                    unidadId, incluirVencidas, dias, authentication.getName());
             return ResponseEntity.ok(dtos);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
