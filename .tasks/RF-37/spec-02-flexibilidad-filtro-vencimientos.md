@@ -32,6 +32,7 @@ Si se envía un valor personalizado en `dias` (por ejemplo 60 o 90 días), o si 
 | `sinLimite` | `Boolean` | No | `false` | Si es `true`, anula el filtro superior de fecha fin (`fechaHasta = null`), devolviendo todas las designaciones activas. Si `sinLimite = true`, se desestima el valor de `dias`. |
 
 #### Lógica en Backend (`DesignacionService` y `DesignacionRepository`):
+#### Lógica en Backend (`DesignacionController`, `DesignacionService` y `DesignacionRepository`):
 
 1. **Cálculo de `fechaHasta`**:
    ```java
@@ -44,10 +45,27 @@ Si se envía un valor personalizado en `dias` (por ejemplo 60 o 90 días), o si 
        fechaHasta = hoy.plusDays(UMBRAL_VENCIMIENTO_DIAS); // Default 30 días
    }
    ```
+1. **Resolución de `effectiveDias` en `DesignacionController` y cálculo de `fechaLimite` en `DesignacionService`**:
+   - En `DesignacionController`:
+     ```java
+     Integer effectiveDias = Boolean.TRUE.equals(sinLimite) ? 0 : dias;
+     ```
+   - En `DesignacionService`:
+     ```java
+     LocalDate fechaLimite = null;
+     if (dias == null) {
+         fechaLimite = hoy.plusDays(UMBRAL_VENCIMIENTO_DIAS); // Default 30 días
+     } else if (dias > 0) {
+         fechaLimite = hoy.plusDays(dias);
+     } // Si dias <= 0 (ej. sinLimite = true -> effectiveDias = 0), fechaLimite queda en null (sin límite superior)
+     ```
 2. **Consulta en Repositorio**:
    - Tanto `findProximosVencimientos` como `findVencimientosIncluyendoVencidas` ya poseen la cláusula JPA:
      `(:fechaHasta IS NULL OR d.designacionFechaFin <= :fechaHasta)`
    - Al recibir `fechaHasta = null` (cuando `sinLimite = true`), la query JPA de forma nativa omite el límite superior.
+   - Tanto `findProximosVencimientos` como `findVencimientosIncluyendoVencidas` poseen la cláusula JPA con casteo explícito de tipo para compatibilidad con PostgreSQL cuando el parámetro es nulo:
+     `(CAST(:fechaHasta AS date) IS NULL OR d.designacionFechaFin <= :fechaHasta)`
+   - Al recibir `fechaLimite = null` (cuando `sinLimite = true` o `dias <= 0`), la query JPA omite el límite superior.
 3. **Filtro de pos-procesamiento en memoria**:
    - En el bucle de `DesignacionService`:
      ```java
@@ -56,6 +74,11 @@ Si se envía un valor personalizado en `dias` (por ejemplo 60 o 90 días), o si 
          if (diasRestantes > maxDias) {
              continue;
          }
+     if (diasRestantes < 0 && !incluirVencidasFlag) {
+         continue;
+     }
+     if (fechaLimite != null && d.getDesignacionFechaFin().isAfter(fechaLimite)) {
+         continue;
      }
      ```
 

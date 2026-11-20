@@ -20,7 +20,7 @@ public interface DesignacionRepository extends JpaRepository<Designacion, Intege
         WHERE LOWER(d.designacionEstadoActual) IN ('activa', 'activo')
           AND d.designacionFechaFin IS NOT NULL
           AND d.designacionFechaFin >= :fechaDesde
-          AND (:fechaHasta IS NULL OR d.designacionFechaFin <= :fechaHasta)
+          AND (CAST(:fechaHasta AS date) IS NULL OR d.designacionFechaFin <= :fechaHasta)
           AND (:unidadId IS NULL OR EXISTS (
               SELECT 1 FROM com.atlas.atlas_backend.cargo.Cargo c
               WHERE c.designacion = d AND c.unidad.unidadId = :unidadId
@@ -37,7 +37,7 @@ public interface DesignacionRepository extends JpaRepository<Designacion, Intege
         FROM Designacion d
         WHERE LOWER(d.designacionEstadoActual) IN ('activa', 'activo')
           AND d.designacionFechaFin IS NOT NULL
-          AND (:fechaHasta IS NULL OR d.designacionFechaFin <= :fechaHasta)
+          AND (CAST(:fechaHasta AS date) IS NULL OR d.designacionFechaFin <= :fechaHasta)
           AND (:unidadId IS NULL OR EXISTS (
               SELECT 1 FROM com.atlas.atlas_backend.cargo.Cargo c
               WHERE c.designacion = d AND c.unidad.unidadId = :unidadId

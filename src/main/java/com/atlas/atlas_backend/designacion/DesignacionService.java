@@ -1,7 +1,15 @@
 package com.atlas.atlas_backend.designacion;
 
+import com.atlas.atlas_backend.archivo.Archivo;
+import com.atlas.atlas_backend.archivo.ArchivoService;
 import com.atlas.atlas_backend.cargo.Cargo;
 import com.atlas.atlas_backend.cargo.CargoRepository;
+import com.atlas.atlas_backend.funcion.Funcion;
+import com.atlas.atlas_backend.funcion.FuncionItemRequest;
+import com.atlas.atlas_backend.funcion.FuncionRepository;
+import com.atlas.atlas_backend.materia.Materia;
+import com.atlas.atlas_backend.materia.MateriaRepository;
+import com.atlas.atlas_backend.notification.EmailService;
 import com.atlas.atlas_backend.unidad.Unidad;
 import com.atlas.atlas_backend.unidad.UnidadRepository;
 import com.atlas.atlas_backend.usuario.AdminUnidad;
@@ -17,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -32,6 +41,7 @@ public class DesignacionService {
 
     public static final int UMBRAL_VENCIMIENTO_DIAS = 30;
     public static final int UMBRAL_CRITICO_DIAS = 7;
+    private static final String TIPO_TRAMITE_DESIGNACION = "DESIGNACION";
 
     @Autowired
     private DesignacionRepository designacionRepository;
@@ -50,6 +60,21 @@ public class DesignacionService {
 
     @Autowired(required = false)
     private UnidadRepository unidadRepository;
+
+    @Autowired(required = false)
+    private FuncionRepository funcionRepository;
+
+    @Autowired(required = false)
+    private MateriaRepository materiaRepository;
+
+    @Autowired(required = false)
+    private ArchivoService archivoService;
+
+    @Autowired(required = false)
+    private DesignacionPdfService designacionPdfService;
+
+    @Autowired(required = false)
+    private EmailService emailService;
 
     @Transactional
     public DesignacionResponseDTO registrarDesignacion(DesignacionCreateRequest request, String username) {
@@ -192,6 +217,217 @@ public class DesignacionService {
         return buildResponseDTO(designacion, docente, cargo);
     }
 
+    @Transactional
+    public DesignacionResponseDTO redesignarDocente(
+            Integer designacionOrigenId,
+            DesignacionRedesignarRequest request,
+            String username) {
+        if (designacionOrigenId == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Designación no encontrada");
+        }
+
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        Designacion designacionOrigen = designacionRepository.findById(Objects.requireNonNull(designacionOrigenId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Designación no encontrada"));
+
+        String estadoOrigen = designacionOrigen.getDesignacionEstadoActual() != null
+                ? designacionOrigen.getDesignacionEstadoActual().trim()
+                : "";
+        if (!estadoOrigen.equalsIgnoreCase("Activa") && !estadoOrigen.equalsIgnoreCase("Activo")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Solo se pueden re-designar designaciones en estado Activa");
+        }
+
+        Integer docenteId = designacionOrigen.getUsuarioId();
+        if (docenteId == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Docente no encontrado");
+        }
+        Docente docente = docenteRepository.findById(Objects.requireNonNull(docenteId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Docente no encontrado"));
+
+        List<Cargo> cargosPrevios = cargoRepository.findByDesignacionDesignacionIdIn(List.of(designacionOrigenId));
+
+        Cargo cargo = null;
+        if (request.getCargoId() != null) {
+            cargo = cargoRepository.findById(Objects.requireNonNull(request.getCargoId()))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cargo no encontrado"));
+        } else if (cargosPrevios != null && !cargosPrevios.isEmpty()) {
+            cargo = cargosPrevios.get(0);
+        }
+
+        // Validación RBAC Multi-tenant
+        String rolNombre = usuario.getRol() != null ? usuario.getRol().getNombre() : "";
+        boolean esAdminUnidad = rolNombre.equalsIgnoreCase("Admin de unidad")
+                || rolNombre.equalsIgnoreCase("Administrador de Unidad")
+                || rolNombre.equalsIgnoreCase("ADMIN_UNIDAD")
+                || rolNombre.equalsIgnoreCase("ADMIN_DE_UNIDAD")
+                || rolNombre.equalsIgnoreCase("ADMINISTRADOR_DE_UNIDAD");
+
+        if (esAdminUnidad) {
+            if (usuario.getId() == null) {
+                throw new AccessDeniedException("ID de usuario nulo");
+            }
+            Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(usuario.getId().intValue());
+            if (adminUnidadOpt.isEmpty() || adminUnidadOpt.get().getUnidad() == null) {
+                throw new AccessDeniedException("La Unidad del Administrador no fue encontrada");
+            }
+            Integer userUnidadId = adminUnidadOpt.get().getUnidad().getUnidadId();
+
+            if (cargosPrevios != null && !cargosPrevios.isEmpty()) {
+                for (Cargo cp : cargosPrevios) {
+                    if (cp.getUnidad() == null || !Objects.equals(userUnidadId, cp.getUnidad().getUnidadId())) {
+                        throw new AccessDeniedException(
+                                "No tiene permisos para re-designar cargos de otra unidad");
+                    }
+                }
+            }
+            if (cargo != null && (cargo.getUnidad() == null
+                    || !Objects.equals(userUnidadId, cargo.getUnidad().getUnidadId()))) {
+                throw new AccessDeniedException(
+                        "No tiene permisos para re-designar cargos de otra unidad");
+            }
+        }
+
+        if (designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(
+                docenteId, request.getNroResolucion())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "El docente ya posee una designación registrada con el número de resolución indicado");
+        }
+
+        if (request.getFechaFin() != null && request.getFechaFin().isBefore(request.getFechaInicio())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La fecha de finalización no puede ser anterior a la fecha de inicio");
+        }
+
+        // 1. Marcar la designación previa como "Renovada"
+        designacionOrigen.setDesignacionEstadoActual("Renovada");
+        designacionRepository.save(designacionOrigen);
+
+        // 2. Crear la nueva designación en estado "Activa"
+        Designacion nuevaDesignacion = new Designacion();
+        nuevaDesignacion.setUsuarioId(docente.getId() != null ? docente.getId() : docenteId);
+        nuevaDesignacion.setDesignacionNumeroResolucion(request.getNroResolucion().trim());
+        nuevaDesignacion.setDesignacionFechaInicio(request.getFechaInicio());
+        nuevaDesignacion.setDesignacionFechaFin(request.getFechaFin());
+        nuevaDesignacion.setDesignacionEstadoActual("Activa");
+
+        Designacion savedDesignacion = designacionRepository.save(nuevaDesignacion);
+
+        // 3. Vincular cargo y procesar funciones si corresponde
+        List<Funcion> funcionesFinales = new ArrayList<>();
+        if (cargo != null) {
+            cargo.setDesignacion(savedDesignacion);
+            cargo.setEstado("Asignado");
+
+            if (request.getFunciones() != null && !request.getFunciones().isEmpty()) {
+                int totalHoras = 0;
+                for (FuncionItemRequest item : request.getFunciones()) {
+                    if (item != null && item.getHoras() != null) {
+                        totalHoras += item.getHoras();
+                    }
+                }
+                Integer dedicacionHoras = cargo.getDedicacion() != null
+                        ? cargo.getDedicacion().getDedicacionHoras()
+                        : null;
+                if (dedicacionHoras != null && totalHoras > dedicacionHoras) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "La suma de horas (" + totalHoras + ") supera la dedicación máxima del cargo ("
+                                    + dedicacionHoras + ")");
+                }
+
+                if (funcionRepository != null && cargo.getId() != null) {
+                    List<Funcion> prevFunciones = funcionRepository.findByCargoIdIn(List.of(cargo.getId()));
+                    if (prevFunciones != null && !prevFunciones.isEmpty()) {
+                        funcionRepository.deleteAll(prevFunciones);
+                    }
+                }
+
+                List<Funcion> nuevasFunciones = new ArrayList<>();
+                for (FuncionItemRequest item : request.getFunciones()) {
+                    if (item == null) {
+                        continue;
+                    }
+                    Materia materia = null;
+                    if (materiaRepository != null && item.getMateriaId() != null) {
+                        materia = materiaRepository.findById(Objects.requireNonNull(item.getMateriaId()))
+                                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                                        "La materia especificada no existe"));
+                    }
+                    Funcion f = new Funcion();
+                    f.setNombre(item.getNombre());
+                    f.setTipo(item.getTipo());
+                    f.setHoras(item.getHoras());
+                    f.setCargo(cargo);
+                    f.setMateria(materia);
+                    nuevasFunciones.add(f);
+                }
+
+                if (funcionRepository != null && !nuevasFunciones.isEmpty()) {
+                    funcionesFinales = funcionRepository.saveAll(nuevasFunciones);
+                } else {
+                    funcionesFinales = nuevasFunciones;
+                }
+                cargo.setHorasOcupadas(totalHoras);
+            } else if (funcionRepository != null && cargo.getId() != null) {
+                List<Funcion> existentes = funcionRepository.findByCargoIdIn(List.of(cargo.getId()));
+                if (existentes != null) {
+                    funcionesFinales = existentes;
+                }
+            }
+
+            cargoRepository.save(cargo);
+        }
+
+        docente.setEstado("Activo");
+        docente.setActivo(true);
+        docenteRepository.save(docente);
+
+        Integer documentoId = null;
+        if (designacionPdfService != null && archivoService != null && cargo != null
+                && savedDesignacion.getDesignacionId() != null) {
+            try {
+                byte[] pdfBytes = designacionPdfService.generarPdfDesignacion(
+                        savedDesignacion, cargo, docente, funcionesFinales);
+                String filename = "designacion-" + savedDesignacion.getDesignacionId() + ".pdf";
+                Archivo doc = archivoService.guardarBytes(
+                        pdfBytes,
+                        filename,
+                        "application/pdf",
+                        TIPO_TRAMITE_DESIGNACION,
+                        savedDesignacion.getDesignacionId());
+                if (doc != null) {
+                    documentoId = doc.getArchivoId();
+                }
+            } catch (IOException | RuntimeException e) {
+                // Non-blocking if PDF generation fails in environments without full storage/fonts
+            }
+        }
+
+        if (emailService != null && cargo != null) {
+            String email = docente.getEmailInstitucional() != null && !docente.getEmailInstitucional().isBlank()
+                    ? docente.getEmailInstitucional()
+                    : docente.getCorreo();
+            if (email != null && !email.isBlank()) {
+                try {
+                    emailService.sendDesignacionCompletaNotification(
+                            email,
+                            savedDesignacion.getDesignacionNumeroResolucion(),
+                            savedDesignacion.getDesignacionFechaInicio(),
+                            savedDesignacion.getDesignacionFechaFin(),
+                            cargo,
+                            funcionesFinales);
+                } catch (RuntimeException ignored) {
+                }
+            }
+        }
+
+        DesignacionResponseDTO responseDto = buildResponseDTO(savedDesignacion, docente, cargo);
+        responseDto.setDocumentoId(documentoId);
+        return responseDto;
+    }
+
     @Transactional(readOnly = true)
     public DesignacionResponseDTO obtenerPorId(Integer id) {
         if (id == null) {
@@ -222,10 +458,13 @@ public class DesignacionService {
     private DesignacionResponseDTO buildResponseDTO(Designacion designacion, Docente docente, Cargo cargo) {
         DesignacionResponseDTO dto = new DesignacionResponseDTO();
         dto.setId(designacion.getDesignacionId());
+        dto.setDesignacionId(designacion.getDesignacionId());
         dto.setNroResolucion(designacion.getDesignacionNumeroResolucion());
         dto.setFechaInicio(designacion.getDesignacionFechaInicio());
         dto.setFechaFin(designacion.getDesignacionFechaFin());
         dto.setEstado(designacion.getDesignacionEstadoActual());
+        dto.setDocenteId(docente != null ? docente.getId() : designacion.getUsuarioId());
+        dto.setCargoId(cargo != null ? cargo.getId() : null);
 
         if (docente != null) {
             DesignacionResponseDTO.DocenteResumenDTO docenteDto = new DesignacionResponseDTO.DocenteResumenDTO();
@@ -362,10 +601,10 @@ public class DesignacionService {
             }
 
             long diasRestantes = ChronoUnit.DAYS.between(hoy, d.getDesignacionFechaFin());
-            if (!incluirVencidasFlag && diasRestantes < 0) {
+            if (diasRestantes < 0 && !incluirVencidasFlag) {
                 continue;
             }
-            if (diasRestantes > UMBRAL_VENCIMIENTO_DIAS) {
+            if (fechaLimite != null && d.getDesignacionFechaFin().isAfter(fechaLimite)) {
                 continue;
             }
 

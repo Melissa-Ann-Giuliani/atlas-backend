@@ -27,10 +27,12 @@ public class DesignacionController {
             @RequestParam(required = false, defaultValue = "false") Boolean incluirVencidas,
             @RequestParam(required = false) Integer unidadId,
             @RequestParam(required = false) Integer dias,
+            @RequestParam(required = false, defaultValue = "false") Boolean sinLimite,
             Authentication authentication) {
         try {
+            Integer effectiveDias = Boolean.TRUE.equals(sinLimite) ? 0 : dias;
             List<DesignacionVencimientoDTO> dtos = designacionService.obtenerVencimientos(
-                    unidadId, incluirVencidas, dias, authentication.getName());
+                    unidadId, incluirVencidas, effectiveDias, authentication.getName());
             return ResponseEntity.ok(dtos);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
@@ -70,6 +72,26 @@ public class DesignacionController {
             Authentication authentication) {
         try {
             DesignacionResponseDTO dto = designacionService.registrarDesignacion(request, authentication.getName());
+            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
+        } catch (ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/redesignar")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD')")
+    public ResponseEntity<?> redesignar(
+            @PathVariable @NonNull Integer id,
+            @Valid @RequestBody DesignacionRedesignarRequest request,
+            Authentication authentication) {
+        try {
+            DesignacionResponseDTO dto = designacionService.redesignarDocente(id, request, authentication.getName());
             return ResponseEntity.status(HttpStatus.CREATED).body(dto);
         } catch (AccessDeniedException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));

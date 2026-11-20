@@ -69,11 +69,15 @@ classDiagram
     class DesignacionController {
         +redesignar(id: Integer, request: DesignacionRedesignarRequest): ResponseEntity
         +obtenerVencimientos(incluirVencidas: Boolean, unidadId: Integer, dias: Integer, sinLimite: Boolean): ResponseEntity
+        +redesignar(id: Integer, request: DesignacionRedesignarRequest, authentication: Authentication): ResponseEntity
+        +obtenerVencimientos(incluirVencidas: Boolean, unidadId: Integer, dias: Integer, sinLimite: Boolean, authentication: Authentication): ResponseEntity
     }
 
     class DesignacionService {
         +redesignarDocente(id: Integer, request: DesignacionRedesignarRequest, username: String): DesignacionResponseDTO
         +obtenerVencimientos(unidadId: Integer, incluirVencidas: Boolean, dias: Integer, sinLimite: Boolean, username: String): List~DesignacionVencimientoDTO~
+        +redesignarDocente(designacionOrigenId: Integer, request: DesignacionRedesignarRequest, username: String): DesignacionResponseDTO
+        +obtenerVencimientos(requestedUnidadId: Integer, incluirVencidas: Boolean, dias: Integer, username: String): List~DesignacionVencimientoDTO~
     }
 
     class DesignacionRedesignarRequest {
@@ -82,6 +86,18 @@ classDiagram
         +fechaFin: LocalDate
         +cargoId: Integer
         +funciones: List~FuncionItemRequest~
+    }
+
+    class DesignacionResponseDTO {
+        +id: Integer
+        +designacionId: Integer
+        +documentoId: Integer
+        +docenteId: Integer
+        +cargoId: Integer
+        +nroResolucion: String
+        +fechaInicio: LocalDate
+        +fechaFin: LocalDate
+        +estado: String
     }
 
     class Designacion {

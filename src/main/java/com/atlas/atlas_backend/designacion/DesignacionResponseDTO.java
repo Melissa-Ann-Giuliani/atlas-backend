@@ -8,6 +8,10 @@ import java.time.LocalDate;
 public class DesignacionResponseDTO {
 
     private Integer id;
+    private Integer designacionId;
+    private Integer documentoId;
+    private Integer docenteId;
+    private Integer cargoId;
     private String nroResolucion;
     private LocalDate fechaInicio;
     private LocalDate fechaFin;

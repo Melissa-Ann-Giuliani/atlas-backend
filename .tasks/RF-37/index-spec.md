@@ -25,6 +25,20 @@
 | `cargoId` | `Integer` | `Cargo.id` | Opcional. Si no viene, se conserva el cargo asociado previo. Debe pertenecer a la unidad del admin si es `ADMIN_UNIDAD`. |
 | `funciones` | `List<FuncionItemRequest>` | `List<Funcion>` | Opcional. Permite registrar las funciones del cargo para la nueva designación. |
 
+### Response: `201 Created` (`DesignacionResponseDTO` en `spec-01`)
+
+| Contract Parameter | Java Type | Domain Field | Descripción |
+| ------------------ | --------- | ------------ | ----------- |
+| `id` / `designacionId` | `Integer` | `Designacion.designacionId` | Identificador de la nueva designación creada. |
+| `documentoId` | `Integer` | `Archivo.archivoId` | ID del PDF oficial generado para la resolución (si aplica). |
+| `nroResolucion` | `String` | `Designacion.designacionNumeroResolucion` | Número de resolución de la nueva designación. |
+| `fechaInicio` | `LocalDate` | `Designacion.designacionFechaInicio` | Fecha de comienzo de la nueva designación. |
+| `fechaFin` | `LocalDate` | `Designacion.designacionFechaFin` | Fecha de finalización (opcional). |
+| `estado` | `String` | `Designacion.designacionEstadoActual` | Estado de la nueva designación (`"Activa"`). |
+| `docenteId` | `Integer` | `Docente.id` | ID del docente re-designado. |
+| `cargoId` | `Integer` | `Cargo.id` | ID del cargo vinculado. |
+| `docente` / `cargo` | `DocenteResumenDTO` / `CargoResumenDTO` | Objetos anidados | Resúmenes informativos del docente y cargo. |
+
 ### Query Parameters: `GET /api/designaciones/vencimientos` (`spec-02`)
 
 | Contract Parameter | Java Type | Default | Descripción |

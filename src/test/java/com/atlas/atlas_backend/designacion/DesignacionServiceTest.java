@@ -824,4 +824,125 @@ public class DesignacionServiceTest {
         assertFalse(resumen.getTieneVencimientosCriticos());
         assertEquals(0L, resumen.getTotalCriticos());
     }
+
+    // =========================================================================
+    // RF-37: Re-designación simple (spec-01)
+    // =========================================================================
+
+    @Test
+    void testRF37_Spec01_Scenario1_Redesignar_AdminUnidad_Success() {
+        Designacion designacionPrevia = new Designacion();
+        designacionPrevia.setDesignacionId(10);
+        designacionPrevia.setDesignacionNumeroResolucion("RES-2025-001");
+        designacionPrevia.setDesignacionFechaInicio(LocalDate.of(2025, 12, 1));
+        designacionPrevia.setDesignacionFechaFin(LocalDate.of(2026, 11, 30));
+        designacionPrevia.setDesignacionEstadoActual("Activa");
+        designacionPrevia.setUsuarioId(10);
+
+        testCargo.setDesignacion(designacionPrevia);
+        testCargo.setEstado("Asignado");
+
+        DesignacionRedesignarRequest req = new DesignacionRedesignarRequest();
+        req.setNroResolucion("RES-2026-100");
+        req.setFechaInicio(LocalDate.of(2026, 12, 1));
+        req.setFechaFin(LocalDate.of(2027, 11, 30));
+        req.setCargoId(25);
+
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(designacionRepository.findById(10)).thenReturn(Optional.of(designacionPrevia));
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(List.of(10))).thenReturn(List.of(testCargo));
+        when(cargoRepository.findById(25)).thenReturn(Optional.of(testCargo));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
+        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "RES-2026-100")).thenReturn(false);
+        when(designacionRepository.save(anyDesignacion())).thenAnswer(inv -> {
+            Designacion d = inv.getArgument(0);
+            if (d.getDesignacionId() == null) {
+                d.setDesignacionId(185);
+            }
+            return d;
+        });
+
+        DesignacionResponseDTO res = designacionService.redesignarDocente(10, req, "admin_unidad");
+
+        assertNotNull(res);
+        assertEquals(185, res.getDesignacionId());
+        assertEquals("RES-2026-100", res.getNroResolucion());
+        assertEquals("Activa", res.getEstado());
+        assertEquals("Renovada", designacionPrevia.getDesignacionEstadoActual());
+        assertEquals(185, testCargo.getDesignacion().getDesignacionId());
+    }
+
+    @Test
+    void testRF37_Spec01_Scenario2_Redesignar_AdminUnidad_OtherUnit_ThrowsAccessDenied() {
+        Unidad otraUnidad = new Unidad();
+        otraUnidad.setUnidadId(99);
+        otraUnidad.setUnidadNombre("Facultad de Medicina");
+        testCargo.setUnidad(otraUnidad);
+
+        Designacion designacionPrevia = new Designacion();
+        designacionPrevia.setDesignacionId(20);
+        designacionPrevia.setDesignacionEstadoActual("Activa");
+        designacionPrevia.setUsuarioId(10);
+
+        DesignacionRedesignarRequest req = new DesignacionRedesignarRequest();
+        req.setNroResolucion("RES-2026-100");
+        req.setFechaInicio(LocalDate.of(2026, 12, 1));
+
+        when(usuarioRepository.findByUsername("admin_unidad")).thenReturn(Optional.of(adminUnidadUser));
+        when(designacionRepository.findById(20)).thenReturn(Optional.of(designacionPrevia));
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(List.of(20))).thenReturn(List.of(testCargo));
+        when(adminUnidadRepository.findById(2)).thenReturn(Optional.of(adminUnidad));
+
+        AccessDeniedException ex = assertThrows(AccessDeniedException.class,
+                () -> designacionService.redesignarDocente(20, req, "admin_unidad"));
+
+        assertEquals("No tiene permisos para re-designar cargos de otra unidad", ex.getMessage());
+    }
+
+    @Test
+    void testRF37_Spec01_Scenario3_Redesignar_DuplicateResolucion_Throws400() {
+        Designacion designacionPrevia = new Designacion();
+        designacionPrevia.setDesignacionId(10);
+        designacionPrevia.setDesignacionEstadoActual("Activa");
+        designacionPrevia.setUsuarioId(10);
+
+        DesignacionRedesignarRequest req = new DesignacionRedesignarRequest();
+        req.setNroResolucion("RES-2024-500");
+        req.setFechaInicio(LocalDate.of(2026, 12, 1));
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(designacionRepository.findById(10)).thenReturn(Optional.of(designacionPrevia));
+        when(docenteRepository.findById(10)).thenReturn(Optional.of(testDocente));
+        when(cargoRepository.findByDesignacionDesignacionIdIn(List.of(10))).thenReturn(List.of(testCargo));
+        when(designacionRepository.existsByUsuarioIdAndDesignacionNumeroResolucion(10, "RES-2024-500")).thenReturn(true);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> designacionService.redesignarDocente(10, req, "admin_global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertEquals("El docente ya posee una designación registrada con el número de resolución indicado", ex.getReason());
+    }
+
+    @Test
+    void testRF37_Spec01_Scenario4_Redesignar_DesignacionNoActiva_Throws400() {
+        Designacion designacionPrevia = new Designacion();
+        designacionPrevia.setDesignacionId(10);
+        designacionPrevia.setDesignacionEstadoActual("Renovada");
+        designacionPrevia.setUsuarioId(10);
+
+        DesignacionRedesignarRequest req = new DesignacionRedesignarRequest();
+        req.setNroResolucion("RES-2026-200");
+        req.setFechaInicio(LocalDate.of(2026, 12, 1));
+
+        when(usuarioRepository.findByUsername("admin_global")).thenReturn(Optional.of(adminGlobalUser));
+        when(designacionRepository.findById(10)).thenReturn(Optional.of(designacionPrevia));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> designacionService.redesignarDocente(10, req, "admin_global"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertEquals("Solo se pueden re-designar designaciones en estado Activa", ex.getReason());
+    }
 }

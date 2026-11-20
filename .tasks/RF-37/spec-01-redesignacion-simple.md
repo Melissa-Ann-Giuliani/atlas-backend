@@ -25,6 +25,7 @@ Donde `{id}` corresponde al `designacionId` de la designación por vencer que se
 
 #### Authorization:
 - `hasRole('ADMIN_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD')`
+- `hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD')`
 - Validación de Unidad: Si es `ADMIN_UNIDAD`, todos los cargos de la designación a renovar deben pertenecer a la unidad del administrador autenticado.
 
 #### Request Headers:
@@ -59,9 +60,12 @@ Donde `{id}` corresponde al `designacionId` de la designación por vencer que se
 #### Responses:
 
 - **`201 Created`**: Retorna el DTO de la nueva designación generada.
+- **`201 Created`**: Retorna el DTO (`DesignacionResponseDTO`) de la nueva designación generada, incluyendo `documentoId` (si se generó el PDF oficial de la resolución) y los resúmenes de docente y cargo.
 ```json
 {
+  "id": 185,
   "designacionId": 185,
+  "documentoId": 42,
   "nroResolucion": "RES-2026-890",
   "fechaInicio": "2026-12-01",
   "fechaFin": "2027-11-30",
