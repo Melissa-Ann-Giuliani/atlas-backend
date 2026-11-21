@@ -1,5 +1,6 @@
 package com.atlas.atlas_backend.cargo;
 
+import com.atlas.atlas_backend.archivo.ArchivoAdjuntoDTO;
 import com.atlas.atlas_backend.usuario.Usuario;
 import com.atlas.atlas_backend.usuario.UsuarioRepository;
 import com.atlas.atlas_backend.usuario.AdminUnidad;
@@ -228,11 +229,11 @@ public class CargoService {
         dto.setSubcargosActivos(subcargos);
         dto.setCargosSubdivididos(cargosSubdivididos);
 
-        List<String> docs = new ArrayList<>();
+        List<ArchivoAdjuntoDTO> docs = new ArrayList<>();
         if (cargo.getDesignacion() != null && cargo.getDesignacion().getDesignacionId() != null) {
             Integer desigId = cargo.getDesignacion().getDesignacionId();
             archivoRepository.findByTipoTramiteAndTramiteId("DESIGNACION", desigId)
-                    .forEach(a -> docs.add("/api/archivos/tramite/DESIGNACION/" + desigId));
+                    .forEach(a -> docs.add(ArchivoAdjuntoDTO.fromArchivo(a)));
         }
         dto.setDocumentacionAdjunta(docs);
 
@@ -326,11 +327,11 @@ public class CargoService {
         dto.setActividadesVinculadas(new ArrayList<>());
         dto.setSubcargosActivos(new ArrayList<>());
         dto.setCargosSubdivididos(new ArrayList<>());
-        List<String> docs = new ArrayList<>();
+        List<ArchivoAdjuntoDTO> docs = new ArrayList<>();
         if (savedCargo.getDesignacion() != null && savedCargo.getDesignacion().getDesignacionId() != null) {
             Integer desigId = savedCargo.getDesignacion().getDesignacionId();
             archivoRepository.findByTipoTramiteAndTramiteId("DESIGNACION", desigId)
-                    .forEach(a -> docs.add("/api/archivos/tramite/DESIGNACION/" + desigId));
+                    .forEach(a -> docs.add(ArchivoAdjuntoDTO.fromArchivo(a)));
         }
         dto.setDocumentacionAdjunta(docs);
 
@@ -441,11 +442,11 @@ public class CargoService {
         dto.setActividadesVinculadas(new ArrayList<>());
         dto.setSubcargosActivos(new ArrayList<>());
         dto.setCargosSubdivididos(new ArrayList<>());
-        List<String> docs = new ArrayList<>();
+        List<ArchivoAdjuntoDTO> docs = new ArrayList<>();
         if (savedCargo.getDesignacion() != null && savedCargo.getDesignacion().getDesignacionId() != null) {
             Integer desigId = savedCargo.getDesignacion().getDesignacionId();
             archivoRepository.findByTipoTramiteAndTramiteId("DESIGNACION", desigId)
-                    .forEach(a -> docs.add("/api/archivos/tramite/DESIGNACION/" + desigId));
+                    .forEach(a -> docs.add(ArchivoAdjuntoDTO.fromArchivo(a)));
         }
         dto.setDocumentacionAdjunta(docs);
 

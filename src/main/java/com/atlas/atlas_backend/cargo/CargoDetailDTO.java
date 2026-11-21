@@ -1,5 +1,6 @@
 package com.atlas.atlas_backend.cargo;
 
+import com.atlas.atlas_backend.archivo.ArchivoAdjuntoDTO;
 import lombok.Data;
 import java.time.LocalDate;
 import java.util.List;
@@ -46,7 +47,7 @@ public class CargoDetailDTO {
     private List<SubcargoData> cargosSubdivididos;
 
     // Attached Documentation
-    private List<String> documentacionAdjunta;
+    private List<ArchivoAdjuntoDTO> documentacionAdjunta;
 
     @Data
     public static class ActividadData {

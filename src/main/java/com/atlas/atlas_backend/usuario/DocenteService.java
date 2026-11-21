@@ -1,5 +1,6 @@
 package com.atlas.atlas_backend.usuario;
 
+import com.atlas.atlas_backend.archivo.ArchivoAdjuntoDTO;
 import com.atlas.atlas_backend.notification.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -293,11 +294,11 @@ public class DocenteService {
         dto.setActividadesActuales(actividadDataList);
         dto.setLicenciasActuales(licenciaDataList);
 
-        List<String> docs = new java.util.ArrayList<>();
+        List<ArchivoAdjuntoDTO> docs = new java.util.ArrayList<>();
         for (Integer desigId : designacionIds) {
             if (desigId != null) {
                 archivoRepository.findByTipoTramiteAndTramiteId("DESIGNACION", desigId)
-                        .forEach(a -> docs.add("/api/archivos/tramite/DESIGNACION/" + desigId));
+                        .forEach(a -> docs.add(ArchivoAdjuntoDTO.fromArchivo(a)));
             }
         }
         dto.setDocumentacionAdjunta(docs);

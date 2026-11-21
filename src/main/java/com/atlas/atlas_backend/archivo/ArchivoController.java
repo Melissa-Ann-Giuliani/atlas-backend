@@ -15,7 +15,6 @@ import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/archivos")
-@CrossOrigin(origins = "*")
 public class ArchivoController {
 
     private final ArchivoService archivoService;

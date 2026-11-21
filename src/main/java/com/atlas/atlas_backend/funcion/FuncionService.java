@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -30,16 +29,12 @@ import java.util.Optional;
 @Service
 public class FuncionService {
 
-    private static final String TIPO_TRAMITE_DESIGNACION = "DESIGNACION";
-
     private final FuncionRepository funcionRepository;
     private final CargoRepository cargoRepository;
     private final MateriaRepository materiaRepository;
     private final UsuarioRepository usuarioRepository;
     private final AdminUnidadRepository adminUnidadRepository;
     private final DocenteRepository docenteRepository;
-    private final ArchivoService archivoService;
-    private final DesignacionPdfService designacionPdfService;
     private final EmailService emailService;
 
     public FuncionService(
@@ -58,13 +53,12 @@ public class FuncionService {
         this.usuarioRepository = usuarioRepository;
         this.adminUnidadRepository = adminUnidadRepository;
         this.docenteRepository = docenteRepository;
-        this.archivoService = archivoService;
-        this.designacionPdfService = designacionPdfService;
         this.emailService = emailService;
     }
 
     /**
-     * Assigns functions to a designated cargo, updates occupied hours, generates the official PDF,
+     * Assigns functions to a designated cargo, updates occupied hours, generates
+     * the official PDF,
      * activates the docente, and sends a confirmation email.
      */
     @Transactional
@@ -102,11 +96,9 @@ public class FuncionService {
 
         Docente docente = activarDocente(designacion);
 
-        Archivo documento = generarYGuardarPdf(designacion, cargo, docente, funcionesGuardadas);
-
         boolean notificacionEnviada = enviarNotificacion(docente, designacion, cargo, funcionesGuardadas);
 
-        return construirResponseDTO(cargo, designacion, funcionesGuardadas, documento, docente, notificacionEnviada);
+        return construirResponseDTO(cargo, designacion, funcionesGuardadas, null, docente, notificacionEnviada);
     }
 
     private void validarAlcanceUnidad(Usuario usuario, Cargo cargo) {
@@ -201,23 +193,6 @@ public class FuncionService {
         return null;
     }
 
-    private Archivo generarYGuardarPdf(Designacion designacion, Cargo cargo, Docente docente,
-            List<Funcion> funciones) {
-        byte[] pdfBytes = designacionPdfService.generarPdfDesignacion(designacion, cargo, docente, funciones);
-        String filename = "designacion-" + designacion.getDesignacionId() + ".pdf";
-        try {
-            return archivoService.guardarBytes(
-                    pdfBytes,
-                    filename,
-                    "application/pdf",
-                    TIPO_TRAMITE_DESIGNACION,
-                    designacion.getDesignacionId());
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "No se pudo almacenar el documento PDF de la designación", e);
-        }
-    }
-
     private boolean enviarNotificacion(Docente docente, Designacion designacion, Cargo cargo,
             List<Funcion> funciones) {
         String email = resolveDocenteEmail(docente);
@@ -273,8 +248,7 @@ public class FuncionService {
             fDto.setHoras(funcion.getHoras());
 
             if (funcion.getMateria() != null) {
-                DesignacionCompletaResponseDTO.MateriaResumenDTO mDto =
-                        new DesignacionCompletaResponseDTO.MateriaResumenDTO();
+                DesignacionCompletaResponseDTO.MateriaResumenDTO mDto = new DesignacionCompletaResponseDTO.MateriaResumenDTO();
                 mDto.setId(funcion.getMateria().getId());
                 mDto.setNombre(funcion.getMateria().getNombre());
                 fDto.setMateria(mDto);
