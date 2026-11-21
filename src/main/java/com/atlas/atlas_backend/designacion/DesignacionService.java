@@ -1,7 +1,5 @@
 package com.atlas.atlas_backend.designacion;
 
-import com.atlas.atlas_backend.archivo.Archivo;
-import com.atlas.atlas_backend.archivo.ArchivoService;
 import com.atlas.atlas_backend.cargo.Cargo;
 import com.atlas.atlas_backend.cargo.CargoRepository;
 import com.atlas.atlas_backend.funcion.Funcion;
@@ -25,7 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -41,7 +38,6 @@ public class DesignacionService {
 
     public static final int UMBRAL_VENCIMIENTO_DIAS = 30;
     public static final int UMBRAL_CRITICO_DIAS = 7;
-    private static final String TIPO_TRAMITE_DESIGNACION = "DESIGNACION";
 
     @Autowired
     private DesignacionRepository designacionRepository;
@@ -66,12 +62,6 @@ public class DesignacionService {
 
     @Autowired(required = false)
     private MateriaRepository materiaRepository;
-
-    @Autowired(required = false)
-    private ArchivoService archivoService;
-
-    @Autowired(required = false)
-    private DesignacionPdfService designacionPdfService;
 
     @Autowired(required = false)
     private EmailService emailService;
@@ -385,25 +375,6 @@ public class DesignacionService {
         docenteRepository.save(docente);
 
         Integer documentoId = null;
-        if (designacionPdfService != null && archivoService != null && cargo != null
-                && savedDesignacion.getDesignacionId() != null) {
-            try {
-                byte[] pdfBytes = designacionPdfService.generarPdfDesignacion(
-                        savedDesignacion, cargo, docente, funcionesFinales);
-                String filename = "designacion-" + savedDesignacion.getDesignacionId() + ".pdf";
-                Archivo doc = archivoService.guardarBytes(
-                        pdfBytes,
-                        filename,
-                        "application/pdf",
-                        TIPO_TRAMITE_DESIGNACION,
-                        savedDesignacion.getDesignacionId());
-                if (doc != null) {
-                    documentoId = doc.getArchivoId();
-                }
-            } catch (IOException | RuntimeException e) {
-                // Non-blocking if PDF generation fails in environments without full storage/fonts
-            }
-        }
 
         if (emailService != null && cargo != null) {
             String email = docente.getEmailInstitucional() != null && !docente.getEmailInstitucional().isBlank()
