@@ -398,7 +398,7 @@ public class DesignacionControllerTest {
                                 .build()))
                 .build();
 
-        when(designacionService.obtenerVencimientos(null, false, "admin_global"))
+        when(designacionService.obtenerVencimientos(null, false, null, "admin_global"))
                 .thenReturn(java.util.List.of(item));
 
         mockMvc.perform(get("/api/designaciones/vencimientos")
@@ -418,7 +418,7 @@ public class DesignacionControllerTest {
     @Test
     @WithMockUser(username = "admin_unidad", roles = { "ADMIN_UNIDAD" })
     void testRF36_GetVencimientos_AdminUnidad_OtherUnit_Returns403() throws Exception {
-        when(designacionService.obtenerVencimientos(3, false, "admin_unidad"))
+        when(designacionService.obtenerVencimientos(3, false, null, "admin_unidad"))
                 .thenThrow(new AccessDeniedException("No tiene permisos para consultar designaciones de otra unidad"));
 
         mockMvc.perform(get("/api/designaciones/vencimientos?unidadId=3")
@@ -449,6 +449,79 @@ public class DesignacionControllerTest {
                 .andExpect(jsonPath("$.umbralDias").value(30))
                 .andExpect(jsonPath("$.tieneVencimientosCriticos").value(true))
                 .andExpect(jsonPath("$.totalCriticos").value(2));
+    }
+
+    // =========================================================================
+    // RF-37: Endpoint POST /api/designaciones/{id}/redesignar
+    // =========================================================================
+
+    @Test
+    @WithMockUser(username = "admin_unidad", roles = { "ADMIN_UNIDAD" })
+    void testRF37_Redesignar_Success_AdminUnidad_Returns201() throws Exception {
+        DesignacionRedesignarRequest req = new DesignacionRedesignarRequest();
+        req.setNroResolucion("RES-2026-890");
+        req.setFechaInicio(LocalDate.of(2026, 12, 1));
+        req.setFechaFin(LocalDate.of(2027, 11, 30));
+        req.setCargoId(12);
+
+        DesignacionResponseDTO resDto = new DesignacionResponseDTO();
+        resDto.setId(185);
+        resDto.setDesignacionId(185);
+        resDto.setNroResolucion("RES-2026-890");
+        resDto.setFechaInicio(LocalDate.of(2026, 12, 1));
+        resDto.setFechaFin(LocalDate.of(2027, 11, 30));
+        resDto.setEstado("Activa");
+        resDto.setDocenteId(45);
+        resDto.setCargoId(12);
+
+        when(designacionService.redesignarDocente(eq(10), any(DesignacionRedesignarRequest.class), eq("admin_unidad")))
+                .thenReturn(resDto);
+
+        mockMvc.perform(post("/api/designaciones/10/redesignar")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.designacionId").value(185))
+                .andExpect(jsonPath("$.nroResolucion").value("RES-2026-890"))
+                .andExpect(jsonPath("$.estado").value("Activa"))
+                .andExpect(jsonPath("$.docenteId").value(45))
+                .andExpect(jsonPath("$.cargoId").value(12));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_unidad", roles = { "ADMIN_UNIDAD" })
+    void testRF37_Redesignar_AdminUnidad_OtherUnit_Returns403() throws Exception {
+        DesignacionRedesignarRequest req = new DesignacionRedesignarRequest();
+        req.setNroResolucion("RES-2026-890");
+        req.setFechaInicio(LocalDate.of(2026, 12, 1));
+
+        when(designacionService.redesignarDocente(eq(20), any(DesignacionRedesignarRequest.class), eq("admin_unidad")))
+                .thenThrow(new AccessDeniedException("No tiene permisos para re-designar cargos de otra unidad"));
+
+        mockMvc.perform(post("/api/designaciones/20/redesignar")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("No tiene permisos para re-designar cargos de otra unidad"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_global", roles = { "ADMIN_GLOBAL" })
+    void testRF37_Redesignar_DuplicateResolucion_Returns400() throws Exception {
+        DesignacionRedesignarRequest req = new DesignacionRedesignarRequest();
+        req.setNroResolucion("RES-2024-500");
+        req.setFechaInicio(LocalDate.of(2026, 12, 1));
+
+        when(designacionService.redesignarDocente(eq(10), any(DesignacionRedesignarRequest.class), eq("admin_global")))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "El docente ya posee una designación registrada con el número de resolución indicado"));
+
+        mockMvc.perform(post("/api/designaciones/10/redesignar")
+                .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                .content(Objects.requireNonNull(objectMapper.writeValueAsString(req))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("El docente ya posee una designación registrada con el número de resolución indicado"));
     }
 }
 

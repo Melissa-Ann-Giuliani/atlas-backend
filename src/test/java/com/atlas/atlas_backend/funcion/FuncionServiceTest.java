@@ -1,6 +1,5 @@
 package com.atlas.atlas_backend.funcion;
 
-import com.atlas.atlas_backend.archivo.Archivo;
 import com.atlas.atlas_backend.archivo.ArchivoService;
 import com.atlas.atlas_backend.caracter.Caracter;
 import com.atlas.atlas_backend.cargo.Cargo;
@@ -295,13 +294,6 @@ public class FuncionServiceTest {
         });
         when(docenteRepository.findById(30)).thenReturn(Optional.of(docente));
         when(docenteRepository.save(anyDocente())).thenAnswer(inv -> inv.getArgument(0));
-        when(designacionPdfService.generarPdfDesignacion(any(), any(), any(), anyList()))
-                .thenReturn(new byte[] { 1, 2, 3 });
-
-        Archivo archivo = new Archivo();
-        archivo.setArchivoId(402);
-        when(archivoService.guardarBytes(any(), eq("designacion-55.pdf"), eq("application/pdf"),
-                eq("DESIGNACION"), eq(55))).thenReturn(archivo);
 
         AsignarFuncionesCargoRequest req = buildRequest(
                 buildItem("Docencia Frente a Curso", "Planta", 15, 3),
@@ -315,7 +307,7 @@ public class FuncionServiceTest {
         assertEquals(25, cargoAsignado.getHorasOcupadas());
         assertEquals("Activo", response.getDocenteEstado());
         assertTrue(docente.getActivo());
-        assertEquals(402, response.getDocumentoId());
+        assertNull(response.getDocumentoId());
         assertTrue(response.getNotificacionEnviada());
         assertEquals(2, response.getFunciones().size());
         assertEquals("Extensión", response.getFunciones().get(1).getTipo());
@@ -345,13 +337,6 @@ public class FuncionServiceTest {
         });
         when(docenteRepository.findById(30)).thenReturn(Optional.of(docente));
         when(docenteRepository.save(anyDocente())).thenAnswer(inv -> inv.getArgument(0));
-        when(designacionPdfService.generarPdfDesignacion(any(), any(), any(), anyList()))
-                .thenReturn(new byte[] { 10, 20, 30 });
-
-        Archivo archivo = new Archivo();
-        archivo.setArchivoId(500);
-        when(archivoService.guardarBytes(any(), eq("designacion-55.pdf"), eq("application/pdf"),
-                eq("DESIGNACION"), eq(55))).thenReturn(archivo);
 
         AsignarFuncionesCargoRequest req = buildRequest(
                 buildItem("Docencia Frente a Curso", "Planta", 10, 3),
@@ -362,7 +347,7 @@ public class FuncionServiceTest {
         assertEquals(20, response.getHorasOcupadas());
         assertEquals(20, response.getHorasDedicacion());
         assertEquals(55, response.getDesignacionId());
-        assertEquals(500, response.getDocumentoId());
+        assertNull(response.getDocumentoId());
         assertEquals("Activo", response.getDocenteEstado());
         assertTrue(response.getNotificacionEnviada());
     }
@@ -382,4 +367,3 @@ public class FuncionServiceTest {
         return item;
     }
 }
-
