@@ -1,5 +1,6 @@
 package com.atlas.atlas_backend.usuario;
 
+import com.atlas.atlas_backend.archivo.ArchivoAdjuntoDTO;
 import lombok.Data;
 import java.time.LocalDate;
 import java.util.List;
@@ -11,7 +12,7 @@ public class DocenteDetailsDTO {
     private List<DesignacionData> designacionesYCargos;
     private List<ActividadData> actividadesActuales;
     private List<LicenciaData> licenciasActuales;
-    private List<String> documentacionAdjunta;
+    private List<ArchivoAdjuntoDTO> documentacionAdjunta;
 
     @Data
     public static class PersonalData {

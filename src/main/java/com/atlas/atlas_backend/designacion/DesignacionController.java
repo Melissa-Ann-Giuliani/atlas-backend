@@ -30,7 +30,7 @@ public class DesignacionController {
             @RequestParam(required = false, defaultValue = "false") Boolean sinLimite,
             Authentication authentication) {
         try {
-            Integer effectiveDias = Boolean.TRUE.equals(sinLimite) ? 0 : dias;
+            Integer effectiveDias = Boolean.TRUE.equals(sinLimite) ? Integer.valueOf(0) : dias;
             List<DesignacionVencimientoDTO> dtos = designacionService.obtenerVencimientos(
                     unidadId, incluirVencidas, effectiveDias, authentication.getName());
             return ResponseEntity.ok(dtos);
