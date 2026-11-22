@@ -160,12 +160,19 @@ CREATE TABLE IF NOT EXISTS public.cambios
     cambio_id serial NOT NULL,
     cambio_tabla_afectada character varying(50) NOT NULL,
     cambio_campo_afectado character varying(50) NOT NULL,
-    cambio_valor_anterior character varying(100) NOT NULL,
-    cambio_valor_nuevo character varying(100) NOT NULL,
-    cambio_fecha_hora date NOT NULL,
+    cambio_valor_anterior character varying(255),
+    cambio_valor_nuevo character varying(255),
+    cambio_fecha_hora timestamp NOT NULL,
+    cambio_tipo_operacion character varying(20) NOT NULL DEFAULT 'MODIFICACION',
     usuario_id integer NOT NULL,
+    usuario_afectado_id integer,
+    unidad_id integer,
     PRIMARY KEY (cambio_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_cambios_fecha_hora ON public.cambios (cambio_fecha_hora DESC);
+CREATE INDEX IF NOT EXISTS idx_cambios_unidad_id ON public.cambios (unidad_id);
+CREATE INDEX IF NOT EXISTS idx_cambios_usuario_afectado_id ON public.cambios (usuario_afectado_id);
 
 CREATE TABLE IF NOT EXISTS public.licencias
 (
@@ -454,6 +461,20 @@ ALTER TABLE IF EXISTS public.cambios
     REFERENCES public.usuarios (usuario_id) MATCH SIMPLE
     ON UPDATE RESTRICT
     ON DELETE RESTRICT
+    NOT VALID;
+
+ALTER TABLE IF EXISTS public.cambios
+    ADD CONSTRAINT fk_cambios_usuario_afectado FOREIGN KEY (usuario_afectado_id)
+    REFERENCES public.usuarios (usuario_id) MATCH SIMPLE
+    ON UPDATE RESTRICT
+    ON DELETE SET NULL
+    NOT VALID;
+
+ALTER TABLE IF EXISTS public.cambios
+    ADD CONSTRAINT fk_cambios_unidades FOREIGN KEY (unidad_id)
+    REFERENCES public.unidades (unidad_id) MATCH SIMPLE
+    ON UPDATE RESTRICT
+    ON DELETE SET NULL
     NOT VALID;
 
 
