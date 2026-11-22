@@ -1,6 +1,7 @@
 package com.atlas.atlas_backend.usuario;
 
 import com.atlas.atlas_backend.cambio.CambioService;
+import com.atlas.atlas_backend.cambio.TipoOperacion;
 import com.atlas.atlas_backend.notification.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -65,6 +66,10 @@ public class AdminGlobalService {
         adminGlobal.setRol(adminGlobalRol);
 
         AdminGlobal savedUser = adminGlobalRepository.save(adminGlobal);
+        if (cambioService != null) {
+            cambioService.registrarCambio("admin_globales", "registro", null, savedUser.getUsername(),
+                    TipoOperacion.ALTA, null, savedUser, null);
+        }
 
         try {
             emailService.sendWelcomeAdminGlobal(savedUser.getCorreo(), provisionalPassword);
@@ -102,11 +107,11 @@ public class AdminGlobalService {
         }
 
         // Auditar diferencias en cambios
-        cambioService.registrarCambio("admin_globales", "username", adminGlobal.getUsername(), nuevoUsername, usuarioResponsable);
-        cambioService.registrarCambio("admin_globales", "nombre", adminGlobal.getNombre(), request.getNombre(), usuarioResponsable);
-        cambioService.registrarCambio("admin_globales", "apellido", adminGlobal.getApellido(), request.getApellido(), usuarioResponsable);
-        cambioService.registrarCambio("admin_globales", "correo", adminGlobal.getCorreo(), nuevoCorreo, usuarioResponsable);
-        cambioService.registrarCambio("admin_globales", "cargo_ag_nombre", adminGlobal.getCargoNombre(), request.getCargoNombre(), usuarioResponsable);
+        cambioService.registrarCambio("admin_globales", "username", adminGlobal.getUsername(), nuevoUsername, TipoOperacion.MODIFICACION, usuarioResponsable, adminGlobal, null);
+        cambioService.registrarCambio("admin_globales", "nombre", adminGlobal.getNombre(), request.getNombre(), TipoOperacion.MODIFICACION, usuarioResponsable, adminGlobal, null);
+        cambioService.registrarCambio("admin_globales", "apellido", adminGlobal.getApellido(), request.getApellido(), TipoOperacion.MODIFICACION, usuarioResponsable, adminGlobal, null);
+        cambioService.registrarCambio("admin_globales", "correo", adminGlobal.getCorreo(), nuevoCorreo, TipoOperacion.MODIFICACION, usuarioResponsable, adminGlobal, null);
+        cambioService.registrarCambio("admin_globales", "cargo_ag_nombre", adminGlobal.getCargoNombre(), request.getCargoNombre(), TipoOperacion.MODIFICACION, usuarioResponsable, adminGlobal, null);
 
         // Aplicar cambios
         adminGlobal.setUsername(nuevoUsername);

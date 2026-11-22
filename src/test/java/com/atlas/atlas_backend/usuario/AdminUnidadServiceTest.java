@@ -214,12 +214,18 @@ public class AdminUnidadServiceTest {
         assertEquals(CargoAdminUnidad.VICEDIRECTOR, result.getCargoNombre());
         assertEquals(2, result.getUnidad().getUnidadId());
 
-        verify(cambioService).registrarCambio("admin_de_unidad", "username", "old_user", "new_user", authUser);
-        verify(cambioService).registrarCambio("admin_de_unidad", "nombre", "Maria", "Maria Ana", authUser);
-        verify(cambioService).registrarCambio("admin_de_unidad", "apellido", "Gomez", "Gomez Lopez", authUser);
-        verify(cambioService).registrarCambio("admin_de_unidad", "correo", "maria.gomez@unc.edu.ar", "maria.new@unc.edu.ar", authUser);
-        verify(cambioService).registrarCambio("admin_de_unidad", "cargo_ad_nombre", CargoAdminUnidad.DIRECTOR, CargoAdminUnidad.VICEDIRECTOR, authUser);
-        verify(cambioService).registrarCambio("admin_de_unidad", "unidad_id", 1, 2, authUser);
+        verify(cambioService).registrarCambio("admin_de_unidad", "username", "old_user", "new_user",
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, authUser, existing, newUnidad);
+        verify(cambioService).registrarCambio("admin_de_unidad", "nombre", "Maria", "Maria Ana",
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, authUser, existing, newUnidad);
+        verify(cambioService).registrarCambio("admin_de_unidad", "apellido", "Gomez", "Gomez Lopez",
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, authUser, existing, newUnidad);
+        verify(cambioService).registrarCambio("admin_de_unidad", "correo", "maria.gomez@unc.edu.ar", "maria.new@unc.edu.ar",
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, authUser, existing, newUnidad);
+        verify(cambioService).registrarCambio("admin_de_unidad", "cargo_ad_nombre", CargoAdminUnidad.DIRECTOR, CargoAdminUnidad.VICEDIRECTOR,
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, authUser, existing, newUnidad);
+        verify(cambioService).registrarCambio("admin_de_unidad", "unidad_id", 1, 2,
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, authUser, existing, newUnidad);
         verify(adminUnidadRepository).save(existing);
     }
 
