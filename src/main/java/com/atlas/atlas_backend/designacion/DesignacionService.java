@@ -1,5 +1,7 @@
 package com.atlas.atlas_backend.designacion;
 
+import com.atlas.atlas_backend.cambio.CambioService;
+import com.atlas.atlas_backend.cambio.TipoOperacion;
 import com.atlas.atlas_backend.cargo.Cargo;
 import com.atlas.atlas_backend.cargo.CargoRepository;
 import com.atlas.atlas_backend.funcion.Funcion;
@@ -65,6 +67,9 @@ public class DesignacionService {
 
     @Autowired(required = false)
     private EmailService emailService;
+
+    @Autowired(required = false)
+    private CambioService cambioService;
 
     @Transactional
     public DesignacionResponseDTO registrarDesignacion(DesignacionCreateRequest request, String username) {
@@ -138,6 +143,12 @@ public class DesignacionService {
             docenteRepository.save(docente);
         }
 
+        if (cambioService != null) {
+            cambioService.registrarCambio("designaciones", "registro", null,
+                    savedDesignacion.getDesignacionNumeroResolucion(),
+                    TipoOperacion.ALTA, usuario, docente, cargo != null ? cargo.getUnidad() : null);
+        }
+
         // El envío de notificación por correo electrónico queda diferido a RF-11
         // (Decisión R1)
 
@@ -202,6 +213,11 @@ public class DesignacionService {
         Docente docente = null;
         if (designacion.getUsuarioId() != null) {
             docente = docenteRepository.findById(Objects.requireNonNull(designacion.getUsuarioId())).orElse(null);
+        }
+
+        if (cambioService != null) {
+            cambioService.registrarCambio("designaciones", "cargo", null, String.valueOf(cargo.getCodigo()),
+                    TipoOperacion.MODIFICACION, usuario, docente, cargo.getUnidad());
         }
 
         return buildResponseDTO(designacion, docente, cargo);
@@ -292,6 +308,7 @@ public class DesignacionService {
         }
 
         // 1. Marcar la designación previa como "Renovada"
+        String estadoAnteriorOrigen = designacionOrigen.getDesignacionEstadoActual();
         designacionOrigen.setDesignacionEstadoActual("Renovada");
         designacionRepository.save(designacionOrigen);
 
@@ -304,6 +321,15 @@ public class DesignacionService {
         nuevaDesignacion.setDesignacionEstadoActual("Activa");
 
         Designacion savedDesignacion = designacionRepository.save(nuevaDesignacion);
+
+        if (cambioService != null) {
+            Unidad unidadDesig = cargo != null ? cargo.getUnidad() : null;
+            cambioService.registrarCambio("designaciones", "designacionEstadoActual", estadoAnteriorOrigen, "Renovada",
+                    TipoOperacion.MODIFICACION, usuario, docente, unidadDesig);
+            cambioService.registrarCambio("designaciones", "redesignacion", null,
+                    savedDesignacion.getDesignacionNumeroResolucion(),
+                    TipoOperacion.ALTA, usuario, docente, unidadDesig);
+        }
 
         // 3. Vincular cargo y procesar funciones si corresponde
         List<Funcion> funcionesFinales = new ArrayList<>();

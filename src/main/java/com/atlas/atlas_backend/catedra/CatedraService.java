@@ -1,5 +1,7 @@
 package com.atlas.atlas_backend.catedra;
 
+import com.atlas.atlas_backend.cambio.CambioService;
+import com.atlas.atlas_backend.cambio.TipoOperacion;
 import com.atlas.atlas_backend.catedra.dto.CatedraRequestDTO;
 import com.atlas.atlas_backend.catedra.dto.CatedraResponseDTO;
 import com.atlas.atlas_backend.catedra.dto.CatedraUpdateRequestDTO;
@@ -31,6 +33,9 @@ public class CatedraService {
     private final DocenteRepository docenteRepository;
     private final UsuarioRepository usuarioRepository;
     private final AdminUnidadRepository adminUnidadRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private CambioService cambioService;
 
     public CatedraService(
             CatedraRepository catedraRepository,
@@ -183,6 +188,11 @@ public class CatedraService {
         catedra.setMateria(materia);
 
         Catedra saved = catedraRepository.save(catedra);
+        if (cambioService != null) {
+            Usuario resp = usuarioRepository.findByUsername(username).orElse(null);
+            cambioService.registrarCambio("catedras", "registro", null, saved.getNombre(),
+                    TipoOperacion.ALTA, resp, docente, materia.getUnidad());
+        }
         return mapToDTO(saved);
     }
 
@@ -230,6 +240,17 @@ public class CatedraService {
         }
 
         // 6. Actualizar atributos editables y persistir
+        if (cambioService != null) {
+            Usuario resp = usuarioRepository.findByUsername(username).orElse(null);
+            com.atlas.atlas_backend.unidad.Unidad u = materia != null ? materia.getUnidad() : null;
+            cambioService.registrarCambio("catedras", "nombre", catedra.getNombre(), nombreCatedra,
+                    TipoOperacion.MODIFICACION, resp, docente, u);
+            cambioService.registrarCambio("catedras", "tipologia", catedra.getTipologia(), request.getTipologia(),
+                    TipoOperacion.MODIFICACION, resp, docente, u);
+            cambioService.registrarCambio("catedras", "director",
+                    catedra.getDirector() != null ? catedra.getDirector().getId() : null, docente.getId(),
+                    TipoOperacion.MODIFICACION, resp, docente, u);
+        }
         catedra.setNombre(nombreCatedra);
         catedra.setTipologia(request.getTipologia());
         catedra.setDirector(docente);
@@ -264,9 +285,16 @@ public class CatedraService {
         }
 
         // 4. Baja lógica: se preservan director (histórico), materia, nombre y tipología
+        String estadoAnterior = catedra.getEstado();
         catedra.setEstado(ESTADO_DE_BAJA);
 
         Catedra saved = catedraRepository.save(catedra);
+        if (cambioService != null) {
+            Usuario resp = usuarioRepository.findByUsername(username).orElse(null);
+            com.atlas.atlas_backend.unidad.Unidad u = catedra.getMateria() != null ? catedra.getMateria().getUnidad() : null;
+            cambioService.registrarCambio("catedras", "estado", estadoAnterior, ESTADO_DE_BAJA,
+                    TipoOperacion.BAJA, resp, catedra.getDirector(), u);
+        }
         return mapToDTO(saved);
     }
 }
