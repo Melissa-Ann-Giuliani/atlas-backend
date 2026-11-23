@@ -52,6 +52,9 @@ public class DesignacionControllerTest {
     @MockBean
     private com.atlas.atlas_backend.security.CustomUserDetailsService customUserDetailsService;
 
+    @MockBean
+    private com.atlas.atlas_backend.usuario.UsuarioRepository usuarioRepository;
+
     private DesignacionCreateRequest validRequest;
     private DesignacionResponseDTO expectedDto;
 
