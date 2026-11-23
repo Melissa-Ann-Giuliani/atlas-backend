@@ -92,6 +92,7 @@ public class UsuarioService {
         cambioService.registrarCambio("usuarios", "usuario_activo", "true", "false",
                 TipoOperacion.BAJA, usuarioResponsable, targetUser, unidadAfectada);
         targetUser.setActivo(false);
+        targetUser.incrementTokenVersion();
         usuarioRepository.save(targetUser);
 
         // Sub-entity synchronization for Docente

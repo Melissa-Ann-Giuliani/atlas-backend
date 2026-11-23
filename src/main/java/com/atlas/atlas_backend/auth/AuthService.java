@@ -65,8 +65,13 @@ public class AuthService {
         }
 
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getUsername());
-        
+        return buildAuthResponse(usuario, userDetails);
+    }
+
+    private AuthResponse buildAuthResponse(Usuario usuario, UserDetails userDetails) {
         java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
+        extraClaims.put("tokenVersion", usuario.getTokenVersion() != null ? usuario.getTokenVersion() : 0);
+
         Integer unidadId = null;
         String unidadNombre = null;
         Integer tipoUnidadId = null;
@@ -141,13 +146,39 @@ public class AuthService {
         usuario.setContrasenia(passwordEncoder.encode(provisionalPassword));
         usuario.setDebeCambiarContrasenia(true);
         usuario.setFechaReset(LocalDateTime.now());
+        usuario.incrementTokenVersion();
 
         usuarioRepository.save(usuario);
         emailService.sendProvisionalPassword(usuario.getCorreo(), provisionalPassword);
     }
 
     public AuthResponse renewToken(String token) throws Exception {
-        return new AuthResponse(jwtUtil.renewToken(token));
+        io.jsonwebtoken.Claims claims = jwtUtil.parseAndValidateClaims(token);
+        String username = claims.getSubject();
+        Integer tokenVersion = jwtUtil.extractTokenVersion(claims);
+
+        if (username == null || username.isBlank() || tokenVersion == null) {
+            throw new IllegalArgumentException("Token inválido o expirado");
+        }
+
+        Usuario usuario = usuarioRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Token inválido o expirado"));
+
+        if (!Boolean.TRUE.equals(usuario.getActivo())) {
+            throw new IllegalArgumentException("Token inválido o expirado");
+        }
+
+        Integer currentVersion = usuario.getTokenVersion() != null ? usuario.getTokenVersion() : 0;
+        if (!currentVersion.equals(tokenVersion)) {
+            throw new IllegalArgumentException("Token inválido o expirado");
+        }
+
+        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        if (!userDetails.isEnabled()) {
+            throw new IllegalArgumentException("Token inválido o expirado");
+        }
+
+        return buildAuthResponse(usuario, userDetails);
     }
 
     public void adminResetPassword(@NonNull Integer userId) throws Exception {
@@ -162,6 +193,7 @@ public class AuthService {
         usuario.setContrasenia(passwordEncoder.encode(provisionalPassword));
         usuario.setDebeCambiarContrasenia(true);
         usuario.setFechaReset(LocalDateTime.now());
+        usuario.incrementTokenVersion();
 
         usuarioRepository.save(usuario);
         emailService.sendProvisionalPassword(usuario.getCorreo(), provisionalPassword);

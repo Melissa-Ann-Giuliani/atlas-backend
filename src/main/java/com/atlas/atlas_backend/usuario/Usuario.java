@@ -44,4 +44,11 @@ public class Usuario {
 
     @Column(name = "usuario_fecha_reset")
     private java.time.LocalDateTime fechaReset;
+
+    @Column(name = "usuario_token_version", nullable = false, columnDefinition = "integer default 0")
+    private Integer tokenVersion = 0;
+
+    public void incrementTokenVersion() {
+        this.tokenVersion = (this.tokenVersion == null ? 0 : this.tokenVersion) + 1;
+    }
 }
