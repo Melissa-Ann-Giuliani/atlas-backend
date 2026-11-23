@@ -255,6 +255,8 @@ public class DocenteService {
                 dd.setFechaFin(cargo.getDesignacion() != null ? cargo.getDesignacion().getDesignacionFechaFin() : null);
                 dd.setCargoId(cargo.getId());
                 dd.setNroCargo(cargo.getCodigo());
+                dd.setFechaCreacion(cargo.getFechaCreacion());
+                dd.setHorasOcupadas(cargo.getHorasOcupadas());
                 dd.setCategoria(cargo.getCategoria() != null ? cargo.getCategoria().getCategoriaNombre() : null);
                 dd.setDedicacion(cargo.getDedicacion() != null ? cargo.getDedicacion().getDedicacionNombre() : null);
                 dd.setCaracter(cargo.getCaracter() != null ? cargo.getCaracter().getCaracterNombre() : null);
@@ -280,6 +282,7 @@ public class DocenteService {
                     ad.setCargoId(f.getCargo() != null ? f.getCargo().getId() : null);
                     ad.setMateriaId(f.getMateria() != null ? f.getMateria().getId() : null);
                     ad.setMateriaNombre(f.getMateria() != null ? f.getMateria().getNombre() : null);
+                    ad.setPlan(f.getMateria() != null ? f.getMateria().getPlanEstudio() : null);
                     actividadDataList.add(ad);
                 }
             }
