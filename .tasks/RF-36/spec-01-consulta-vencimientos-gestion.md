@@ -55,9 +55,15 @@ Proveer un endpoint y vista de gestión para consultar el listado detallado de t
       {
         "cargoId": 88,
         "codigo": 100234,
+        "fechaCreacion": "2024-01-15",
+        "horasOcupadas": 10,
+        "estado": "Asignado",
+        "origen": "De Planta",
         "categoria": "Profesor Adjunto",
         "dedicacion": "Simple (10 hs)",
-        "caracter": "Interino"
+        "caracter": "Interino",
+        "materia": "Matemática I",
+        "plan": 2020
       }
     ]
   }

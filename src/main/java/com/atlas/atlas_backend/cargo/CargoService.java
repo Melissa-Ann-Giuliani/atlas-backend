@@ -153,6 +153,7 @@ public class CargoService {
         }
 
         dto.setFechaCreacion(cargo.getFechaCreacion());
+        dto.setHorasOcupadas(cargo.getHorasOcupadas());
         dto.setDedicacion(cargo.getDedicacion() != null ? cargo.getDedicacion().getDedicacionNombre() : null);
         dto.setCaracter(cargo.getCaracter() != null ? cargo.getCaracter().getCaracterNombre() : null);
 
@@ -450,6 +451,7 @@ public class CargoService {
         dto.setCategoria(categoria != null ? categoria.getCategoriaNombre() : null);
         dto.setEstado(savedCargo.getEstado());
         dto.setFechaCreacion(savedCargo.getFechaCreacion());
+        dto.setHorasOcupadas(savedCargo.getHorasOcupadas());
         dto.setDedicacion(dedicacion != null ? dedicacion.getDedicacionNombre() : null);
         dto.setCaracter(caracter != null ? caracter.getCaracterNombre() : null);
 

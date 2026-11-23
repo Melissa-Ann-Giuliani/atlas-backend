@@ -308,7 +308,6 @@ public class DesignacionService {
         }
 
         // 1. Marcar la designación previa como "Renovada"
-        String estadoAnteriorOrigen = designacionOrigen.getDesignacionEstadoActual();
         designacionOrigen.setDesignacionEstadoActual("Renovada");
         designacionRepository.save(designacionOrigen);
 
@@ -324,9 +323,8 @@ public class DesignacionService {
 
         if (cambioService != null) {
             Unidad unidadDesig = cargo != null ? cargo.getUnidad() : null;
-            cambioService.registrarCambio("designaciones", "designacionEstadoActual", estadoAnteriorOrigen, "Renovada",
-                    TipoOperacion.MODIFICACION, usuario, docente, unidadDesig);
-            cambioService.registrarCambio("designaciones", "redesignacion", null,
+            cambioService.registrarCambio("designaciones", "redesignacion",
+                    designacionOrigen.getDesignacionNumeroResolucion(),
                     savedDesignacion.getDesignacionNumeroResolucion(),
                     TipoOperacion.ALTA, usuario, docente, unidadDesig);
         }
@@ -554,12 +552,28 @@ public class DesignacionService {
                 : cargoRepository.findByDesignacionDesignacionIdIn(designacionIds);
 
         Map<Integer, List<Cargo>> cargosPorDesignacion = new HashMap<>();
+        List<Integer> cargoIds = new ArrayList<>();
         if (allCargos != null) {
             for (Cargo c : allCargos) {
                 if (c != null && c.getDesignacion() != null && c.getDesignacion().getDesignacionId() != null) {
                     cargosPorDesignacion
                             .computeIfAbsent(c.getDesignacion().getDesignacionId(), k -> new ArrayList<>())
                             .add(c);
+                    if (c.getId() != null) {
+                        cargoIds.add(c.getId());
+                    }
+                }
+            }
+        }
+
+        Map<Integer, Funcion> primeraFuncionPorCargo = new HashMap<>();
+        if (funcionRepository != null && !cargoIds.isEmpty()) {
+            List<Funcion> funciones = funcionRepository.findByCargoIdIn(cargoIds);
+            if (funciones != null) {
+                for (Funcion f : funciones) {
+                    if (f != null && f.getCargo() != null && f.getCargo().getId() != null) {
+                        primeraFuncionPorCargo.putIfAbsent(f.getCargo().getId(), f);
+                    }
                 }
             }
         }
@@ -638,12 +652,20 @@ public class DesignacionService {
                             .nombre(c.getUnidad().getUnidadNombre())
                             .build();
                 }
+                Funcion primeraFuncion = c.getId() != null ? primeraFuncionPorCargo.get(c.getId()) : null;
+                Materia materiaCargo = primeraFuncion != null ? primeraFuncion.getMateria() : null;
                 cargosDto.add(DesignacionVencimientoDTO.CargoResumenDTO.builder()
                         .cargoId(c.getId())
                         .codigo(c.getCodigo())
+                        .fechaCreacion(c.getFechaCreacion())
+                        .horasOcupadas(c.getHorasOcupadas())
+                        .estado(c.getEstado())
+                        .origen(c.getOrigen() != null ? c.getOrigen().getOrigenNombre() : null)
                         .categoria(c.getCategoria() != null ? c.getCategoria().getCategoriaNombre() : null)
                         .dedicacion(c.getDedicacion() != null ? c.getDedicacion().getDedicacionNombre() : null)
                         .caracter(c.getCaracter() != null ? c.getCaracter().getCaracterNombre() : null)
+                        .materia(materiaCargo != null ? materiaCargo.getNombre() : null)
+                        .plan(materiaCargo != null ? materiaCargo.getPlanEstudio() : null)
                         .build());
             }
 

@@ -52,8 +52,14 @@ public class DesignacionVencimientoDTO {
     public static class CargoResumenDTO {
         private Integer cargoId;
         private Long codigo;
+        private LocalDate fechaCreacion;
+        private Integer horasOcupadas;
+        private String estado;
+        private String origen;
         private String categoria;
         private String dedicacion;
         private String caracter;
+        private String materia;
+        private Integer plan;
     }
 }

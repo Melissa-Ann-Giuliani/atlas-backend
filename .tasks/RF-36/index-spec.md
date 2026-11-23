@@ -38,7 +38,7 @@
 | `docente.legajo` | `String` | `Docente.legajo` | Legajo del docente |
 | `unidad.unidadId` | `Integer` | `Unidad.id` | ID de la unidad académica |
 | `unidad.nombre` | `String` | `Unidad.nombre` | Nombre de la unidad académica |
-| `cargos` | `List<CargoResumenDTO>` | `cargos` asociados a la designación | Códigos, categoría, dedicación y carácter |
+| `cargos` | `List<CargoResumenDTO>` | `cargos` y `funciones` asociados a la designación | Código, fecha de creación, horas ocupadas, estado, origen, categoría, dedicación, carácter, materia y plan de estudio |
 
 ### Response: `DesignacionVencimientosResumenDTO` (`spec-02`) (Decisión R1)
 

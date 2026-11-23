@@ -967,16 +967,30 @@ new_designaciones AS (
         usuario_id
     FROM new_docentes
     RETURNING designacion_id, usuario_id, designacion_fecha_fin
+),
+new_cargos AS (
+    INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id, cargo_estado)
+    SELECT
+        9100 + ROW_NUMBER() OVER (ORDER BY designacion_id),
+        10,
+        CURRENT_DATE - INTERVAL '6 months',
+        1, 1, 1, 1,
+        designacion_id,
+        1,
+        'Asignado'
+    FROM new_designaciones
+    RETURNING cargo_id
 )
-INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id, cargo_estado)
+INSERT INTO public.funciones (funcion_nombre, funcion_tipo, funcion_horas, cargo_id, materia_id)
 SELECT
-    9100 + ROW_NUMBER() OVER (ORDER BY designacion_id),
+    'Dictado de Clases',
+    'Planta',
     10,
-    CURRENT_DATE - INTERVAL '6 months',
-    1, 1, 1, 1,
-    designacion_id,
-    1,
-    'Ocupado'
-FROM new_designaciones;
+    cargo_id,
+    COALESCE(
+        (SELECT materia_id FROM public.materias WHERE unidad_id = 1 LIMIT 1),
+        (SELECT materia_id FROM public.materias LIMIT 1)
+    )
+FROM new_cargos;
 
 COMMIT;
