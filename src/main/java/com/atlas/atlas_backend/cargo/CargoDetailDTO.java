@@ -20,6 +20,7 @@ public class CargoDetailDTO {
     private Long asignadoADni;
     private String nroResolucionDesignacion;
     private LocalDate fechaCreacion;
+    private Integer horasOcupadas;
     private String dedicacion;
     private String caracter;
 

@@ -43,6 +43,8 @@ public class DocenteDetailsDTO {
         private LocalDate fechaFin;
         private Integer cargoId;
         private Long nroCargo;
+        private LocalDate fechaCreacion;
+        private Integer horasOcupadas;
         private String categoria;
         private String dedicacion;
         private String caracter;
@@ -58,6 +60,7 @@ public class DocenteDetailsDTO {
         private Integer cargoId;
         private Integer materiaId;
         private String materiaNombre;
+        private Integer plan;
     }
 
     @Data

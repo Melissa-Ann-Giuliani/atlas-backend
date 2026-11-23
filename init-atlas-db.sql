@@ -160,12 +160,19 @@ CREATE TABLE IF NOT EXISTS public.cambios
     cambio_id serial NOT NULL,
     cambio_tabla_afectada character varying(50) NOT NULL,
     cambio_campo_afectado character varying(50) NOT NULL,
-    cambio_valor_anterior character varying(100) NOT NULL,
-    cambio_valor_nuevo character varying(100) NOT NULL,
-    cambio_fecha_hora date NOT NULL,
+    cambio_valor_anterior character varying(255),
+    cambio_valor_nuevo character varying(255),
+    cambio_fecha_hora timestamp NOT NULL,
+    cambio_tipo_operacion character varying(20) NOT NULL DEFAULT 'MODIFICACION',
     usuario_id integer NOT NULL,
+    usuario_afectado_id integer,
+    unidad_id integer,
     PRIMARY KEY (cambio_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_cambios_fecha_hora ON public.cambios (cambio_fecha_hora DESC);
+CREATE INDEX IF NOT EXISTS idx_cambios_unidad_id ON public.cambios (unidad_id);
+CREATE INDEX IF NOT EXISTS idx_cambios_usuario_afectado_id ON public.cambios (usuario_afectado_id);
 
 CREATE TABLE IF NOT EXISTS public.licencias
 (
@@ -454,6 +461,20 @@ ALTER TABLE IF EXISTS public.cambios
     REFERENCES public.usuarios (usuario_id) MATCH SIMPLE
     ON UPDATE RESTRICT
     ON DELETE RESTRICT
+    NOT VALID;
+
+ALTER TABLE IF EXISTS public.cambios
+    ADD CONSTRAINT fk_cambios_usuario_afectado FOREIGN KEY (usuario_afectado_id)
+    REFERENCES public.usuarios (usuario_id) MATCH SIMPLE
+    ON UPDATE RESTRICT
+    ON DELETE SET NULL
+    NOT VALID;
+
+ALTER TABLE IF EXISTS public.cambios
+    ADD CONSTRAINT fk_cambios_unidades FOREIGN KEY (unidad_id)
+    REFERENCES public.unidades (unidad_id) MATCH SIMPLE
+    ON UPDATE RESTRICT
+    ON DELETE SET NULL
     NOT VALID;
 
 
@@ -946,16 +967,30 @@ new_designaciones AS (
         usuario_id
     FROM new_docentes
     RETURNING designacion_id, usuario_id, designacion_fecha_fin
+),
+new_cargos AS (
+    INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id, cargo_estado)
+    SELECT
+        9100 + ROW_NUMBER() OVER (ORDER BY designacion_id),
+        10,
+        CURRENT_DATE - INTERVAL '6 months',
+        1, 1, 1, 1,
+        designacion_id,
+        1,
+        'Asignado'
+    FROM new_designaciones
+    RETURNING cargo_id
 )
-INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id, cargo_estado)
+INSERT INTO public.funciones (funcion_nombre, funcion_tipo, funcion_horas, cargo_id, materia_id)
 SELECT
-    9100 + ROW_NUMBER() OVER (ORDER BY designacion_id),
+    'Dictado de Clases',
+    'Planta',
     10,
-    CURRENT_DATE - INTERVAL '6 months',
-    1, 1, 1, 1,
-    designacion_id,
-    1,
-    'Ocupado'
-FROM new_designaciones;
+    cargo_id,
+    COALESCE(
+        (SELECT materia_id FROM public.materias WHERE unidad_id = 1 LIMIT 1),
+        (SELECT materia_id FROM public.materias LIMIT 1)
+    )
+FROM new_cargos;
 
 COMMIT;

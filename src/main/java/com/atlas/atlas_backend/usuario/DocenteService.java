@@ -105,6 +105,13 @@ public class DocenteService {
         }
 
         Docente savedUser = docenteRepository.save(docente);
+        if (cambioService != null) {
+            com.atlas.atlas_backend.usuario.Usuario authUser = cambioService.resolveAuthenticatedUsuario();
+            com.atlas.atlas_backend.unidad.Unidad unidadResp = authUser instanceof AdminUnidad au ? au.getUnidad()
+                    : null;
+            cambioService.registrarCambio("docentes", "registro", null, savedUser.getUsername(),
+                    com.atlas.atlas_backend.cambio.TipoOperacion.ALTA, authUser, savedUser, unidadResp);
+        }
 
         try {
             emailService.sendWelcomeDocente(savedUser.getEmailInstitucional(), provisionalPassword);
@@ -248,6 +255,8 @@ public class DocenteService {
                 dd.setFechaFin(cargo.getDesignacion() != null ? cargo.getDesignacion().getDesignacionFechaFin() : null);
                 dd.setCargoId(cargo.getId());
                 dd.setNroCargo(cargo.getCodigo());
+                dd.setFechaCreacion(cargo.getFechaCreacion());
+                dd.setHorasOcupadas(cargo.getHorasOcupadas());
                 dd.setCategoria(cargo.getCategoria() != null ? cargo.getCategoria().getCategoriaNombre() : null);
                 dd.setDedicacion(cargo.getDedicacion() != null ? cargo.getDedicacion().getDedicacionNombre() : null);
                 dd.setCaracter(cargo.getCaracter() != null ? cargo.getCaracter().getCaracterNombre() : null);
@@ -273,6 +282,7 @@ public class DocenteService {
                     ad.setCargoId(f.getCargo() != null ? f.getCargo().getId() : null);
                     ad.setMateriaId(f.getMateria() != null ? f.getMateria().getId() : null);
                     ad.setMateriaNombre(f.getMateria() != null ? f.getMateria().getNombre() : null);
+                    ad.setPlan(f.getMateria() != null ? f.getMateria().getPlanEstudio() : null);
                     actividadDataList.add(ad);
                 }
             }
@@ -391,35 +401,38 @@ public class DocenteService {
                     "El legajo ya se encuentra registrado por otro docente");
         }
 
+        com.atlas.atlas_backend.unidad.Unidad unidadResp = resolveUnidadParaDocente(usuarioResponsable, id);
+
         // Audit deltas in cambios table
         cambioService.registrarCambio("docentes", "nombre", docente.getNombre(), request.getNombre(),
-                usuarioResponsable);
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docente, unidadResp);
         cambioService.registrarCambio("docentes", "apellido", docente.getApellido(), request.getApellido(),
-                usuarioResponsable);
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docente, unidadResp);
         cambioService.registrarCambio("docentes", "emailInstitucional", docente.getEmailInstitucional(), nuevoEmail,
-                usuarioResponsable);
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docente, unidadResp);
         cambioService.registrarCambio("docentes", "fechaIngreso", docente.getFechaIngreso(), request.getFechaIngreso(),
-                usuarioResponsable);
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docente, unidadResp);
         cambioService.registrarCambio("docentes", "domicilio", docente.getDomicilio(), request.getDomicilio(),
-                usuarioResponsable);
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docente, unidadResp);
         cambioService.registrarCambio("docentes", "antigPrevia", docente.getAntigPrevia(), request.getAntigPrevia(),
-                usuarioResponsable);
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docente, unidadResp);
         if (request.getTipoDni() != null) {
             cambioService.registrarCambio("docentes", "tipoDni", docente.getTipoDni(), request.getTipoDni(),
-                    usuarioResponsable);
+                    com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docente, unidadResp);
         }
         if (request.getEstado() != null) {
             cambioService.registrarCambio("docentes", "estado", docente.getEstado(), request.getEstado(),
-                    usuarioResponsable);
+                    com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docente, unidadResp);
         }
         if (request.getLegajo() != null) {
             cambioService.registrarCambio("docentes", "legajo", docente.getLegajo(), request.getLegajo(),
-                    usuarioResponsable);
+                    com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docente, unidadResp);
         }
         if (request.getTelefonos() != null) {
             String telsAnt = docente.getTelefonos() != null ? String.join(", ", docente.getTelefonos()) : null;
             String telsNuevos = String.join(", ", request.getTelefonos());
-            cambioService.registrarCambio("docentes", "telefonos", telsAnt, telsNuevos, usuarioResponsable);
+            cambioService.registrarCambio("docentes", "telefonos", telsAnt, telsNuevos,
+                    com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docente, unidadResp);
         }
 
         // Apply changes
@@ -448,6 +461,35 @@ public class DocenteService {
         docenteRepository.save(docente);
 
         return getTeacherProfile(id);
+    }
+
+    private com.atlas.atlas_backend.unidad.Unidad resolveUnidadParaDocente(Usuario usuarioResponsable,
+            Integer docenteId) {
+        if (usuarioResponsable instanceof AdminUnidad au && au.getUnidad() != null) {
+            return au.getUnidad();
+        }
+        if (docenteId != null && designacionRepository != null && cargoRepository != null) {
+            List<com.atlas.atlas_backend.designacion.Designacion> designaciones = designacionRepository
+                    .findByUsuarioId(docenteId);
+            if (designaciones != null && !designaciones.isEmpty()) {
+                List<Integer> desigIds = designaciones.stream()
+                        .filter(d -> d != null && d.getDesignacionId() != null)
+                        .map(d -> d.getDesignacionId())
+                        .toList();
+                if (!desigIds.isEmpty()) {
+                    List<com.atlas.atlas_backend.cargo.Cargo> cargos = cargoRepository
+                            .findByDesignacionDesignacionIdIn(desigIds);
+                    if (cargos != null) {
+                        for (com.atlas.atlas_backend.cargo.Cargo c : cargos) {
+                            if (c != null && c.getUnidad() != null) {
+                                return c.getUnidad();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     @Transactional
@@ -508,17 +550,26 @@ public class DocenteService {
         }
 
         com.atlas.atlas_backend.designacion.Designacion designacion = cargo.getDesignacion();
+        Docente docenteAfectado = docenteRepository.findById(docenteId).orElse(null);
 
         // Audit deltas for Designacion
         cambioService.registrarCambio("designaciones", "designacionNumeroResolucion",
-                designacion.getDesignacionNumeroResolucion(), request.getNroResolucion(), usuarioResponsable);
+                designacion.getDesignacionNumeroResolucion(), request.getNroResolucion(),
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docenteAfectado,
+                cargo.getUnidad());
         cambioService.registrarCambio("designaciones", "designacionFechaInicio",
-                designacion.getDesignacionFechaInicio(), request.getFechaInicio(), usuarioResponsable);
+                designacion.getDesignacionFechaInicio(), request.getFechaInicio(),
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docenteAfectado,
+                cargo.getUnidad());
         cambioService.registrarCambio("designaciones", "designacionFechaFin",
-                designacion.getDesignacionFechaFin(), request.getFechaFin(), usuarioResponsable);
+                designacion.getDesignacionFechaFin(), request.getFechaFin(),
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docenteAfectado,
+                cargo.getUnidad());
         if (request.getEstadoDesignacion() != null) {
             cambioService.registrarCambio("designaciones", "designacionEstadoActual",
-                    designacion.getDesignacionEstadoActual(), request.getEstadoDesignacion(), usuarioResponsable);
+                    designacion.getDesignacionEstadoActual(), request.getEstadoDesignacion(),
+                    com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docenteAfectado,
+                    cargo.getUnidad());
             designacion.setDesignacionEstadoActual(request.getEstadoDesignacion());
         }
 
@@ -530,17 +581,23 @@ public class DocenteService {
         // Audit deltas for Cargo
         String antCat = cargo.getCategoria() != null ? cargo.getCategoria().getCategoriaNombre() : null;
         cambioService.registrarCambio("cargos", "categoria", antCat, categoria.getCategoriaNombre(),
-                usuarioResponsable);
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docenteAfectado,
+                cargo.getUnidad());
 
         String antDed = cargo.getDedicacion() != null ? cargo.getDedicacion().getDedicacionNombre() : null;
         cambioService.registrarCambio("cargos", "dedicacion", antDed, dedicacion.getDedicacionNombre(),
-                usuarioResponsable);
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docenteAfectado,
+                cargo.getUnidad());
 
         String antCar = cargo.getCaracter() != null ? cargo.getCaracter().getCaracterNombre() : null;
-        cambioService.registrarCambio("cargos", "caracter", antCar, caracter.getCaracterNombre(), usuarioResponsable);
+        cambioService.registrarCambio("cargos", "caracter", antCar, caracter.getCaracterNombre(),
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docenteAfectado,
+                cargo.getUnidad());
 
         String antOrig = cargo.getOrigen() != null ? cargo.getOrigen().getOrigenNombre() : null;
-        cambioService.registrarCambio("cargos", "origen", antOrig, origen.getOrigenNombre(), usuarioResponsable);
+        cambioService.registrarCambio("cargos", "origen", antOrig, origen.getOrigenNombre(),
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docenteAfectado,
+                cargo.getUnidad());
 
         cargo.setCategoria(categoria);
         cargo.setDedicacion(dedicacion);
@@ -609,12 +666,17 @@ public class DocenteService {
         }
 
         // Audit deltas in cambios table
+        Docente docenteAfectado = docenteRepository.findById(docenteId).orElse(null);
         cambioService.registrarCambio("funciones", "funcion_nombre", funcion.getNombre(), request.getNombre(),
-                usuarioResponsable);
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docenteAfectado,
+                cargo.getUnidad());
         cambioService.registrarCambio("funciones", "funcion_horas", funcion.getHoras(), request.getHoras(),
-                usuarioResponsable);
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docenteAfectado,
+                cargo.getUnidad());
         String antMat = funcion.getMateria() != null ? funcion.getMateria().getNombre() : null;
-        cambioService.registrarCambio("funciones", "materia", antMat, materia.getNombre(), usuarioResponsable);
+        cambioService.registrarCambio("funciones", "materia", antMat, materia.getNombre(),
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, usuarioResponsable, docenteAfectado,
+                cargo.getUnidad());
 
         funcion.setNombre(request.getNombre());
         funcion.setHoras(request.getHoras());

@@ -1,6 +1,7 @@
 package com.atlas.atlas_backend.usuario;
 
 import com.atlas.atlas_backend.cambio.CambioService;
+import com.atlas.atlas_backend.cambio.TipoOperacion;
 import com.atlas.atlas_backend.designacion.Designacion;
 import com.atlas.atlas_backend.designacion.DesignacionRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -121,7 +122,7 @@ public class UsuarioServiceTest {
         assertFalse(targetUser.getActivo());
         verify(usuarioRepository).save(Objects.requireNonNull(targetUser));
         verify(cambioService).registrarCambio(eq("usuarios"), eq("usuario_activo"), eq("true"), eq("false"),
-                eq(adminUser));
+                eq(TipoOperacion.BAJA), eq(adminUser), eq(targetUser), isNull());
         verify(docenteRepository, never()).save(anyDocente());
     }
 
@@ -166,9 +167,9 @@ public class UsuarioServiceTest {
         verify(usuarioRepository).save(Objects.requireNonNull(docente));
         verify(docenteRepository).save(Objects.requireNonNull(docente));
         verify(cambioService).registrarCambio(eq("usuarios"), eq("usuario_activo"), eq("true"), eq("false"),
-                eq(adminUser));
+                eq(TipoOperacion.BAJA), eq(adminUser), eq(docente), isNull());
         verify(cambioService).registrarCambio(eq("docentes"), eq("docente_estado"), eq("Activo"), eq("Inactivo"),
-                eq(adminUser));
+                eq(TipoOperacion.BAJA), eq(adminUser), eq(docente), isNull());
     }
 
     @Test

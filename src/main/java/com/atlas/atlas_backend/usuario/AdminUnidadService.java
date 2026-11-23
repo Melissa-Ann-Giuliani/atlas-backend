@@ -1,5 +1,6 @@
 package com.atlas.atlas_backend.usuario;
 
+import com.atlas.atlas_backend.cambio.TipoOperacion;
 import com.atlas.atlas_backend.notification.EmailService;
 import com.atlas.atlas_backend.unidad.Unidad;
 import com.atlas.atlas_backend.unidad.UnidadRepository;
@@ -78,6 +79,10 @@ public class AdminUnidadService {
         adminUnidad.setRol(adminUnidadRol);
 
         AdminUnidad savedUser = adminUnidadRepository.save(adminUnidad);
+        if (cambioService != null) {
+            cambioService.registrarCambio("admin_de_unidad", "registro", null, savedUser.getUsername(),
+                    TipoOperacion.ALTA, null, savedUser, unidad);
+        }
 
         try {
             emailService.sendWelcomeAdminUnidad(savedUser.getCorreo(), provisionalPassword);
@@ -127,18 +132,18 @@ public class AdminUnidadService {
 
         // Auditar diferencias en cambios
         cambioService.registrarCambio("admin_de_unidad", "username", adminUnidad.getUsername(), nuevoUsername,
-                usuarioResponsable);
+                TipoOperacion.MODIFICACION, usuarioResponsable, adminUnidad, nuevaUnidad);
         cambioService.registrarCambio("admin_de_unidad", "nombre", adminUnidad.getNombre(), request.getNombre(),
-                usuarioResponsable);
+                TipoOperacion.MODIFICACION, usuarioResponsable, adminUnidad, nuevaUnidad);
         cambioService.registrarCambio("admin_de_unidad", "apellido", adminUnidad.getApellido(), request.getApellido(),
-                usuarioResponsable);
+                TipoOperacion.MODIFICACION, usuarioResponsable, adminUnidad, nuevaUnidad);
         cambioService.registrarCambio("admin_de_unidad", "correo", adminUnidad.getCorreo(), nuevoCorreo,
-                usuarioResponsable);
+                TipoOperacion.MODIFICACION, usuarioResponsable, adminUnidad, nuevaUnidad);
         cambioService.registrarCambio("admin_de_unidad", "cargo_ad_nombre", adminUnidad.getCargoNombre(),
-                request.getCargoNombre(), usuarioResponsable);
+                request.getCargoNombre(), TipoOperacion.MODIFICACION, usuarioResponsable, adminUnidad, nuevaUnidad);
         cambioService.registrarCambio("admin_de_unidad", "unidad_id",
                 adminUnidad.getUnidad() != null ? adminUnidad.getUnidad().getUnidadId() : null, nuevaUnidadId,
-                usuarioResponsable);
+                TipoOperacion.MODIFICACION, usuarioResponsable, adminUnidad, nuevaUnidad);
 
         // Aplicar cambios
         adminUnidad.setUsername(nuevoUsername);

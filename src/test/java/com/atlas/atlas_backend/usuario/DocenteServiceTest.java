@@ -274,7 +274,9 @@ public class DocenteServiceTest {
         assertEquals("Carlos Alberto", docente.getNombre());
         assertEquals("Lopez Perez", docente.getApellido());
         assertEquals("carlos.lopez@facultad.edu", docente.getEmailInstitucional());
-        verify(cambioService, atLeastOnce()).registrarCambio(eq("docentes"), anyString(), any(), any(), eq(adminGlobal));
+        verify(cambioService, atLeastOnce()).registrarCambio(
+                eq("docentes"), anyString(), any(), any(),
+                eq(com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION), eq(adminGlobal), eq(docente), isNull());
         verify(docenteRepository, times(1)).save(docente);
     }
 

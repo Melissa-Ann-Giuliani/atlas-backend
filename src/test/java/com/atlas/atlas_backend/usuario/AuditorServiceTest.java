@@ -1,6 +1,7 @@
 package com.atlas.atlas_backend.usuario;
 
 import com.atlas.atlas_backend.cambio.CambioService;
+import com.atlas.atlas_backend.cambio.TipoOperacion;
 import com.atlas.atlas_backend.notification.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -165,11 +166,11 @@ public class AuditorServiceTest {
         assertEquals("c.lopez@unc.edu.ar", result.getCorreo());
         assertEquals(CargoAuditor.DECANO, result.getCargoNombre());
 
-        verify(cambioService).registrarCambio("auditores", "username", "old_username", "new_username", authUser);
-        verify(cambioService).registrarCambio("auditores", "nombre", "Carlos", "Carlos Alberto", authUser);
-        verify(cambioService).registrarCambio("auditores", "apellido", "Lopez", "Lopez Martinez", authUser);
-        verify(cambioService).registrarCambio("auditores", "correo", "carlos.lopez@unc.edu.ar", "c.lopez@unc.edu.ar", authUser);
-        verify(cambioService).registrarCambio("auditores", "cargo_au_nombre", CargoAuditor.VICEDECANO, CargoAuditor.DECANO, authUser);
+        verify(cambioService).registrarCambio("auditores", "username", "old_username", "new_username", TipoOperacion.MODIFICACION, authUser, existing, null);
+        verify(cambioService).registrarCambio("auditores", "nombre", "Carlos", "Carlos Alberto", TipoOperacion.MODIFICACION, authUser, existing, null);
+        verify(cambioService).registrarCambio("auditores", "apellido", "Lopez", "Lopez Martinez", TipoOperacion.MODIFICACION, authUser, existing, null);
+        verify(cambioService).registrarCambio("auditores", "correo", "carlos.lopez@unc.edu.ar", "c.lopez@unc.edu.ar", TipoOperacion.MODIFICACION, authUser, existing, null);
+        verify(cambioService).registrarCambio("auditores", "cargo_au_nombre", CargoAuditor.VICEDECANO, CargoAuditor.DECANO, TipoOperacion.MODIFICACION, authUser, existing, null);
         verify(auditorRepository).save(existing);
     }
 
@@ -204,11 +205,11 @@ public class AuditorServiceTest {
         assertNotNull(result);
         assertEquals("carlos.nuevo@unc.edu.ar", result.getCorreo());
 
-        verify(cambioService).registrarCambio("auditores", "username", "auditor_unc", "auditor_unc", authUser);
-        verify(cambioService).registrarCambio("auditores", "nombre", "Carlos", "Carlos", authUser);
-        verify(cambioService).registrarCambio("auditores", "apellido", "Lopez", "Lopez", authUser);
-        verify(cambioService).registrarCambio("auditores", "correo", "carlos.lopez@unc.edu.ar", "carlos.nuevo@unc.edu.ar", authUser);
-        verify(cambioService).registrarCambio("auditores", "cargo_au_nombre", CargoAuditor.VICEDECANO, CargoAuditor.VICEDECANO, authUser);
+        verify(cambioService).registrarCambio("auditores", "username", "auditor_unc", "auditor_unc", TipoOperacion.MODIFICACION, authUser, existing, null);
+        verify(cambioService).registrarCambio("auditores", "nombre", "Carlos", "Carlos", TipoOperacion.MODIFICACION, authUser, existing, null);
+        verify(cambioService).registrarCambio("auditores", "apellido", "Lopez", "Lopez", TipoOperacion.MODIFICACION, authUser, existing, null);
+        verify(cambioService).registrarCambio("auditores", "correo", "carlos.lopez@unc.edu.ar", "carlos.nuevo@unc.edu.ar", TipoOperacion.MODIFICACION, authUser, existing, null);
+        verify(cambioService).registrarCambio("auditores", "cargo_au_nombre", CargoAuditor.VICEDECANO, CargoAuditor.VICEDECANO, TipoOperacion.MODIFICACION, authUser, existing, null);
         verify(auditorRepository).save(existing);
     }
 
