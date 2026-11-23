@@ -1,6 +1,8 @@
 package com.atlas.atlas_backend.cargo;
 
 import com.atlas.atlas_backend.archivo.ArchivoAdjuntoDTO;
+import com.atlas.atlas_backend.cambio.CambioService;
+import com.atlas.atlas_backend.cambio.TipoOperacion;
 import com.atlas.atlas_backend.usuario.Usuario;
 import com.atlas.atlas_backend.usuario.UsuarioRepository;
 import com.atlas.atlas_backend.usuario.AdminUnidad;
@@ -70,6 +72,9 @@ public class CargoService {
 
     @Autowired
     private com.atlas.atlas_backend.archivo.ArchivoRepository archivoRepository;
+
+    @Autowired(required = false)
+    private CambioService cambioService;
 
     @Transactional(readOnly = true)
     public Page<CargoListDTO> getActiveCargos(String username, String searchTerm, String estado, Integer categoriaId,
@@ -148,6 +153,7 @@ public class CargoService {
         }
 
         dto.setFechaCreacion(cargo.getFechaCreacion());
+        dto.setHorasOcupadas(cargo.getHorasOcupadas());
         dto.setDedicacion(cargo.getDedicacion() != null ? cargo.getDedicacion().getDedicacionNombre() : null);
         dto.setCaracter(cargo.getCaracter() != null ? cargo.getCaracter().getCaracterNombre() : null);
 
@@ -303,6 +309,10 @@ public class CargoService {
         }
 
         Cargo savedCargo = cargoRepository.save(Objects.requireNonNull(cargo));
+        if (cambioService != null) {
+            cambioService.registrarCambio("cargos", "registro", null, String.valueOf(savedCargo.getCodigo()),
+                    TipoOperacion.ALTA, usuario, null, unidad);
+        }
 
         CargoDetailDTO dto = new CargoDetailDTO();
         dto.setNumero(savedCargo.getCodigo());
@@ -407,6 +417,23 @@ public class CargoService {
             cargo.setCargoPredecesor(predecesor);
         }
 
+        if (cambioService != null) {
+            cambioService.registrarCambio("cargos", "fechaCreacion", cargo.getFechaCreacion(), request.getFechaCreacion(),
+                    TipoOperacion.MODIFICACION, usuario, null, cargo.getUnidad());
+            cambioService.registrarCambio("cargos", "origen",
+                    cargo.getOrigen() != null ? cargo.getOrigen().getOrigenNombre() : null, origen.getOrigenNombre(),
+                    TipoOperacion.MODIFICACION, usuario, null, cargo.getUnidad());
+            cambioService.registrarCambio("cargos", "caracter",
+                    cargo.getCaracter() != null ? cargo.getCaracter().getCaracterNombre() : null, caracter.getCaracterNombre(),
+                    TipoOperacion.MODIFICACION, usuario, null, cargo.getUnidad());
+            cambioService.registrarCambio("cargos", "categoria",
+                    cargo.getCategoria() != null ? cargo.getCategoria().getCategoriaNombre() : null, categoria.getCategoriaNombre(),
+                    TipoOperacion.MODIFICACION, usuario, null, cargo.getUnidad());
+            cambioService.registrarCambio("cargos", "dedicacion",
+                    cargo.getDedicacion() != null ? cargo.getDedicacion().getDedicacionNombre() : null, dedicacion.getDedicacionNombre(),
+                    TipoOperacion.MODIFICACION, usuario, null, cargo.getUnidad());
+        }
+
         cargo.setFechaCreacion(request.getFechaCreacion());
         cargo.setOrigen(origen);
         cargo.setCaracter(caracter);
@@ -424,6 +451,7 @@ public class CargoService {
         dto.setCategoria(categoria != null ? categoria.getCategoriaNombre() : null);
         dto.setEstado(savedCargo.getEstado());
         dto.setFechaCreacion(savedCargo.getFechaCreacion());
+        dto.setHorasOcupadas(savedCargo.getHorasOcupadas());
         dto.setDedicacion(dedicacion != null ? dedicacion.getDedicacionNombre() : null);
         dto.setCaracter(caracter != null ? caracter.getCaracterNombre() : null);
 
@@ -661,13 +689,22 @@ public class CargoService {
         }
 
         // Update parent: 100% occupied hours, keep status
+        Integer parentHorasAnt = parentCargo.getHorasOcupadas();
         parentCargo.setHorasOcupadas(parentHoras);
         cargoRepository.save(Objects.requireNonNull(parentCargo));
+        if (cambioService != null) {
+            cambioService.registrarCambio("cargos", "horasOcupadas", parentHorasAnt, parentHoras,
+                    TipoOperacion.MODIFICACION, usuario, null, parentCargo.getUnidad());
+        }
 
         // Persist all subcargos and build response
         List<CargoDetailDTO> result = new ArrayList<>();
         for (int i = 0; i < subcargosToSave.size(); i++) {
             Cargo saved = cargoRepository.save(Objects.requireNonNull(subcargosToSave.get(i)));
+            if (cambioService != null) {
+                cambioService.registrarCambio("cargos", "subdivision", null, String.valueOf(saved.getCodigo()),
+                        TipoOperacion.ALTA, usuario, null, saved.getUnidad());
+            }
             result.add(buildCargoDetailDTO(saved, categoriasList.get(i), dedicacionesList.get(i), caracteresList.get(i)));
         }
 
@@ -717,9 +754,14 @@ public class CargoService {
             }
         }
 
+        String estadoAnterior = cargo.getEstado();
         cargo.setEstado("Dado de baja");
         cargo.setHorasOcupadas(0);
         cargoRepository.save(cargo);
+        if (cambioService != null) {
+            cambioService.registrarCambio("cargos", "estado", estadoAnterior, "Dado de baja",
+                    TipoOperacion.BAJA, usuario, null, cargo.getUnidad());
+        }
 
         return getCargoDetails(cargo.getId(), username);
     }

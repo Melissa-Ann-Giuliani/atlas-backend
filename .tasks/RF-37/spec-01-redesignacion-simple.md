@@ -3,7 +3,7 @@
 ## Overview
 Implementar el endpoint y la lógica de negocio para la re-designación ágil de un docente cuya designación actual se encuentra próxima a vencer (o activa) desde la sección *Gestión > Vencimientos*. 
 
-Al accionar la renovación, el sistema permite generar una **nueva designación** vinculando automáticamente al mismo docente y al cargo correspondiente (con sus funciones asociadas pre-cargadas o editables), registrando las nuevas fechas de vigencia y número de resolución oficial (Decisión B1 y B2). La designación previa pasa inmediatamente a estado `"Renovada"` (o inactiva), asegurando que la alerta de vencimiento de RF-36 quede desactivada de forma automática y se preserve la trazabilidad histórica. 
+Al accionar la renovación, el sistema permite generar una **nueva designación** vinculando automáticamente al mismo docente y al cargo correspondiente (con sus funciones asociadas pre-cargadas o editables), registrando las nuevas fechas de vigencia y número de resolución oficial (Decisión B1 y B2). La designación previa pasa inmediatamente a estado `"Renovada"` (o inactiva), asegurando que la alerta de vencimiento de RF-36 quede desactivada de forma automática y se preserve la trazabilidad histórica. En el historial de cambios se registra una única operación (`ALTA` sobre el campo `redesignacion`, con el número de resolución anterior como valor previo y el nuevo número de resolución como valor nuevo). 
 
 La operación valida el control de acceso multi-tenant: los usuarios con rol `ADMIN_UNIDAD` únicamente pueden re-designar docentes sobre cargos pertenecientes a su unidad académica (Decisión R2).
 

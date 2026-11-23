@@ -157,11 +157,16 @@ public class AdminGlobalServiceTest {
         assertEquals("new.email@unc.edu.ar", result.getCorreo());
         assertEquals(CargoAdminGlobal.DESPACHO, result.getCargoNombre());
 
-        verify(cambioService).registrarCambio("admin_globales", "username", "old_username", "new_username", authUser);
-        verify(cambioService).registrarCambio("admin_globales", "nombre", "Juan", "Juan Carlos", authUser);
-        verify(cambioService).registrarCambio("admin_globales", "apellido", "Perez", "Perez Gomez", authUser);
-        verify(cambioService).registrarCambio("admin_globales", "correo", "juan.perez@unc.edu.ar", "new.email@unc.edu.ar", authUser);
-        verify(cambioService).registrarCambio("admin_globales", "cargo_ag_nombre", CargoAdminGlobal.DIRECCION_DE_PERSONAL, CargoAdminGlobal.DESPACHO, authUser);
+        verify(cambioService).registrarCambio("admin_globales", "username", "old_username", "new_username",
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, authUser, existing, null);
+        verify(cambioService).registrarCambio("admin_globales", "nombre", "Juan", "Juan Carlos",
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, authUser, existing, null);
+        verify(cambioService).registrarCambio("admin_globales", "apellido", "Perez", "Perez Gomez",
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, authUser, existing, null);
+        verify(cambioService).registrarCambio("admin_globales", "correo", "juan.perez@unc.edu.ar", "new.email@unc.edu.ar",
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, authUser, existing, null);
+        verify(cambioService).registrarCambio("admin_globales", "cargo_ag_nombre", CargoAdminGlobal.DIRECCION_DE_PERSONAL, CargoAdminGlobal.DESPACHO,
+                com.atlas.atlas_backend.cambio.TipoOperacion.MODIFICACION, authUser, existing, null);
         verify(adminGlobalRepository).save(existing);
     }
 

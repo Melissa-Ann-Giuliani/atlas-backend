@@ -1,6 +1,7 @@
 package com.atlas.atlas_backend.usuario;
 
 import com.atlas.atlas_backend.cambio.CambioService;
+import com.atlas.atlas_backend.cambio.TipoOperacion;
 import com.atlas.atlas_backend.notification.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -65,6 +66,10 @@ public class AuditorService {
         auditor.setRol(auditorRol);
 
         Auditor savedUser = auditorRepository.save(auditor);
+        if (cambioService != null) {
+            cambioService.registrarCambio("auditores", "registro", null, savedUser.getUsername(),
+                    TipoOperacion.ALTA, null, savedUser, null);
+        }
 
         try {
             emailService.sendWelcomeAuditor(savedUser.getCorreo(), provisionalPassword);
@@ -102,11 +107,11 @@ public class AuditorService {
         }
 
         // Auditar diferencias en cambios
-        cambioService.registrarCambio("auditores", "username", auditor.getUsername(), nuevoUsername, usuarioResponsable);
-        cambioService.registrarCambio("auditores", "nombre", auditor.getNombre(), request.getNombre(), usuarioResponsable);
-        cambioService.registrarCambio("auditores", "apellido", auditor.getApellido(), request.getApellido(), usuarioResponsable);
-        cambioService.registrarCambio("auditores", "correo", auditor.getCorreo(), nuevoCorreo, usuarioResponsable);
-        cambioService.registrarCambio("auditores", "cargo_au_nombre", auditor.getCargoNombre(), request.getCargoNombre(), usuarioResponsable);
+        cambioService.registrarCambio("auditores", "username", auditor.getUsername(), nuevoUsername, TipoOperacion.MODIFICACION, usuarioResponsable, auditor, null);
+        cambioService.registrarCambio("auditores", "nombre", auditor.getNombre(), request.getNombre(), TipoOperacion.MODIFICACION, usuarioResponsable, auditor, null);
+        cambioService.registrarCambio("auditores", "apellido", auditor.getApellido(), request.getApellido(), TipoOperacion.MODIFICACION, usuarioResponsable, auditor, null);
+        cambioService.registrarCambio("auditores", "correo", auditor.getCorreo(), nuevoCorreo, TipoOperacion.MODIFICACION, usuarioResponsable, auditor, null);
+        cambioService.registrarCambio("auditores", "cargo_au_nombre", auditor.getCargoNombre(), request.getCargoNombre(), TipoOperacion.MODIFICACION, usuarioResponsable, auditor, null);
 
         // Aplicar cambios
         auditor.setUsername(nuevoUsername);

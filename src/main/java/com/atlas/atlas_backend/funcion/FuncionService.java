@@ -2,6 +2,8 @@ package com.atlas.atlas_backend.funcion;
 
 import com.atlas.atlas_backend.archivo.Archivo;
 import com.atlas.atlas_backend.archivo.ArchivoService;
+import com.atlas.atlas_backend.cambio.CambioService;
+import com.atlas.atlas_backend.cambio.TipoOperacion;
 import com.atlas.atlas_backend.cargo.Cargo;
 import com.atlas.atlas_backend.cargo.CargoRepository;
 import com.atlas.atlas_backend.designacion.Designacion;
@@ -36,6 +38,9 @@ public class FuncionService {
     private final AdminUnidadRepository adminUnidadRepository;
     private final DocenteRepository docenteRepository;
     private final EmailService emailService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private CambioService cambioService;
 
     public FuncionService(
             FuncionRepository funcionRepository,
@@ -95,6 +100,14 @@ public class FuncionService {
         cargoRepository.save(cargo);
 
         Docente docente = activarDocente(designacion);
+
+        if (cambioService != null) {
+            for (Funcion f : funcionesGuardadas) {
+                cambioService.registrarCambio("funciones", "asignacion", null,
+                        f.getNombre() + " (" + f.getHoras() + " hs)",
+                        TipoOperacion.ALTA, usuario, docente, cargo.getUnidad());
+            }
+        }
 
         boolean notificacionEnviada = enviarNotificacion(docente, designacion, cargo, funcionesGuardadas);
 

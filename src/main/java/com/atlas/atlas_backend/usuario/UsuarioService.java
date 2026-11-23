@@ -1,6 +1,8 @@
 package com.atlas.atlas_backend.usuario;
 
 import com.atlas.atlas_backend.cambio.CambioService;
+import com.atlas.atlas_backend.cambio.TipoOperacion;
+import com.atlas.atlas_backend.unidad.Unidad;
 import com.atlas.atlas_backend.designacion.Designacion;
 import com.atlas.atlas_backend.designacion.DesignacionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,8 +81,16 @@ public class UsuarioService {
             }
         }
 
+        Unidad unidadAfectada = null;
+        if (targetUser instanceof AdminUnidad au) {
+            unidadAfectada = au.getUnidad();
+        } else if (usuarioResponsable instanceof AdminUnidad auResp) {
+            unidadAfectada = auResp.getUnidad();
+        }
+
         // Perform deactivation and audit on usuarios table
-        cambioService.registrarCambio("usuarios", "usuario_activo", "true", "false", usuarioResponsable);
+        cambioService.registrarCambio("usuarios", "usuario_activo", "true", "false",
+                TipoOperacion.BAJA, usuarioResponsable, targetUser, unidadAfectada);
         targetUser.setActivo(false);
         usuarioRepository.save(targetUser);
 
@@ -88,7 +98,8 @@ public class UsuarioService {
         if (docenteOpt.isPresent()) {
             Docente docente = docenteOpt.get();
             String prevEstado = docente.getEstado();
-            cambioService.registrarCambio("docentes", "docente_estado", prevEstado, "Inactivo", usuarioResponsable);
+            cambioService.registrarCambio("docentes", "docente_estado", prevEstado, "Inactivo",
+                    TipoOperacion.BAJA, usuarioResponsable, docente, unidadAfectada);
             docente.setEstado("Inactivo");
             docenteRepository.save(docente);
         }

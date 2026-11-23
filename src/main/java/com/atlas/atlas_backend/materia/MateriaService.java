@@ -1,5 +1,7 @@
 package com.atlas.atlas_backend.materia;
 
+import com.atlas.atlas_backend.cambio.CambioService;
+import com.atlas.atlas_backend.cambio.TipoOperacion;
 import com.atlas.atlas_backend.unidad.Unidad;
 import com.atlas.atlas_backend.unidad.UnidadRepository;
 import com.atlas.atlas_backend.usuario.AdminUnidad;
@@ -32,6 +34,9 @@ public class MateriaService {
     private final UsuarioRepository usuarioRepository;
     private final AdminUnidadRepository adminUnidadRepository;
     private final CatedraRepository catedraRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private CambioService cambioService;
 
     public MateriaService(
             MateriaRepository materiaRepository,
@@ -117,6 +122,10 @@ public class MateriaService {
         materia.setUnidad(unidad);
 
         Materia saved = materiaRepository.save(materia);
+        if (cambioService != null) {
+            cambioService.registrarCambio("materias", "registro", null, saved.getNombre(),
+                    TipoOperacion.ALTA, usuario, null, unidad);
+        }
 
         // 8. Retornar DTO
         return toDetailDTO(saved);
@@ -204,15 +213,31 @@ public class MateriaService {
 
         // 7. Aplicar modificaciones parciales
         if (request.getNombre() != null) {
+            if (cambioService != null) {
+                cambioService.registrarCambio("materias", "nombre", materia.getNombre(), request.getNombre().trim(),
+                        TipoOperacion.MODIFICACION, usuario, null, materia.getUnidad());
+            }
             materia.setNombre(request.getNombre().trim());
         }
         if (request.getHoras() != null) {
+            if (cambioService != null) {
+                cambioService.registrarCambio("materias", "horas", materia.getHoras(), request.getHoras(),
+                        TipoOperacion.MODIFICACION, usuario, null, materia.getUnidad());
+            }
             materia.setHoras(request.getHoras());
         }
         if (request.getAnio() != null) {
+            if (cambioService != null) {
+                cambioService.registrarCambio("materias", "anio", materia.getAnio(), request.getAnio().trim(),
+                        TipoOperacion.MODIFICACION, usuario, null, materia.getUnidad());
+            }
             materia.setAnio(request.getAnio().trim());
         }
         if (request.getDespliegue() != null) {
+            if (cambioService != null) {
+                cambioService.registrarCambio("materias", "despliegue", materia.getDespliegue(), request.getDespliegue(),
+                        TipoOperacion.MODIFICACION, usuario, null, materia.getUnidad());
+            }
             materia.setDespliegue(request.getDespliegue());
         }
 
@@ -326,8 +351,13 @@ public class MateriaService {
         }
 
         // 5. Aplicar transición de ciclo de vida
+        String estadoAnterior = materia.getEstado();
         materia.setEstado("Dada de baja");
         Materia saved = materiaRepository.save(materia);
+        if (cambioService != null) {
+            cambioService.registrarCambio("materias", "estado", estadoAnterior, "Dada de baja",
+                    TipoOperacion.BAJA, usuario, null, materia.getUnidad());
+        }
 
         // 6. Retornar DTO
         return toDetailDTO(saved);
