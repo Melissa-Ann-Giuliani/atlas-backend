@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.usuarios
     usuario_activo boolean NOT NULL,
     usuario_debe_cambiar_contrasenia boolean NOT NULL DEFAULT false,
     usuario_fecha_reset timestamp without time zone,
+    usuario_token_version integer NOT NULL DEFAULT 0,
     rol_id integer NOT NULL,
     PRIMARY KEY (usuario_id)
 );

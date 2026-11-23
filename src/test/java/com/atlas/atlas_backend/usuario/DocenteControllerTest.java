@@ -44,6 +44,9 @@ public class DocenteControllerTest {
         @MockBean
         private com.atlas.atlas_backend.security.CustomUserDetailsService customUserDetailsService;
 
+        @MockBean
+        private UsuarioRepository usuarioRepository;
+
         @Test
         @WithMockUser(username = "admin", roles = { "ADMIN_GLOBAL" })
         void getActiveTeachers_Returns200AndPageOfTeachers() throws Exception {

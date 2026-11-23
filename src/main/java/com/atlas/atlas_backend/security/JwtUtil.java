@@ -2,7 +2,6 @@ package com.atlas.atlas_backend.security;
 
 import org.springframework.beans.factory.annotation.Value;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -73,28 +72,37 @@ public class JwtUtil {
                 .compact();
     }
 
-    public String renewToken(String token) {
-        Claims claims;
-        try {
-            claims = extractAllClaims(token);
-        } catch (ExpiredJwtException e) {
-            claims = e.getClaims();
-        }
-        
-        if (claims.getExpiration().before(new Date(System.currentTimeMillis() - 1000 * 60 * 60))) {
-            throw new RuntimeException("Token expired too long ago");
-        }
+    public Claims parseAndValidateClaims(String token) {
+        return extractAllClaims(token);
+    }
 
-        Map<String, Object> newClaims = new HashMap<>(claims);
-        // Remove standard JWT registered claims before resigning
-        newClaims.remove("sub");
-        newClaims.remove("iat");
-        newClaims.remove("exp");
-        return createToken(newClaims, claims.getSubject());
+    public Integer extractTokenVersion(Claims claims) {
+        Object version = claims.get("tokenVersion");
+        if (version instanceof Number number) {
+            return number.intValue();
+        }
+        return null;
+    }
+
+    public Integer extractTokenVersion(String token) {
+        return extractTokenVersion(extractAllClaims(token));
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
         return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    }
+
+    public boolean validateToken(String token, UserDetails userDetails, Integer expectedTokenVersion) {
+        Claims claims = extractAllClaims(token);
+        String username = claims.getSubject();
+        Integer tokenVersion = extractTokenVersion(claims);
+        return username != null
+                && username.equals(userDetails.getUsername())
+                && userDetails.isEnabled()
+                && expectedTokenVersion != null
+                && expectedTokenVersion.equals(tokenVersion)
+                && claims.getExpiration() != null
+                && !claims.getExpiration().before(new Date());
     }
 }

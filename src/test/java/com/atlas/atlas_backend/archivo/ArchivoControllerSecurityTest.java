@@ -43,6 +43,9 @@ class ArchivoControllerSecurityTest {
     @MockBean
     private CustomUserDetailsService customUserDetailsService;
 
+    @MockBean
+    private com.atlas.atlas_backend.usuario.UsuarioRepository usuarioRepository;
+
     @Test
     @WithMockUser(username = "docente")
     void authenticatedUserCanDownloadFile(@TempDir Path tempDir) throws Exception {
@@ -82,8 +85,8 @@ class ArchivoControllerSecurityTest {
     }
 
     @Test
-    void unauthenticatedUserIsForbiddenOnDownload() throws Exception {
+    void unauthenticatedUserIsUnauthorizedOnDownload() throws Exception {
         mockMvc.perform(get("/api/archivos/descargar/abc123.pdf"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }
