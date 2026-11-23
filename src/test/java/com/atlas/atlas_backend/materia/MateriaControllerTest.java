@@ -51,6 +51,9 @@ public class MateriaControllerTest {
     @MockBean
     private com.atlas.atlas_backend.security.CustomUserDetailsService customUserDetailsService;
 
+    @MockBean
+    private com.atlas.atlas_backend.usuario.UsuarioRepository usuarioRepository;
+
     private MateriaCreateRequest validRequest;
     private MateriaDetailDTO expectedDto;
 
@@ -190,12 +193,12 @@ public class MateriaControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/materias - 403 Forbidden for unauthenticated request")
-    void testCrearMateria_Unauthenticated_ReturnsForbidden() throws Exception {
+    @DisplayName("POST /api/materias - 401 Unauthorized for unauthenticated request")
+    void testCrearMateria_Unauthenticated_ReturnsUnauthorized() throws Exception {
         mockMvc.perform(post("/api/materias")
                         .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
                         .content(Objects.requireNonNull(objectMapper.writeValueAsString(validRequest))))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ==================== Tests for PATCH /api/materias/{id} ====================
@@ -467,10 +470,10 @@ public class MateriaControllerTest {
     }
 
     @Test
-    @DisplayName("PATCH /api/materias/{id}/baja - 401/403 for unauthenticated request")
+    @DisplayName("PATCH /api/materias/{id}/baja - 401 Unauthorized for unauthenticated request")
     void testDarDeBajaMateria_Unauthorized() throws Exception {
         mockMvc.perform(patch("/api/materias/101/baja"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }
 

@@ -44,6 +44,9 @@ class CambioControllerTest {
     @MockBean
     private CustomUserDetailsService customUserDetailsService;
 
+    @MockBean
+    private com.atlas.atlas_backend.usuario.UsuarioRepository usuarioRepository;
+
     @Test
     @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
     void consultarHistorial_AdminGlobal_Retorna200() throws Exception {

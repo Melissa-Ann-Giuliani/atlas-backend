@@ -55,6 +55,9 @@ public class CatedraControllerTest {
         @MockBean
         private com.atlas.atlas_backend.security.CustomUserDetailsService customUserDetailsService;
 
+        @MockBean
+        private com.atlas.atlas_backend.usuario.UsuarioRepository usuarioRepository;
+
         private CatedraRequestDTO validRequest;
         private CatedraUpdateRequestDTO validUpdateRequest;
         private CatedraResponseDTO expectedResponse;

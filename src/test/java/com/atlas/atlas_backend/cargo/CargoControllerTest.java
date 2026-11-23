@@ -54,6 +54,9 @@ public class CargoControllerTest {
         @MockBean
         private com.atlas.atlas_backend.security.CustomUserDetailsService customUserDetailsService;
 
+        @MockBean
+        private com.atlas.atlas_backend.usuario.UsuarioRepository usuarioRepository;
+
         private CargoCreateRequest validRequest;
         private CargoUpdateRequest validUpdateRequest;
         private CargoDetailDTO expectedDto;
@@ -218,11 +221,11 @@ public class CargoControllerTest {
         }
 
         @Test
-        void testScenario10_Unauthenticated_ReturnsForbidden() throws Exception {
+        void testScenario10_Unauthenticated_ReturnsUnauthorized() throws Exception {
                 mockMvc.perform(post("/api/cargos")
                                 .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
                                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(validRequest))))
-                                .andExpect(status().isForbidden());
+                                .andExpect(status().isUnauthorized());
         }
 
         @Test
@@ -330,11 +333,11 @@ public class CargoControllerTest {
         }
 
         @Test
-        void testPutModificarCargo_Unauthenticated_ReturnsForbidden() throws Exception {
+        void testPutModificarCargo_Unauthenticated_ReturnsUnauthorized() throws Exception {
                 mockMvc.perform(put("/api/cargos/10")
                                 .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
                                 .content(Objects.requireNonNull(objectMapper.writeValueAsString(validUpdateRequest))))
-                                .andExpect(status().isForbidden());
+                                .andExpect(status().isUnauthorized());
         }
 
         @Test

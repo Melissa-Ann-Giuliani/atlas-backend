@@ -44,6 +44,9 @@ public class LicenciaControllerTest {
     @MockBean
     private com.atlas.atlas_backend.security.CustomUserDetailsService customUserDetailsService;
 
+    @MockBean
+    private com.atlas.atlas_backend.usuario.UsuarioRepository usuarioRepository;
+
     @Test
     @WithMockUser(username = "admin", roles = {"ADMIN_GLOBAL"})
     void getActiveLicencias_AuthorizedRole_Returns200() throws Exception {
@@ -83,9 +86,9 @@ public class LicenciaControllerTest {
     }
 
     @Test
-    void getActiveLicencias_Unauthenticated_ReturnsForbidden() throws Exception {
+    void getActiveLicencias_Unauthenticated_ReturnsUnauthorized() throws Exception {
         mockMvc.perform(get("/api/licencias"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

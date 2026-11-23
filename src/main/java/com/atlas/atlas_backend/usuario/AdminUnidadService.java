@@ -146,12 +146,18 @@ public class AdminUnidadService {
                 TipoOperacion.MODIFICACION, usuarioResponsable, adminUnidad, nuevaUnidad);
 
         // Aplicar cambios
+        Integer anteriorUnidadId = adminUnidad.getUnidad() != null ? adminUnidad.getUnidad().getUnidadId() : null;
+        boolean unidadCambio = !Objects.equals(anteriorUnidadId, nuevaUnidadId);
+
         adminUnidad.setUsername(nuevoUsername);
         adminUnidad.setNombre(request.getNombre() != null ? request.getNombre().trim() : null);
         adminUnidad.setApellido(request.getApellido() != null ? request.getApellido().trim() : null);
         adminUnidad.setCorreo(nuevoCorreo);
         adminUnidad.setCargoNombre(request.getCargoNombre());
         adminUnidad.setUnidad(nuevaUnidad);
+        if (unidadCambio) {
+            adminUnidad.incrementTokenVersion();
+        }
 
         return adminUnidadRepository.save(adminUnidad);
     }
