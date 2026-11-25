@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -90,9 +91,9 @@ class ExportServiceTest {
                 "listado_docentes", "Listado de Docentes", headers, rows, "pdf");
         assertEquals(HttpStatus.OK, pdfResp.getStatusCode());
         assertEquals(MediaType.APPLICATION_PDF, pdfResp.getHeaders().getContentType());
-        assertNotNull(pdfResp.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION));
-        assertTrue(pdfResp.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION).contains("listado_docentes_"));
-        assertTrue(pdfResp.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION).endsWith(".pdf\""));
+        String pdfDisposition = Objects.requireNonNull(pdfResp.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION));
+        assertTrue(pdfDisposition.contains("listado_docentes_"));
+        assertTrue(pdfDisposition.endsWith(".pdf\""));
         assertEquals(HttpHeaders.CONTENT_DISPOSITION,
                 pdfResp.getHeaders().getFirst(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS));
 
@@ -100,6 +101,7 @@ class ExportServiceTest {
                 "listado_docentes", "Listado de Docentes", headers, rows, "xlsx");
         assertEquals(HttpStatus.OK, xlsxResp.getStatusCode());
         assertEquals(ExportFormat.XLSX.getMediaType(), xlsxResp.getHeaders().getContentType());
-        assertTrue(xlsxResp.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION).endsWith(".xlsx\""));
+        String xlsxDisposition = Objects.requireNonNull(xlsxResp.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION));
+        assertTrue(xlsxDisposition.endsWith(".xlsx\""));
     }
 }

@@ -31,21 +31,21 @@ import org.springframework.stereotype.Service;
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class ExportService {
 
-    private static final DateTimeFormatter FILE_DATE_FMT = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter FILE_DATETIME_FMT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
     private static final DateTimeFormatter DISPLAY_DATETIME_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     // Admin green palette (--admin-primary-900, 800, 100, 50)
-    private static final Color ADMIN_TITLE_COLOR = new Color(26, 46, 28);    // #1A2E1C
-    private static final Color ADMIN_HEADER_BG = new Color(42, 75, 47);      // #2A4B2F
-    private static final Color ADMIN_ZEBRA_BG = new Color(239, 246, 240);    // #EFF6F0
+    private static final Color ADMIN_TITLE_COLOR = new Color(26, 46, 28); // #1A2E1C
+    private static final Color ADMIN_HEADER_BG = new Color(42, 75, 47); // #2A4B2F
+    private static final Color ADMIN_ZEBRA_BG = new Color(239, 246, 240); // #EFF6F0
     private static final Color ADMIN_BORDER_COLOR = new Color(209, 229, 212); // #D1E5D4
 
     public ResponseEntity<byte[]> buildExportResponse(
@@ -72,7 +72,8 @@ public class ExportService {
             case XLSX -> exportToExcel(title, headers, rows, cleanFilters);
         };
 
-        String filename = baseFilename + "_" + LocalDate.now().format(FILE_DATE_FMT) + "." + exportFormat.getExtension();
+        String filename = baseFilename + "_" + LocalDateTime.now().format(FILE_DATETIME_FMT) + "."
+                + exportFormat.getExtension();
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(exportFormat.getMediaType());
@@ -88,10 +89,11 @@ public class ExportService {
         return exportToExcel(title, headers, rows, List.of());
     }
 
-    public byte[] exportToExcel(String title, List<String> headers, List<List<String>> rows, List<String> appliedFilters) {
+    public byte[] exportToExcel(String title, List<String> headers, List<List<String>> rows,
+            List<String> appliedFilters) {
         List<String> cleanFilters = sanitizeFilters(appliedFilters);
         try (XSSFWorkbook workbook = new XSSFWorkbook();
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
 
             String sheetName = sanitizeSheetName(title);
             Sheet sheet = workbook.createSheet(sheetName);
@@ -220,7 +222,8 @@ public class ExportService {
         return exportToPdf(title, headers, rows, List.of());
     }
 
-    public byte[] exportToPdf(String title, List<String> headers, List<List<String>> rows, List<String> appliedFilters) {
+    public byte[] exportToPdf(String title, List<String> headers, List<List<String>> rows,
+            List<String> appliedFilters) {
         List<String> cleanFilters = sanitizeFilters(appliedFilters);
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document document = new Document(PageSize.A4.rotate(), 24, 24, 28, 28);
@@ -342,10 +345,13 @@ public class ExportService {
         if (appliedFilters == null || appliedFilters.isEmpty()) {
             return List.of();
         }
-        return appliedFilters.stream()
-                .filter(f -> f != null && !f.isBlank())
-                .map(String::trim)
-                .toList();
+        List<String> sanitized = new ArrayList<>();
+        for (String f : appliedFilters) {
+            if (f != null && !f.isBlank()) {
+                sanitized.add(f.trim());
+            }
+        }
+        return sanitized;
     }
 
     private String sanitizeSheetName(String title) {

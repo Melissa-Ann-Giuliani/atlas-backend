@@ -77,9 +77,11 @@ public class CambioController {
                         String responsable = "";
                         if (c.getUsuarioResponsable() != null) {
                             String nombre = c.getUsuarioResponsable().getNombre() != null
-                                    ? c.getUsuarioResponsable().getNombre() : "";
+                                    ? c.getUsuarioResponsable().getNombre()
+                                    : "";
                             String apellido = c.getUsuarioResponsable().getApellido() != null
-                                    ? c.getUsuarioResponsable().getApellido() : "";
+                                    ? c.getUsuarioResponsable().getApellido()
+                                    : "";
                             responsable = (apellido + " " + nombre).trim();
                             if (responsable.isEmpty() && c.getUsuarioResponsable().getUsername() != null) {
                                 responsable = c.getUsuarioResponsable().getUsername();
@@ -93,11 +95,13 @@ public class CambioController {
                                 c.getCampoAfectado() != null ? c.getCampoAfectado() : "",
                                 c.getValorAnterior() != null ? c.getValorAnterior() : "",
                                 c.getValorNuevo() != null ? c.getValorNuevo() : "",
-                                c.getUsuarioAfectadoNombreCompleto() != null ? c.getUsuarioAfectadoNombreCompleto() : "");
+                                c.getUsuarioAfectadoNombreCompleto() != null ? c.getUsuarioAfectadoNombreCompleto()
+                                        : "");
                     })
                     .toList();
 
-            return exportService.buildExportResponse("historial_cambios", "Historial de Cambios", headers, rows, formato, filtros);
+            return exportService.buildExportResponse("historial_cambios", "Historial de Cambios", headers, rows,
+                    formato, filtros);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {

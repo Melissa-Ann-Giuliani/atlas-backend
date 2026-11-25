@@ -107,7 +107,8 @@ public class UsuarioController {
                             Boolean.TRUE.equals(u.getActivo()) ? "Sí" : "No"))
                     .toList();
 
-            return exportService.buildExportResponse("listado_usuarios", "Listado de Usuarios", headers, rows, formato, filtros);
+            return exportService.buildExportResponse("listado_usuarios", "Listado de Usuarios", headers, rows, formato,
+                    filtros);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
