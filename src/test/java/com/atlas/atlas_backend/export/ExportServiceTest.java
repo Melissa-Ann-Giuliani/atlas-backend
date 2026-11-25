@@ -83,6 +83,20 @@ class ExportServiceTest {
     }
 
     @Test
+    void exportToExcelHandlesEmptyRows() throws Exception {
+        byte[] bytes = exportService.exportToExcel("Listado Vacío", List.of("Col 1", "Col 2"), List.of());
+        assertNotNull(bytes);
+        assertTrue(bytes.length > 0);
+        try (XSSFWorkbook wb = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+            assertEquals(1, wb.getNumberOfSheets());
+            var sheet = wb.getSheetAt(0);
+            assertEquals("Col 1", sheet.getRow(3).getCell(0).getStringCellValue());
+            assertEquals("Col 2", sheet.getRow(3).getCell(1).getStringCellValue());
+            assertNull(sheet.getRow(4));
+        }
+    }
+
+    @Test
     void buildExportResponseSetsHeadersForPdfAndXlsx() {
         List<String> headers = List.of("Col1");
         List<List<String>> rows = List.of(List.of("Val1"));

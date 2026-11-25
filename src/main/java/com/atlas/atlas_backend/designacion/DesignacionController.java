@@ -5,6 +5,7 @@ import com.atlas.atlas_backend.export.ExportService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.AccessDeniedException;
@@ -15,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/designaciones")
@@ -102,15 +104,23 @@ public class DesignacionController {
             return exportService.buildExportResponse(
                     "vencimientos_designaciones", "Vencimientos de Designaciones", headers, rows, formato, filtros);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+            return ResponseEntity.badRequest()
+                    .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                    .body(new ErrorResponse(e.getMessage()));
         } catch (AccessDeniedException e) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponse(e.getMessage()));
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                    .body(new ErrorResponse(e.getMessage()));
         } catch (ResponseStatusException e) {
             String msg = e.getReason() != null ? e.getReason() : e.getMessage();
-            return ResponseEntity.status(e.getStatusCode()).body(new ErrorResponse(msg));
+            return ResponseEntity.status(e.getStatusCode())
+                    .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                    .body(new ErrorResponse(msg));
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponse(e.getMessage()));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                    .body(new ErrorResponse(e.getMessage()));
         }
     }
 

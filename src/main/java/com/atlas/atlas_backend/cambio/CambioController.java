@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,10 +15,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/cambios")
@@ -103,9 +106,18 @@ public class CambioController {
             return exportService.buildExportResponse("historial_cambios", "Historial de Cambios", headers, rows,
                     formato, filtros);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+            return ResponseEntity.badRequest()
+                    .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                    .body(new ErrorResponse(e.getMessage()));
+        } catch (ResponseStatusException e) {
+            String msg = e.getReason() != null ? e.getReason() : e.getMessage();
+            return ResponseEntity.status(e.getStatusCode())
+                    .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                    .body(new ErrorResponse(msg));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
+            return ResponseEntity.internalServerError()
+                    .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                    .body(new ErrorResponse(e.getMessage()));
         }
     }
 }

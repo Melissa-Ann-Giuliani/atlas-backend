@@ -47,6 +47,9 @@ public class LicenciaControllerTest {
     @MockBean
     private com.atlas.atlas_backend.usuario.UsuarioRepository usuarioRepository;
 
+    @MockBean
+    private com.atlas.atlas_backend.export.ExportService exportService;
+
     @Test
     @WithMockUser(username = "admin", roles = {"ADMIN_GLOBAL"})
     void getActiveLicencias_AuthorizedRole_Returns200() throws Exception {

@@ -135,10 +135,12 @@ public class CambioService {
 
         Sort defaultSort = Sort.by(Sort.Order.desc("fechaHora"), Sort.Order.desc("id"));
         Sort effectiveSort = pageable.getSort().isSorted() ? pageable.getSort() : defaultSort;
-        Pageable sortedPageable = PageRequest.of(
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                Objects.requireNonNull(effectiveSort));
+        Pageable sortedPageable = pageable.isUnpaged()
+                ? Pageable.unpaged(Objects.requireNonNull(effectiveSort))
+                : PageRequest.of(
+                        pageable.getPageNumber(),
+                        pageable.getPageSize(),
+                        Objects.requireNonNull(effectiveSort));
 
         Specification<Cambio> spec = CambioSpecification.withFilters(
                 usuarioAfectado,

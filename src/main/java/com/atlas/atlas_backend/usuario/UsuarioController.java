@@ -5,6 +5,7 @@ import com.atlas.atlas_backend.error.ErrorResponse;
 import com.atlas.atlas_backend.export.ExportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -110,9 +111,13 @@ public class UsuarioController {
             return exportService.buildExportResponse("listado_usuarios", "Listado de Usuarios", headers, rows, formato,
                     filtros);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+            return ResponseEntity.badRequest()
+                    .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                    .body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
+            return ResponseEntity.internalServerError()
+                    .contentType(Objects.requireNonNull(MediaType.APPLICATION_JSON))
+                    .body(new ErrorResponse(e.getMessage()));
         }
     }
 
