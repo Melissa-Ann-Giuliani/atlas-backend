@@ -1,6 +1,7 @@
 package com.atlas.atlas_backend.cargo;
 
 import com.atlas.atlas_backend.error.ErrorResponse;
+import com.atlas.atlas_backend.export.ExportService;
 import com.atlas.atlas_backend.funcion.AsignarFuncionesCargoRequest;
 import com.atlas.atlas_backend.funcion.DesignacionCompletaResponseDTO;
 import com.atlas.atlas_backend.funcion.FuncionService;
@@ -18,15 +19,23 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.lang.NonNull;
 
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/cargos")
 public class CargoController {
+
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     @Autowired
     private CargoService cargoService;
 
     @Autowired
     private FuncionService funcionService;
+
+    @Autowired
+    private ExportService exportService;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
@@ -45,6 +54,46 @@ public class CargoController {
             Page<CargoListDTO> result = cargoService.getActiveCargos(
                     authentication.getName(), safeSearch, estado, categoriaId, dedicacionId, caracterId, pageable);
             return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().header("X-Error-Message", e.getMessage()).build();
+        }
+    }
+
+    @GetMapping("/exportar")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
+    public ResponseEntity<?> exportActiveCargos(
+            @RequestParam(defaultValue = "xlsx") String formato,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String estado,
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) Integer dedicacionId,
+            @RequestParam(required = false) Integer caracterId,
+            @RequestParam(required = false) List<String> filtros,
+            Authentication authentication) {
+        try {
+            String safeSearch = (search == null) ? "" : search;
+            Page<CargoListDTO> result = cargoService.getActiveCargos(
+                    authentication.getName(), safeSearch, estado, categoriaId, dedicacionId, caracterId,
+                    Pageable.unpaged());
+
+            List<String> headers = List.of(
+                    "Número", "Fecha de Creación", "Estado", "Docente", "Categoría", "Dedicación", "Carácter");
+
+            List<List<String>> rows = result.getContent().stream()
+                    .map(c -> List.of(
+                            c.getNumero() != null ? String.valueOf(c.getNumero()) : "",
+                            c.getFechaCreacion() != null ? c.getFechaCreacion().format(DATE_FMT) : "",
+                            c.getEstado() != null ? c.getEstado() : "",
+                            c.getApellidoNombre() != null ? c.getApellidoNombre() : "",
+                            c.getCategoria() != null ? c.getCategoria() : "",
+                            c.getDedicacion() != null ? c.getDedicacion() : "",
+                            c.getCaracter() != null ? c.getCaracter() : ""))
+                    .toList();
+
+            return exportService.buildExportResponse("listado_cargos", "Listado de Cargos", headers, rows, formato, filtros);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().header("X-Error-Message", e.getMessage()).build();

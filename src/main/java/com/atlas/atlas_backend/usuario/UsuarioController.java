@@ -2,6 +2,7 @@ package com.atlas.atlas_backend.usuario;
 
 import com.atlas.atlas_backend.auth.AuthService;
 import com.atlas.atlas_backend.error.ErrorResponse;
+import com.atlas.atlas_backend.export.ExportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 import java.util.Objects;
 
 @RestController
@@ -48,6 +50,9 @@ public class UsuarioController {
     @Autowired
     private DocenteRepository docenteRepository;
 
+    @Autowired
+    private ExportService exportService;
+
     @GetMapping
     @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD') or hasRole('AUDITOR')")
     public ResponseEntity<org.springframework.data.domain.Page<UsuarioListDTO>> getUsuarios(
@@ -64,51 +69,93 @@ public class UsuarioController {
         org.springframework.data.domain.Page<Usuario> usuariosPage = usuarioRepository.searchUsuarios(cleanSearch,
                 cleanRol, pageable);
 
-        org.springframework.data.domain.Page<UsuarioListDTO> dtoPage = usuariosPage.map(u -> {
-            UsuarioListDTO dto = new UsuarioListDTO();
-            dto.setId(u.getId());
-            dto.setUsuarioId(u.getId());
-            dto.setUsername(u.getUsername());
-            dto.setNombre(u.getNombre());
-            dto.setApellido(u.getApellido());
-            dto.setCorreo(u.getCorreo());
-            dto.setActivo(u.getActivo());
-            dto.setRol(u.getRol() != null ? u.getRol().getNombre() : null);
-
-            // Populate specific fields if available
-            adminGlobalRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(ag -> {
-                if (ag.getCargoNombre() != null) {
-                    dto.setCargo(ag.getCargoNombre().name());
-                }
-            });
-
-            adminUnidadRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(au -> {
-                if (au.getCargoNombre() != null) {
-                    dto.setCargo(au.getCargoNombre().name());
-                }
-                if (au.getUnidad() != null) {
-                    dto.setUnidad(au.getUnidad().getUnidadNombre());
-                }
-            });
-
-            auditorRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(aud -> {
-                if (aud.getCargoNombre() != null) {
-                    dto.setCargo(aud.getCargoNombre().name());
-                }
-            });
-
-            docenteRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(doc -> {
-                if (doc.getDni() != null) {
-                    dto.setDni(String.valueOf(doc.getDni()));
-                }
-                dto.setEstado(doc.getEstado());
-                dto.setLegajo(doc.getLegajo());
-            });
-
-            return dto;
-        });
+        org.springframework.data.domain.Page<UsuarioListDTO> dtoPage = usuariosPage.map(this::toUsuarioListDTO);
 
         return ResponseEntity.ok(dtoPage);
+    }
+
+    @GetMapping("/exportar")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('ADMINISTRADOR_GLOBAL') or hasRole('ADMIN_UNIDAD') or hasRole('ADMINISTRADOR_DE_UNIDAD') or hasRole('AUDITOR')")
+    public ResponseEntity<?> exportUsuarios(
+            @RequestParam(defaultValue = "xlsx") String formato,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String rol,
+            @RequestParam(required = false) List<String> filtros) {
+        try {
+            String cleanSearch = (search != null && search.trim().isEmpty()) ? null
+                    : (search != null ? search.trim() : null);
+            String cleanRol = (rol != null && rol.trim().isEmpty()) ? null : (rol != null ? rol.trim() : null);
+
+            org.springframework.data.domain.Page<Usuario> usuariosPage = usuarioRepository.searchUsuarios(
+                    cleanSearch, cleanRol, org.springframework.data.domain.Pageable.unpaged());
+
+            List<String> headers = List.of(
+                    "Usuario", "Apellido", "Nombre", "Correo", "Rol", "Cargo", "Unidad", "DNI", "Legajo", "Activo");
+
+            List<List<String>> rows = usuariosPage.getContent().stream()
+                    .map(this::toUsuarioListDTO)
+                    .map(u -> List.of(
+                            u.getUsername() != null ? u.getUsername() : "",
+                            u.getApellido() != null ? u.getApellido() : "",
+                            u.getNombre() != null ? u.getNombre() : "",
+                            u.getCorreo() != null ? u.getCorreo() : "",
+                            u.getRol() != null ? u.getRol() : "",
+                            u.getCargo() != null ? u.getCargo() : "",
+                            u.getUnidad() != null ? u.getUnidad() : "",
+                            u.getDni() != null ? u.getDni() : "",
+                            u.getLegajo() != null ? String.valueOf(u.getLegajo()) : "",
+                            Boolean.TRUE.equals(u.getActivo()) ? "Sí" : "No"))
+                    .toList();
+
+            return exportService.buildExportResponse("listado_usuarios", "Listado de Usuarios", headers, rows, formato, filtros);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    private UsuarioListDTO toUsuarioListDTO(Usuario u) {
+        UsuarioListDTO dto = new UsuarioListDTO();
+        dto.setId(u.getId());
+        dto.setUsuarioId(u.getId());
+        dto.setUsername(u.getUsername());
+        dto.setNombre(u.getNombre());
+        dto.setApellido(u.getApellido());
+        dto.setCorreo(u.getCorreo());
+        dto.setActivo(u.getActivo());
+        dto.setRol(u.getRol() != null ? u.getRol().getNombre() : null);
+
+        adminGlobalRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(ag -> {
+            if (ag.getCargoNombre() != null) {
+                dto.setCargo(ag.getCargoNombre().name());
+            }
+        });
+
+        adminUnidadRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(au -> {
+            if (au.getCargoNombre() != null) {
+                dto.setCargo(au.getCargoNombre().name());
+            }
+            if (au.getUnidad() != null) {
+                dto.setUnidad(au.getUnidad().getUnidadNombre());
+            }
+        });
+
+        auditorRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(aud -> {
+            if (aud.getCargoNombre() != null) {
+                dto.setCargo(aud.getCargoNombre().name());
+            }
+        });
+
+        docenteRepository.findById(Objects.requireNonNull(u.getId())).ifPresent(doc -> {
+            if (doc.getDni() != null) {
+                dto.setDni(String.valueOf(doc.getDni()));
+            }
+            dto.setEstado(doc.getEstado());
+            dto.setLegajo(doc.getLegajo());
+        });
+
+        return dto;
     }
 
     @GetMapping("/{id}")

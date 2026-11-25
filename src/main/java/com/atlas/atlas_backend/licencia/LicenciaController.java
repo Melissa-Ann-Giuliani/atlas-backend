@@ -1,5 +1,7 @@
 package com.atlas.atlas_backend.licencia;
 
+import com.atlas.atlas_backend.error.ErrorResponse;
+import com.atlas.atlas_backend.export.ExportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,14 +16,21 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/licencias")
 public class LicenciaController {
 
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
     @Autowired
     private LicenciaService licenciaService;
+
+    @Autowired
+    private ExportService exportService;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
@@ -40,6 +49,46 @@ public class LicenciaController {
             Page<LicenciaListDTO> result = licenciaService.getActiveLicencias(
                     authentication.getName(), safeSearch, motivoId, fechaDesde, fechaHasta, unidadId, pageable);
             return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().header("X-Error-Message", e.getMessage()).build();
+        }
+    }
+
+    @GetMapping("/exportar")
+    @PreAuthorize("hasRole('ADMIN_GLOBAL') or hasRole('AUDITOR') or hasRole('ADMIN_UNIDAD') or hasRole('ADMIN_DE_UNIDAD')")
+    public ResponseEntity<?> exportActiveLicencias(
+            @RequestParam(defaultValue = "xlsx") String formato,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer motivoId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
+            @RequestParam(required = false) Integer unidadId,
+            @RequestParam(required = false) List<String> filtros,
+            Authentication authentication) {
+        try {
+            String safeSearch = (search == null) ? "" : search;
+            Page<LicenciaListDTO> result = licenciaService.getActiveLicencias(
+                    authentication.getName(), safeSearch, motivoId, fechaDesde, fechaHasta, unidadId,
+                    Pageable.unpaged());
+
+            List<String> headers = List.of(
+                    "Nro. Resolución", "Motivo", "Docente", "Fecha Inicio", "Fecha Fin", "Días Usados", "Estado");
+
+            List<List<String>> rows = result.getContent().stream()
+                    .map(l -> List.of(
+                            l.getNroResolucion() != null ? l.getNroResolucion() : "",
+                            l.getMotivoNombre() != null ? l.getMotivoNombre() : "",
+                            l.getDocenteNombreCompleto() != null ? l.getDocenteNombreCompleto() : "",
+                            l.getFechaInicio() != null ? l.getFechaInicio().format(DATE_FMT) : "",
+                            l.getFechaFin() != null ? l.getFechaFin().format(DATE_FMT) : "",
+                            l.getDiasUsados() != null ? String.valueOf(l.getDiasUsados()) : "",
+                            l.getEstado() != null ? l.getEstado() : ""))
+                    .toList();
+
+            return exportService.buildExportResponse("listado_licencias", "Listado de Licencias", headers, rows, formato, filtros);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().header("X-Error-Message", e.getMessage()).build();
