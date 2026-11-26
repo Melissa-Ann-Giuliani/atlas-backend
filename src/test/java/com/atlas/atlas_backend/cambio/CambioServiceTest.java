@@ -231,4 +231,21 @@ class CambioServiceTest {
         assertTrue(result.isEmpty());
         verify(cambioRepository).findAll(any(Specification.class), any(Pageable.class));
     }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void consultarHistorial_Unpaged_UsaPageableUnpagedConOrdenPorDefecto() {
+        when(cambioRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        Page<CambioResponseDTO> result = cambioService.consultarHistorial(
+                null, null, null, null, null, null, null, Pageable.unpaged());
+
+        assertTrue(result.isEmpty());
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(cambioRepository).findAll(any(Specification.class), pageableCaptor.capture());
+        Pageable captured = pageableCaptor.getValue();
+        assertTrue(captured.isUnpaged());
+        assertTrue(captured.getSort().isSorted());
+    }
 }

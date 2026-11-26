@@ -1,13 +1,11 @@
 package com.atlas.atlas_backend.funcion;
 
 import com.atlas.atlas_backend.archivo.Archivo;
-import com.atlas.atlas_backend.archivo.ArchivoService;
 import com.atlas.atlas_backend.cambio.CambioService;
 import com.atlas.atlas_backend.cambio.TipoOperacion;
 import com.atlas.atlas_backend.cargo.Cargo;
 import com.atlas.atlas_backend.cargo.CargoRepository;
 import com.atlas.atlas_backend.designacion.Designacion;
-import com.atlas.atlas_backend.designacion.DesignacionPdfService;
 import com.atlas.atlas_backend.materia.Materia;
 import com.atlas.atlas_backend.materia.MateriaRepository;
 import com.atlas.atlas_backend.notification.EmailService;
@@ -49,8 +47,6 @@ public class FuncionService {
             UsuarioRepository usuarioRepository,
             AdminUnidadRepository adminUnidadRepository,
             DocenteRepository docenteRepository,
-            ArchivoService archivoService,
-            DesignacionPdfService designacionPdfService,
             EmailService emailService) {
         this.funcionRepository = funcionRepository;
         this.cargoRepository = cargoRepository;
@@ -62,8 +58,7 @@ public class FuncionService {
     }
 
     /**
-     * Assigns functions to a designated cargo, updates occupied hours, generates
-     * the official PDF,
+     * Assigns functions to a designated cargo, updates occupied hours,
      * activates the docente, and sends a confirmation email.
      */
     @Transactional

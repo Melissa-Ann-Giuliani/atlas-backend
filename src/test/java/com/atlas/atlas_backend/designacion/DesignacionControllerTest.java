@@ -55,6 +55,9 @@ public class DesignacionControllerTest {
     @MockBean
     private com.atlas.atlas_backend.usuario.UsuarioRepository usuarioRepository;
 
+    @MockBean
+    private com.atlas.atlas_backend.export.ExportService exportService;
+
     private DesignacionCreateRequest validRequest;
     private DesignacionResponseDTO expectedDto;
 

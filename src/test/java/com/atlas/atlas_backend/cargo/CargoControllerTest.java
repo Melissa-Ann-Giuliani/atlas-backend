@@ -57,6 +57,9 @@ public class CargoControllerTest {
         @MockBean
         private com.atlas.atlas_backend.usuario.UsuarioRepository usuarioRepository;
 
+        @MockBean
+        private com.atlas.atlas_backend.export.ExportService exportService;
+
         private CargoCreateRequest validRequest;
         private CargoUpdateRequest validUpdateRequest;
         private CargoDetailDTO expectedDto;
