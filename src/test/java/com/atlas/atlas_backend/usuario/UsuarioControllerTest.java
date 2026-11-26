@@ -59,6 +59,9 @@ public class UsuarioControllerTest {
         private AdminUnidadRepository adminUnidadRepository;
 
         @MockBean
+        private com.atlas.atlas_backend.export.ExportService exportService;
+
+        @MockBean
         private AuditorRepository auditorRepository;
 
         @MockBean

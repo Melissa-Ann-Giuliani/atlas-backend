@@ -1,5 +1,7 @@
 package com.atlas.atlas_backend.cambio;
 
+import com.atlas.atlas_backend.export.ExportFormat;
+import com.atlas.atlas_backend.export.ExportService;
 import com.atlas.atlas_backend.security.CustomUserDetailsService;
 import com.atlas.atlas_backend.security.JwtUtil;
 import com.atlas.atlas_backend.security.SecurityConfig;
@@ -11,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,11 +27,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(CambioController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, ExportService.class})
 @SuppressWarnings("null")
 class CambioControllerTest {
 
@@ -126,5 +130,45 @@ class CambioControllerTest {
                         .param("fechaDesde", "2026-05-10")
                         .param("fechaHasta", "2026-05-01"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void exportarHistorial_PdfSinRegistrosConAcceptPdf_Retorna200() throws Exception {
+        when(cambioService.consultarHistorial(any(), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/cambios/exportar")
+                        .param("formato", "pdf")
+                        .accept(MediaType.APPLICATION_PDF))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void exportarHistorial_XlsxSinRegistrosConAcceptXlsx_Retorna200() throws Exception {
+        when(cambioService.consultarHistorial(any(), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/cambios/exportar")
+                        .param("formato", "xlsx")
+                        .accept(ExportFormat.XLSX.getMediaType()))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(ExportFormat.XLSX.getMediaType()));
+    }
+
+    @Test
+    @WithMockUser(username = "admin_global", roles = {"ADMIN_GLOBAL"})
+    void exportarHistorial_FormatoInvalidoConAcceptPdf_Retorna400JsonYNo406() throws Exception {
+        when(cambioService.consultarHistorial(any(), any(), any(), any(), any(), any(), any(), any(Pageable.class)))
+                .thenReturn(Page.empty());
+
+        mockMvc.perform(get("/api/cambios/exportar")
+                        .param("formato", "csv")
+                        .accept(MediaType.APPLICATION_PDF))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").exists());
     }
 }

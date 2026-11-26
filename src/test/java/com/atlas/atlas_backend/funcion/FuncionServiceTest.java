@@ -1,13 +1,11 @@
 package com.atlas.atlas_backend.funcion;
 
-import com.atlas.atlas_backend.archivo.ArchivoService;
 import com.atlas.atlas_backend.caracter.Caracter;
 import com.atlas.atlas_backend.cargo.Cargo;
 import com.atlas.atlas_backend.cargo.CargoRepository;
 import com.atlas.atlas_backend.categoria.Categoria;
 import com.atlas.atlas_backend.dedicacion.Dedicacion;
 import com.atlas.atlas_backend.designacion.Designacion;
-import com.atlas.atlas_backend.designacion.DesignacionPdfService;
 import com.atlas.atlas_backend.materia.Materia;
 import com.atlas.atlas_backend.materia.MateriaRepository;
 import com.atlas.atlas_backend.notification.EmailService;
@@ -57,12 +55,6 @@ public class FuncionServiceTest {
 
     @Mock
     private DocenteRepository docenteRepository;
-
-    @Mock
-    private ArchivoService archivoService;
-
-    @Mock
-    private DesignacionPdfService designacionPdfService;
 
     @Mock
     private EmailService emailService;
