@@ -18,11 +18,20 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
 
     boolean existsByEmailInstitucionalAndIdNot(String emailInstitucional, Integer id);
 
+    java.util.List<Docente> findByEstadoIgnoreCase(String estado);
+
     @org.springframework.data.jpa.repository.Query(
         value = """
             SELECT d.id AS usuarioId, d.legajo AS legajo, d.nombre AS nombre, d.apellido AS apellido,
                    o.origenNombre AS origen, u.unidadNombre AS unidad, u.tipoUnidad.nombre AS tipoUnidadNombre, cat.categoriaNombre AS categoria,
-                   ded.dedicacionNombre AS dedicacion, car.caracterNombre AS caracter, d.estado AS estado
+                   ded.dedicacionNombre AS dedicacion, car.caracterNombre AS caracter,
+                   CASE WHEN EXISTS (
+                       SELECT 1 FROM Licencia l
+                       WHERE l.designacion = des
+                         AND LOWER(des.designacionEstadoActual) = 'licencia'
+                         AND CURRENT_DATE >= l.fechaInicio
+                         AND (COALESCE(l.fechaFin, l.fechaFinEstim) IS NULL OR CURRENT_DATE <= COALESCE(l.fechaFin, l.fechaFinEstim))
+                   ) THEN 'Licencia' ELSE 'Activo' END AS estado
             FROM Cargo c
             JOIN c.designacion des
             JOIN Docente d ON d.id = des.usuarioId
@@ -31,8 +40,22 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
             JOIN c.categoria cat
             JOIN c.dedicacion ded
             JOIN c.caracter car
-            WHERE d.estado IN ('Activo', 'Licencia')
-              AND (:estado IS NULL OR d.estado = :estado)
+            WHERE LOWER(d.estado) IN ('activo', 'licencia')
+              AND (CAST(:estado AS string) IS NULL
+                   OR (LOWER(CAST(:estado AS string)) = 'licencia' AND EXISTS (
+                       SELECT 1 FROM Licencia l
+                       WHERE l.designacion = des
+                         AND LOWER(des.designacionEstadoActual) = 'licencia'
+                         AND CURRENT_DATE >= l.fechaInicio
+                         AND (COALESCE(l.fechaFin, l.fechaFinEstim) IS NULL OR CURRENT_DATE <= COALESCE(l.fechaFin, l.fechaFinEstim))
+                   ))
+                   OR (LOWER(CAST(:estado AS string)) = 'activo' AND NOT EXISTS (
+                       SELECT 1 FROM Licencia l
+                       WHERE l.designacion = des
+                         AND LOWER(des.designacionEstadoActual) = 'licencia'
+                         AND CURRENT_DATE >= l.fechaInicio
+                         AND (COALESCE(l.fechaFin, l.fechaFinEstim) IS NULL OR CURRENT_DATE <= COALESCE(l.fechaFin, l.fechaFinEstim))
+                   )))
               AND (:unidadId IS NULL OR u.unidadId = :unidadId)
               AND (CAST(:searchTerm AS string) IS NULL OR LOWER(d.nombre) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
                    OR LOWER(d.apellido) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
@@ -55,8 +78,22 @@ public interface DocenteRepository extends JpaRepository<Docente, Integer> {
             JOIN c.categoria cat
             JOIN c.dedicacion ded
             JOIN c.caracter car
-            WHERE d.estado IN ('Activo', 'Licencia')
-              AND (:estado IS NULL OR d.estado = :estado)
+            WHERE LOWER(d.estado) IN ('activo', 'licencia')
+              AND (CAST(:estado AS string) IS NULL
+                   OR (LOWER(CAST(:estado AS string)) = 'licencia' AND EXISTS (
+                       SELECT 1 FROM Licencia l
+                       WHERE l.designacion = des
+                         AND LOWER(des.designacionEstadoActual) = 'licencia'
+                         AND CURRENT_DATE >= l.fechaInicio
+                         AND (COALESCE(l.fechaFin, l.fechaFinEstim) IS NULL OR CURRENT_DATE <= COALESCE(l.fechaFin, l.fechaFinEstim))
+                   ))
+                   OR (LOWER(CAST(:estado AS string)) = 'activo' AND NOT EXISTS (
+                       SELECT 1 FROM Licencia l
+                       WHERE l.designacion = des
+                         AND LOWER(des.designacionEstadoActual) = 'licencia'
+                         AND CURRENT_DATE >= l.fechaInicio
+                         AND (COALESCE(l.fechaFin, l.fechaFinEstim) IS NULL OR CURRENT_DATE <= COALESCE(l.fechaFin, l.fechaFinEstim))
+                   )))
               AND (:unidadId IS NULL OR u.unidadId = :unidadId)
               AND (CAST(:searchTerm AS string) IS NULL OR LOWER(d.nombre) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 
                    OR LOWER(d.apellido) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) 

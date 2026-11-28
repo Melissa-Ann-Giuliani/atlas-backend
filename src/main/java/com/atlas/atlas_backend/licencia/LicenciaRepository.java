@@ -28,9 +28,10 @@ public interface LicenciaRepository extends JpaRepository<Licencia, Integer> {
         JOIN l.motivo m
         JOIN l.designacion des
         JOIN Docente doc ON doc.id = des.usuarioId
-        WHERE des.designacionEstadoActual = 'Licencia'
+        WHERE LOWER(des.designacionEstadoActual) = 'licencia'
+          AND LOWER(doc.estado) IN ('activo', 'licencia')
           AND CURRENT_DATE >= l.fechaInicio
-          AND CURRENT_DATE <= COALESCE(l.fechaFin, l.fechaFinEstim)
+          AND (COALESCE(l.fechaFin, l.fechaFinEstim) IS NULL OR CURRENT_DATE <= COALESCE(l.fechaFin, l.fechaFinEstim))
           AND (:motivoId IS NULL OR m.id = :motivoId)
           AND (:fechaDesde IS NULL OR l.fechaInicio >= :fechaDesde)
           AND (:fechaHasta IS NULL OR COALESCE(l.fechaFin, l.fechaFinEstim) <= :fechaHasta)

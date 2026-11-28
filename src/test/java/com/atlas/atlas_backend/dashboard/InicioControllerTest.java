@@ -1,11 +1,11 @@
 package com.atlas.atlas_backend.dashboard;
 
+import com.atlas.atlas_backend.unidad.Unidad;
 import com.atlas.atlas_backend.usuario.AdminUnidad;
 import com.atlas.atlas_backend.usuario.AdminUnidadRepository;
 import com.atlas.atlas_backend.usuario.Rol;
 import com.atlas.atlas_backend.usuario.Usuario;
 import com.atlas.atlas_backend.usuario.UsuarioRepository;
-import com.atlas.atlas_backend.unidad.Unidad;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -106,5 +107,35 @@ class InicioControllerTest {
         assertEquals(200, response.getStatusCode().value());
         assertNotNull(response.getBody());
         verify(dashboardService, times(1)).getTeachingMapData(10, null, null, null, null, null);
+    }
+
+    @Test
+    void testGetTeachingMap_ForwardsMultiValueFilters() {
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getName()).thenReturn("admin");
+
+        Usuario mockUser = new Usuario();
+        mockUser.setId(1);
+        Rol rol = new Rol();
+        rol.setNombre("Administrador Global");
+        mockUser.setRol(rol);
+
+        List<Integer> caracterIds = List.of(1, 2);
+        List<Integer> categoriaIds = List.of(3);
+        List<Integer> dedicacionIds = List.of(4, 5);
+        List<Integer> origenIds = List.of(1, 2);
+        List<String> estados = List.of("Activo", "Licencia");
+
+        when(usuarioRepository.findByUsername("admin")).thenReturn(Optional.of(mockUser));
+        when(dashboardService.getTeachingMapData(null, caracterIds, categoriaIds, dedicacionIds, origenIds, estados))
+                .thenReturn(new TeachingMapResponseDTO());
+
+        ResponseEntity<TeachingMapResponseDTO> response = inicioController.getTeachingMap(
+                caracterIds, categoriaIds, dedicacionIds, origenIds, estados);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertNotNull(response.getBody());
+        verify(dashboardService, times(1))
+                .getTeachingMapData(null, caracterIds, categoriaIds, dedicacionIds, origenIds, estados);
     }
 }

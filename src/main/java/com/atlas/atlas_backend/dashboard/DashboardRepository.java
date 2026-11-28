@@ -1,43 +1,126 @@
 package com.atlas.atlas_backend.dashboard;
 
-import com.atlas.atlas_backend.cargo.Cargo;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.Repository;
-import org.springframework.data.repository.query.Param;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.TypedQuery;
+import org.springframework.stereotype.Repository;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public interface DashboardRepository extends Repository<Cargo, Integer> {
+@Repository
+public class DashboardRepository {
 
-    @Query("SELECT COUNT(DISTINCT d.usuarioId) " +
-           "FROM Cargo c JOIN c.designacion d JOIN c.unidad u " +
-           "WHERE (:unidadId IS NULL OR u.unidadId = :unidadId) " +
-           "AND (:caracterId IS NULL OR c.caracter.caracterId = :caracterId) " +
-           "AND (:categoriaId IS NULL OR c.categoria.categoriaId = :categoriaId) " +
-           "AND (:dedicacionId IS NULL OR c.dedicacion.dedicacionId = :dedicacionId) " +
-           "AND (:origenId IS NULL OR c.origen.origenId = :origenId) " +
-           "AND (:estadoActual IS NULL OR d.designacionEstadoActual = :estadoActual)")
-    long countTotalTeachers(@Param("unidadId") Integer unidadId, @Param("caracterId") Integer caracterId, @Param("categoriaId") Integer categoriaId, @Param("dedicacionId") Integer dedicacionId, @Param("origenId") Integer origenId, @Param("estadoActual") String estadoActual);
+    @PersistenceContext
+    private EntityManager entityManager;
 
-    @Query("SELECT tu.nombre, COUNT(DISTINCT d.usuarioId) " +
-           "FROM Cargo c JOIN c.designacion d JOIN c.unidad u JOIN u.tipoUnidad tu " +
-           "WHERE (:unidadId IS NULL OR u.unidadId = :unidadId) " +
-           "AND (:caracterId IS NULL OR c.caracter.caracterId = :caracterId) " +
-           "AND (:categoriaId IS NULL OR c.categoria.categoriaId = :categoriaId) " +
-           "AND (:dedicacionId IS NULL OR c.dedicacion.dedicacionId = :dedicacionId) " +
-           "AND (:origenId IS NULL OR c.origen.origenId = :origenId) " +
-           "AND (:estadoActual IS NULL OR d.designacionEstadoActual = :estadoActual) " +
-           "GROUP BY tu.nombre")
-    List<Object[]> countTeachersByUnitType(@Param("unidadId") Integer unidadId, @Param("caracterId") Integer caracterId, @Param("categoriaId") Integer categoriaId, @Param("dedicacionId") Integer dedicacionId, @Param("origenId") Integer origenId, @Param("estadoActual") String estadoActual);
+    public long countTotalTeachers(
+            Integer unidadId,
+            List<Integer> caracterIds,
+            List<Integer> categoriaIds,
+            List<Integer> dedicacionIds,
+            List<Integer> origenIds,
+            List<String> estados) {
+        StringBuilder jpql = new StringBuilder(
+                "SELECT COUNT(DISTINCT d.usuarioId) " +
+                "FROM Cargo c JOIN c.designacion d JOIN Docente doc ON doc.id = d.usuarioId JOIN c.unidad u ");
+        Map<String, Object> params = appendFilters(
+                jpql, unidadId, caracterIds, categoriaIds, dedicacionIds, origenIds, estados);
 
-    @Query("SELECT tu.nombre, u.unidadNombre, COUNT(DISTINCT d.usuarioId) " +
-           "FROM Cargo c JOIN c.designacion d JOIN c.unidad u JOIN u.tipoUnidad tu " +
-           "WHERE (:unidadId IS NULL OR u.unidadId = :unidadId) " +
-           "AND (:caracterId IS NULL OR c.caracter.caracterId = :caracterId) " +
-           "AND (:categoriaId IS NULL OR c.categoria.categoriaId = :categoriaId) " +
-           "AND (:dedicacionId IS NULL OR c.dedicacion.dedicacionId = :dedicacionId) " +
-           "AND (:origenId IS NULL OR c.origen.origenId = :origenId) " +
-           "AND (:estadoActual IS NULL OR d.designacionEstadoActual = :estadoActual) " +
-           "GROUP BY tu.nombre, u.unidadNombre")
-    List<Object[]> countTeachersByUnit(@Param("unidadId") Integer unidadId, @Param("caracterId") Integer caracterId, @Param("categoriaId") Integer categoriaId, @Param("dedicacionId") Integer dedicacionId, @Param("origenId") Integer origenId, @Param("estadoActual") String estadoActual);
+        TypedQuery<Long> query = entityManager.createQuery(jpql.toString(), Long.class);
+        params.forEach(query::setParameter);
+        Long result = query.getSingleResult();
+        return result != null ? result : 0L;
+    }
+
+    public List<Object[]> countTeachersByUnitType(
+            Integer unidadId,
+            List<Integer> caracterIds,
+            List<Integer> categoriaIds,
+            List<Integer> dedicacionIds,
+            List<Integer> origenIds,
+            List<String> estados) {
+        StringBuilder jpql = new StringBuilder(
+                "SELECT tu.nombre, COUNT(DISTINCT d.usuarioId) " +
+                "FROM Cargo c JOIN c.designacion d JOIN Docente doc ON doc.id = d.usuarioId JOIN c.unidad u JOIN u.tipoUnidad tu ");
+        Map<String, Object> params = appendFilters(
+                jpql, unidadId, caracterIds, categoriaIds, dedicacionIds, origenIds, estados);
+        jpql.append(" GROUP BY tu.nombre");
+
+        TypedQuery<Object[]> query = entityManager.createQuery(jpql.toString(), Object[].class);
+        params.forEach(query::setParameter);
+        return query.getResultList();
+    }
+
+    public List<Object[]> countTeachersByUnit(
+            Integer unidadId,
+            List<Integer> caracterIds,
+            List<Integer> categoriaIds,
+            List<Integer> dedicacionIds,
+            List<Integer> origenIds,
+            List<String> estados) {
+        StringBuilder jpql = new StringBuilder(
+                "SELECT tu.nombre, u.unidadNombre, COUNT(DISTINCT d.usuarioId) " +
+                "FROM Cargo c JOIN c.designacion d JOIN Docente doc ON doc.id = d.usuarioId JOIN c.unidad u JOIN u.tipoUnidad tu ");
+        Map<String, Object> params = appendFilters(
+                jpql, unidadId, caracterIds, categoriaIds, dedicacionIds, origenIds, estados);
+        jpql.append(" GROUP BY tu.nombre, u.unidadNombre");
+
+        TypedQuery<Object[]> query = entityManager.createQuery(jpql.toString(), Object[].class);
+        params.forEach(query::setParameter);
+        return query.getResultList();
+    }
+
+    private Map<String, Object> appendFilters(
+            StringBuilder jpql,
+            Integer unidadId,
+            List<Integer> caracterIds,
+            List<Integer> categoriaIds,
+            List<Integer> dedicacionIds,
+            List<Integer> origenIds,
+            List<String> estados) {
+        Map<String, Object> params = new HashMap<>();
+        jpql.append("WHERE LOWER(doc.estado) IN ('activo', 'licencia')");
+
+        if (unidadId != null) {
+            jpql.append(" AND u.unidadId = :unidadId");
+            params.put("unidadId", unidadId);
+        }
+        if (caracterIds != null && !caracterIds.isEmpty()) {
+            jpql.append(" AND c.caracter.caracterId IN :caracterIds");
+            params.put("caracterIds", caracterIds);
+        }
+        if (categoriaIds != null && !categoriaIds.isEmpty()) {
+            jpql.append(" AND c.categoria.categoriaId IN :categoriaIds");
+            params.put("categoriaIds", categoriaIds);
+        }
+        if (dedicacionIds != null && !dedicacionIds.isEmpty()) {
+            jpql.append(" AND c.dedicacion.dedicacionId IN :dedicacionIds");
+            params.put("dedicacionIds", dedicacionIds);
+        }
+        if (origenIds != null && !origenIds.isEmpty()) {
+            jpql.append(" AND c.origen.origenId IN :origenIds");
+            params.put("origenIds", origenIds);
+        }
+        if (estados != null && !estados.isEmpty()) {
+            boolean includeLicencia = estados.contains("licencia");
+            boolean includeActivo = estados.contains("activo");
+            if (includeLicencia && !includeActivo) {
+                jpql.append(" AND EXISTS (" + ACTIVE_LICENCIA_SUBQUERY + ")");
+            } else if (includeActivo && !includeLicencia) {
+                jpql.append(" AND NOT EXISTS (" + ACTIVE_LICENCIA_SUBQUERY + ")");
+            } else if (!includeActivo && !includeLicencia) {
+                jpql.append(" AND 1 = 0");
+            }
+        }
+        return params;
+    }
+
+    private static final String ACTIVE_LICENCIA_SUBQUERY =
+            "SELECT 1 FROM Licencia l " +
+            "WHERE l.designacion = d " +
+            "AND LOWER(d.designacionEstadoActual) = 'licencia' " +
+            "AND CURRENT_DATE >= l.fechaInicio " +
+            "AND (COALESCE(l.fechaFin, l.fechaFinEstim) IS NULL OR CURRENT_DATE <= COALESCE(l.fechaFin, l.fechaFinEstim))";
 }

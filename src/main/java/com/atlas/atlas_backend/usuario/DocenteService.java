@@ -234,6 +234,21 @@ public class DocenteService {
             java.util.List<com.atlas.atlas_backend.cargo.Cargo> cargos = cargoRepository
                     .findByDesignacionDesignacionIdIn(designacionIds);
 
+            java.util.List<com.atlas.atlas_backend.licencia.Licencia> licencias = licenciaRepository
+                    .findByDesignacionDesignacionIdIn(designacionIds);
+            java.time.LocalDate today = java.time.LocalDate.now();
+            java.util.Set<Integer> designacionesConLicenciaActiva = licencias.stream()
+                    .filter(l -> com.atlas.atlas_backend.licencia.LicenciaExpirationService.isLicenciaActiva(l, today))
+                    .map(l -> l.getDesignacion().getDesignacionId())
+                    .filter(Objects::nonNull)
+                    .collect(java.util.stream.Collectors.toSet());
+
+            if (docente.getEstado() != null
+                    && (docente.getEstado().equalsIgnoreCase("Activo")
+                            || docente.getEstado().equalsIgnoreCase("Licencia"))) {
+                pd.setEstado(!designacionesConLicenciaActiva.isEmpty() ? "Licencia" : "Activo");
+            }
+
             if (!cargos.isEmpty()) {
                 com.atlas.atlas_backend.unidad.Unidad unidad = cargos.get(0).getUnidad();
                 if (unidad != null) {
@@ -260,8 +275,14 @@ public class DocenteService {
                 dd.setCategoria(cargo.getCategoria() != null ? cargo.getCategoria().getCategoriaNombre() : null);
                 dd.setDedicacion(cargo.getDedicacion() != null ? cargo.getDedicacion().getDedicacionNombre() : null);
                 dd.setCaracter(cargo.getCaracter() != null ? cargo.getCaracter().getCaracterNombre() : null);
-                dd.setEstado(
-                        cargo.getDesignacion() != null ? cargo.getDesignacion().getDesignacionEstadoActual() : null);
+                String desigEstado = cargo.getDesignacion() != null
+                        ? cargo.getDesignacion().getDesignacionEstadoActual()
+                        : null;
+                if (desigEstado != null && desigEstado.equalsIgnoreCase("Licencia")
+                        && !designacionesConLicenciaActiva.contains(cargo.getDesignacion().getDesignacionId())) {
+                    desigEstado = "Activo";
+                }
+                dd.setEstado(desigEstado);
                 dd.setOrigen(cargo.getOrigen() != null ? cargo.getOrigen().getOrigenNombre() : null);
                 designacionDataList.add(dd);
             }
@@ -287,8 +308,6 @@ public class DocenteService {
                 }
             }
 
-            java.util.List<com.atlas.atlas_backend.licencia.Licencia> licencias = licenciaRepository
-                    .findByDesignacionDesignacionIdIn(designacionIds);
             for (com.atlas.atlas_backend.licencia.Licencia l : licencias) {
                 DocenteDetailsDTO.LicenciaData ld = new DocenteDetailsDTO.LicenciaData();
                 ld.setNroResolucion(l.getNroResolucion());

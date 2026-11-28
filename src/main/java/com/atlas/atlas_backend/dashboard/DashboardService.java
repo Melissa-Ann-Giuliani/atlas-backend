@@ -6,7 +6,9 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 public class DashboardService {
@@ -14,11 +16,25 @@ public class DashboardService {
     @Autowired
     private DashboardRepository dashboardRepository;
 
-    public TeachingMapResponseDTO getTeachingMapData(Integer unidadId, Integer caracterId, Integer categoriaId, Integer dedicacionId, Integer origenId, String estadoActual) {
-        TeachingMapResponseDTO dto = new TeachingMapResponseDTO();
-        dto.setTotalDocentes(dashboardRepository.countTotalTeachers(unidadId, caracterId, categoriaId, dedicacionId, origenId, estadoActual));
+    public TeachingMapResponseDTO getTeachingMapData(
+            Integer unidadId,
+            List<Integer> caracterIds,
+            List<Integer> categoriaIds,
+            List<Integer> dedicacionIds,
+            List<Integer> origenIds,
+            List<String> estados) {
+        List<Integer> cleanCaracterIds = sanitizeIds(caracterIds);
+        List<Integer> cleanCategoriaIds = sanitizeIds(categoriaIds);
+        List<Integer> cleanDedicacionIds = sanitizeIds(dedicacionIds);
+        List<Integer> cleanOrigenIds = sanitizeIds(origenIds);
+        List<String> cleanEstados = sanitizeEstados(estados);
 
-        List<Object[]> byUnitTypeData = dashboardRepository.countTeachersByUnitType(unidadId, caracterId, categoriaId, dedicacionId, origenId, estadoActual);
+        TeachingMapResponseDTO dto = new TeachingMapResponseDTO();
+        dto.setTotalDocentes(dashboardRepository.countTotalTeachers(
+                unidadId, cleanCaracterIds, cleanCategoriaIds, cleanDedicacionIds, cleanOrigenIds, cleanEstados));
+
+        List<Object[]> byUnitTypeData = dashboardRepository.countTeachersByUnitType(
+                unidadId, cleanCaracterIds, cleanCategoriaIds, cleanDedicacionIds, cleanOrigenIds, cleanEstados);
         Map<String, Long> byUnitTypeMap = new HashMap<>();
         byUnitTypeMap.put("Centro", 0L);
         byUnitTypeMap.put("Departamento", 0L);
@@ -28,7 +44,8 @@ public class DashboardService {
             byUnitTypeMap.put((String) row[0], (Long) row[1]);
         }
 
-        List<Object[]> byUnitData = dashboardRepository.countTeachersByUnit(unidadId, caracterId, categoriaId, dedicacionId, origenId, estadoActual);
+        List<Object[]> byUnitData = dashboardRepository.countTeachersByUnit(
+                unidadId, cleanCaracterIds, cleanCategoriaIds, cleanDedicacionIds, cleanOrigenIds, cleanEstados);
         Map<String, List<SpecificUnitStatsDTO>> specificUnitsMap = new HashMap<>();
         specificUnitsMap.put("Centro", new ArrayList<>());
         specificUnitsMap.put("Departamento", new ArrayList<>());
@@ -66,5 +83,32 @@ public class DashboardService {
         dto.setDepartamentos(specificUnitsMap.getOrDefault("Departamento", new ArrayList<>()));
         dto.setInstitutos(specificUnitsMap.getOrDefault("Instituto", new ArrayList<>()));
         return dto;
+    }
+
+    private List<Integer> sanitizeIds(List<Integer> ids) {
+        if (ids == null) {
+            return null;
+        }
+        List<Integer> cleaned = ids.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        return cleaned.isEmpty() ? null : cleaned;
+    }
+
+    private List<String> sanitizeEstados(List<String> estados) {
+        if (estados == null) {
+            return null;
+        }
+        List<String> cleaned = new ArrayList<>();
+        for (String estado : estados) {
+            if (estado != null) {
+                String normalized = estado.trim().toLowerCase(Locale.ROOT);
+                if (!normalized.isEmpty() && !cleaned.contains(normalized)) {
+                    cleaned.add(normalized);
+                }
+            }
+        }
+        return cleaned.isEmpty() ? null : cleaned;
     }
 }

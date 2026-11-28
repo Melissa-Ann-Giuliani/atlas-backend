@@ -132,7 +132,7 @@ public class LicenciaService {
         dto.setFechaFin(licencia.getFechaFin());
         dto.setFechaFinEstim(licencia.getFechaFinEstim());
         dto.setCantidadDias(licencia.getCantidadDias());
-        dto.setEstado("Activa");
+        dto.setEstado(LicenciaExpirationService.isLicenciaActiva(licencia, LocalDate.now()) ? "Activa" : "Finalizada");
 
         // Motivo Data
         if (licencia.getMotivo() != null) {

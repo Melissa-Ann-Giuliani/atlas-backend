@@ -12,6 +12,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class DashboardServiceTest {
@@ -29,7 +30,6 @@ class DashboardServiceTest {
 
     @Test
     void testGetTeachingMapData_ReturnsProperlyFormattedDTO() {
-        // Arrange
         when(dashboardRepository.countTotalTeachers(null, null, null, null, null, null)).thenReturn(100L);
 
         List<Object[]> unitTypeData = new ArrayList<>();
@@ -44,15 +44,12 @@ class DashboardServiceTest {
         unitData.add(new Object[]{"Centro", "Creación", 10L});
         when(dashboardRepository.countTeachersByUnit(null, null, null, null, null, null)).thenReturn(unitData);
 
-        // Act
         TeachingMapResponseDTO result = dashboardService.getTeachingMapData(null, null, null, null, null, null);
 
-        // Assert
         assertNotNull(result);
         assertEquals(100L, result.getTotalDocentes());
         assertEquals(3, result.getUnitTypes().size());
 
-        // Assert specific unit mapping
         UnitTypeStatsDTO deptStats = result.getUnitTypes().stream()
                 .filter(u -> u.getLabel().equals("Departamento"))
                 .findFirst().orElse(null);
@@ -69,18 +66,15 @@ class DashboardServiceTest {
 
     @Test
     void testGetTeachingMapData_HandlesEmptyDatabase() {
-        // Arrange
         when(dashboardRepository.countTotalTeachers(any(), any(), any(), any(), any(), any())).thenReturn(0L);
         when(dashboardRepository.countTeachersByUnitType(any(), any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
         when(dashboardRepository.countTeachersByUnit(any(), any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
 
-        // Act
         TeachingMapResponseDTO result = dashboardService.getTeachingMapData(null, null, null, null, null, null);
 
-        // Assert
         assertNotNull(result);
         assertEquals(0L, result.getTotalDocentes());
-        assertEquals(3, result.getUnitTypes().size()); // Should still initialize the core 3 types
+        assertEquals(3, result.getUnitTypes().size());
 
         for (UnitTypeStatsDTO type : result.getUnitTypes()) {
             assertEquals(0L, type.getValue());
@@ -88,5 +82,28 @@ class DashboardServiceTest {
         assertEquals(0, result.getCentros().size());
         assertEquals(0, result.getDepartamentos().size());
         assertEquals(0, result.getInstitutos().size());
+    }
+
+    @Test
+    void testGetTeachingMapData_SanitizesFilterLists() {
+        List<Integer> caracterIds = List.of(1, 2);
+        List<Integer> origenIds = List.of(3);
+        List<String> rawEstados = List.of(" Activo ", " ", "Licencia");
+        List<String> expectedEstados = List.of("activo", "licencia");
+
+        when(dashboardRepository.countTotalTeachers(null, caracterIds, null, null, origenIds, expectedEstados))
+                .thenReturn(5L);
+        when(dashboardRepository.countTeachersByUnitType(null, caracterIds, null, null, origenIds, expectedEstados))
+                .thenReturn(List.of());
+        when(dashboardRepository.countTeachersByUnit(null, caracterIds, null, null, origenIds, expectedEstados))
+                .thenReturn(List.of());
+
+        TeachingMapResponseDTO result = dashboardService.getTeachingMapData(
+                null, caracterIds, List.of(), null, origenIds, rawEstados);
+
+        assertEquals(5L, result.getTotalDocentes());
+        verify(dashboardRepository).countTotalTeachers(null, caracterIds, null, null, origenIds, expectedEstados);
+        verify(dashboardRepository).countTeachersByUnitType(null, caracterIds, null, null, origenIds, expectedEstados);
+        verify(dashboardRepository).countTeachersByUnit(null, caracterIds, null, null, origenIds, expectedEstados);
     }
 }
