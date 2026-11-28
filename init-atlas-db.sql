@@ -824,9 +824,9 @@ INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fec
 ('3002', '2026-04-01', '2027-03-31', 'Licencia', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2'));
 
 -- 4. Insert Cargos
-INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id) VALUES
-(7001, 10, '2020-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
-(7002, 10, '2021-02-02', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Historia' LIMIT 1));
+INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id, cargo_estado) VALUES
+(7001, 10, '2020-01-01', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic1') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1), 'Licencia'),
+(7002, 10, '2021-02-02', 1, 1, 1, 1, (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'doc_lic2') LIMIT 1), (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Historia' LIMIT 1), 'Licencia');
 
 -- 5. Insert Licencias for these new docentes
 INSERT INTO public.licencias (licencia_nro_resolucion, licencia_fecha_inicio, licencia_fecha_fin, licencia_fecha_fin_estim, motivo_id, licencia_cantidad_dias, designacion_id) VALUES
