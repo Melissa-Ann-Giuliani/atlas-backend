@@ -82,6 +82,7 @@ public class LicenciaExpirationService {
     }
 
     @EventListener(ApplicationReadyEvent.class)
+    @Transactional
     public void onApplicationReady() {
         if (!syncOnStartup) {
             return;

@@ -82,6 +82,39 @@ public class DashboardService {
         dto.setCentros(specificUnitsMap.getOrDefault("Centro", new ArrayList<>()));
         dto.setDepartamentos(specificUnitsMap.getOrDefault("Departamento", new ArrayList<>()));
         dto.setInstitutos(specificUnitsMap.getOrDefault("Instituto", new ArrayList<>()));
+
+        if (unidadId != null) {
+            List<Object[]> activeMaterias = dashboardRepository.findActiveMateriasByUnidad(unidadId);
+            List<Object[]> byMateriaData = dashboardRepository.countTeachersByMateria(
+                    unidadId, cleanCaracterIds, cleanCategoriaIds, cleanDedicacionIds, cleanOrigenIds, cleanEstados);
+
+            Map<Integer, Long> materiaCounts = new HashMap<>();
+            if (byMateriaData != null) {
+                for (Object[] row : byMateriaData) {
+                    materiaCounts.put((Integer) row[0], (Long) row[1]);
+                }
+            }
+
+            List<SpecificUnitStatsDTO> materias = new ArrayList<>();
+            if (activeMaterias != null) {
+                for (Object[] row : activeMaterias) {
+                    Integer materiaId = (Integer) row[0];
+                    String materiaNombre = (String) row[1];
+                    SpecificUnitStatsDTO item = new SpecificUnitStatsDTO();
+                    item.setLabel(materiaNombre);
+                    item.setValue(materiaCounts.getOrDefault(materiaId, 0L));
+                    materias.add(item);
+                }
+            }
+            dto.setMaterias(materias);
+
+            Object[] unidadMeta = dashboardRepository.findUnidadMetadata(unidadId);
+            if (unidadMeta != null) {
+                dto.setUnidadNombre((String) unidadMeta[0]);
+                dto.setTipoUnidadNombre((String) unidadMeta[1]);
+            }
+        }
+
         return dto;
     }
 

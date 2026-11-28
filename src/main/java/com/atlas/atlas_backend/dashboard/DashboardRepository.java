@@ -72,6 +72,50 @@ public class DashboardRepository {
         return query.getResultList();
     }
 
+    public List<Object[]> findActiveMateriasByUnidad(Integer unidadId) {
+        TypedQuery<Object[]> query = entityManager.createQuery(
+                "SELECT m.id, m.nombre " +
+                "FROM Materia m " +
+                "WHERE m.unidad.unidadId = :unidadId AND LOWER(m.estado) = 'activa' " +
+                "ORDER BY m.nombre ASC, m.id ASC",
+                Object[].class);
+        query.setParameter("unidadId", unidadId);
+        return query.getResultList();
+    }
+
+    public List<Object[]> countTeachersByMateria(
+            Integer unidadId,
+            List<Integer> caracterIds,
+            List<Integer> categoriaIds,
+            List<Integer> dedicacionIds,
+            List<Integer> origenIds,
+            List<String> estados) {
+        StringBuilder jpql = new StringBuilder(
+                "SELECT m.id, COUNT(DISTINCT d.usuarioId) " +
+                "FROM Funcion f JOIN f.materia m JOIN f.cargo c JOIN c.designacion d " +
+                "JOIN Docente doc ON doc.id = d.usuarioId JOIN c.unidad u ");
+        Map<String, Object> params = appendFilters(
+                jpql, unidadId, caracterIds, categoriaIds, dedicacionIds, origenIds, estados);
+        jpql.append(" AND m.unidad.unidadId = :materiaUnidadId AND LOWER(m.estado) = 'activa'");
+        params.put("materiaUnidadId", unidadId);
+        jpql.append(" GROUP BY m.id");
+
+        TypedQuery<Object[]> query = entityManager.createQuery(jpql.toString(), Object[].class);
+        params.forEach(query::setParameter);
+        return query.getResultList();
+    }
+
+    public Object[] findUnidadMetadata(Integer unidadId) {
+        TypedQuery<Object[]> query = entityManager.createQuery(
+                "SELECT u.unidadNombre, tu.nombre " +
+                "FROM Unidad u LEFT JOIN u.tipoUnidad tu " +
+                "WHERE u.unidadId = :unidadId",
+                Object[].class);
+        query.setParameter("unidadId", unidadId);
+        List<Object[]> results = query.getResultList();
+        return results.isEmpty() ? null : results.get(0);
+    }
+
     private Map<String, Object> appendFilters(
             StringBuilder jpql,
             Integer unidadId,

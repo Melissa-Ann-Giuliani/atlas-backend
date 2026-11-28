@@ -2,6 +2,7 @@ package com.atlas.atlas_backend.licencia;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +13,7 @@ import java.util.List;
 
 @Repository
 public interface LicenciaRepository extends JpaRepository<Licencia, Integer> {
+    @EntityGraph(attributePaths = "designacion")
     List<Licencia> findByDesignacionDesignacionIdIn(List<Integer> designacionIds);
 
     @Query("""

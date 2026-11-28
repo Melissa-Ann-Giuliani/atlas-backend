@@ -994,4 +994,87 @@ SELECT
     )
 FROM new_cargos;
 
+-- =========================================================================
+-- ADDITIONAL MOCK DATA: MATERIAS & DOCENTES FOR DEPARTAMENTO DE MATEMÁTICA
+-- =========================================================================
+
+-- 1. Additional active Materias in Departamento de Matemática
+INSERT INTO public.materias (materia_nombre, materia_horas, materia_anio, materia_despliegue, materia_plan_estudio, materia_estado, unidad_id) VALUES
+('Análisis Matemático I', 8, '1°', 'Anual', 2023, 'Activa', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
+('Análisis Matemático II', 8, '2°', 'Anual', 2023, 'Activa', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
+('Probabilidad y Estadística', 6, '3°', 'Primer Semestre', 2024, 'Activa', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1)),
+('Matemática Discreta', 6, '2°', 'Segundo Semestre', 2024, 'Activa', (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1));
+
+-- 2. Additional Docentes in Departamento de Matemática (varied estado, origen, caracter, categoria, dedicacion)
+INSERT INTO public.usuarios (usuario_username, usuario_contrasenia, usuario_correo, usuario_apellido, usuario_nombre, usuario_activo, rol_id) VALUES
+('lgomez_mat', crypt('pass123', gen_salt('bf', 10)), 'laura.gomez@atlas.edu', 'Gómez', 'Laura', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente' LIMIT 1)),
+('mfernandez_mat', crypt('pass123', gen_salt('bf', 10)), 'martin.fernandez@atlas.edu', 'Fernández', 'Martín', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente' LIMIT 1)),
+('smorales_mat', crypt('pass123', gen_salt('bf', 10)), 'sofia.morales@atlas.edu', 'Morales', 'Sofía', true, (SELECT rol_id FROM public.roles WHERE rol_nombre = 'Docente' LIMIT 1));
+
+INSERT INTO public.docentes (usuario_id, docente_legajo, docente_tipo_dni, docente_dni, docente_cuil, docente_email_institucional, docente_fecha_ingreso, docente_estado) VALUES
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'lgomez_mat'), 90101, 'DNI', 31100101, 27311001014, 'lgomez@unsj.edu.ar', '2018-03-01', 'Activo'),
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'mfernandez_mat'), 90102, 'DNI', 32100102, 20321001025, 'mfernandez@unsj.edu.ar', '2020-04-01', 'Activo'),
+((SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'smorales_mat'), 90103, 'DNI', 33100103, 27331001036, 'smorales@unsj.edu.ar', '2021-08-01', 'Licencia');
+
+INSERT INTO public.designaciones (designacion_numero_resolucion, designacion_fecha_inicio, designacion_fecha_fin, designacion_estado_actual, usuario_id) VALUES
+('RES-MAT-101/2026', '2026-01-01', '2026-12-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'lgomez_mat')),
+('RES-MAT-102/2026', '2026-01-01', '2026-12-31', 'Activo', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'mfernandez_mat')),
+('RES-MAT-103/2026', '2026-01-01', '2026-12-31', 'Licencia', (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'smorales_mat'));
+
+INSERT INTO public.cargos (cargo_codigo, cargo_horas_ocupadas, cargo_fecha_creacion, origen_id, caracter_id, categoria_id, dedicacion_id, designacion_id, unidad_id, cargo_estado) VALUES
+(9201, 20, '2025-01-01',
+ (SELECT origen_id FROM public.origen WHERE origen_nombre = 'Planta' LIMIT 1),
+ (SELECT caracter_id FROM public.caracteres WHERE caracter_nombre = 'Efectivo' LIMIT 1),
+ (SELECT categoria_id FROM public.categorias WHERE categoria_nombre = 'Titular' LIMIT 1),
+ (SELECT dedicacion_id FROM public.dedicaciones WHERE dedicacion_nombre = 'Exclusiva' LIMIT 1),
+ (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'lgomez_mat') LIMIT 1),
+ (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1),
+ 'Asignado'),
+(9202, 16, '2025-01-01',
+ (SELECT origen_id FROM public.origen WHERE origen_nombre = 'Investigación' LIMIT 1),
+ (SELECT caracter_id FROM public.caracteres WHERE caracter_nombre = 'Interino' LIMIT 1),
+ (SELECT categoria_id FROM public.categorias WHERE categoria_nombre = 'Adjunto' LIMIT 1),
+ (SELECT dedicacion_id FROM public.dedicaciones WHERE dedicacion_nombre = 'Semi-Exclusiva' LIMIT 1),
+ (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'mfernandez_mat') LIMIT 1),
+ (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1),
+ 'Asignado'),
+(9203, 10, '2025-01-01',
+ (SELECT origen_id FROM public.origen WHERE origen_nombre = 'Planta' LIMIT 1),
+ (SELECT caracter_id FROM public.caracteres WHERE caracter_nombre = 'Suplente Constituido' LIMIT 1),
+ (SELECT categoria_id FROM public.categorias WHERE categoria_nombre = 'Jefe de Trabajos Prácticos' LIMIT 1),
+ (SELECT dedicacion_id FROM public.dedicaciones WHERE dedicacion_nombre = 'Simple' LIMIT 1),
+ (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'smorales_mat') LIMIT 1),
+ (SELECT unidad_id FROM public.unidades WHERE unidad_nombre = 'Matemática' LIMIT 1),
+ 'Licencia');
+
+INSERT INTO public.licencias (licencia_nro_resolucion, licencia_fecha_inicio, licencia_fecha_fin, licencia_fecha_fin_estim, motivo_id, licencia_cantidad_dias, designacion_id) VALUES
+('LIC-MAT-103/2026', CURRENT_DATE - INTERVAL '5 days', NULL, CURRENT_DATE + INTERVAL '25 days', 3, 30,
+ (SELECT designacion_id FROM public.designaciones WHERE usuario_id = (SELECT usuario_id FROM public.usuarios WHERE usuario_username = 'smorales_mat') LIMIT 1));
+
+INSERT INTO public.funciones (funcion_nombre, funcion_tipo, funcion_horas, cargo_id, materia_id) VALUES
+('Titular de Cátedra', 'Docencia', 10,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 9201 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Análisis Matemático I' LIMIT 1)),
+('Titular de Cátedra', 'Docencia', 10,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 9201 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Análisis Matemático II' LIMIT 1)),
+('Profesor Adjunto', 'Docencia', 8,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 9202 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Análisis Matemático I' LIMIT 1)),
+('Profesor Adjunto', 'Docencia', 8,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 9202 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Probabilidad y Estadística' LIMIT 1)),
+('Jefe de Trabajos Prácticos', 'Docencia', 5,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 9203 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Álgebra y Geometría Analítica' LIMIT 1)),
+('Jefe de Trabajos Prácticos', 'Docencia', 5,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 9203 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Probabilidad y Estadística' LIMIT 1)),
+('Dictado Práctico', 'Docencia', 4,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 5001 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Álgebra y Geometría Analítica' LIMIT 1)),
+('Dictado Teórico', 'Docencia', 4,
+ (SELECT cargo_id FROM public.cargos WHERE cargo_codigo = 8001 LIMIT 1),
+ (SELECT materia_id FROM public.materias WHERE materia_nombre = 'Análisis Matemático I' LIMIT 1));
+
 COMMIT;

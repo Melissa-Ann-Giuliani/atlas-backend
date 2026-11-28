@@ -53,8 +53,14 @@ public class InicioController {
         Usuario user = userOpt.get();
         Integer unidadId = null;
 
-        if (user.getRol().getNombre().equalsIgnoreCase("Admin de unidad") ||
-            user.getRol().getNombre().equalsIgnoreCase("Administrador de Unidad")) {
+        String rolNombre = (user.getRol() != null && user.getRol().getNombre() != null)
+                ? user.getRol().getNombre()
+                : "";
+        if (rolNombre.equalsIgnoreCase("Admin de unidad") ||
+            rolNombre.equalsIgnoreCase("Administrador de Unidad") ||
+            rolNombre.equalsIgnoreCase("ADMIN_UNIDAD") ||
+            rolNombre.equalsIgnoreCase("ADMIN_DE_UNIDAD") ||
+            rolNombre.equalsIgnoreCase("ADMINISTRADOR_DE_UNIDAD")) {
             Integer userId = user.getId();
             if (userId != null) {
                 Optional<AdminUnidad> adminUnidadOpt = adminUnidadRepository.findById(userId);

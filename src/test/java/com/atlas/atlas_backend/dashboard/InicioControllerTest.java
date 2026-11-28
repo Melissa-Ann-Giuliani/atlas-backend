@@ -110,6 +110,34 @@ class InicioControllerTest {
     }
 
     @Test
+    void testGetTeachingMap_AdminUnidadRoleCode_ReturnsFilteredData() {
+        when(authentication.isAuthenticated()).thenReturn(true);
+        when(authentication.getName()).thenReturn("admin_unidad_code");
+
+        Usuario mockUser = new Usuario();
+        mockUser.setId(3);
+        Rol rol = new Rol();
+        rol.setNombre("ADMIN_UNIDAD");
+        mockUser.setRol(rol);
+
+        AdminUnidad adminUnidad = new AdminUnidad();
+        Unidad unidad = new Unidad();
+        unidad.setUnidadId(15);
+        adminUnidad.setUnidad(unidad);
+
+        when(usuarioRepository.findByUsername("admin_unidad_code")).thenReturn(Optional.of(mockUser));
+        when(adminUnidadRepository.findById(3)).thenReturn(Optional.of(adminUnidad));
+        when(dashboardService.getTeachingMapData(15, null, null, null, null, null))
+                .thenReturn(new TeachingMapResponseDTO());
+
+        ResponseEntity<TeachingMapResponseDTO> response = inicioController.getTeachingMap(null, null, null, null, null);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertNotNull(response.getBody());
+        verify(dashboardService, times(1)).getTeachingMapData(15, null, null, null, null, null);
+    }
+
+    @Test
     void testGetTeachingMap_ForwardsMultiValueFilters() {
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getName()).thenReturn("admin");
